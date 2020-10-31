@@ -70,9 +70,9 @@ var (
 	DefaultCmd Cmd = New()
 
 	// name of the binary
-	name = "micro"
+	name = "mcbeam"
 	// description of the binary
-	description = "A framework for cloud native development\n\n	 Use `micro [command] --help` to see command specific help."
+	description = "A framework for cloud native development\n\n	 Use `mcbeam [command] --help` to see command specific help."
 	// defaultFlags which are used on all commands
 	defaultFlags = []cli.Flag{
 		&cli.StringFlag{
