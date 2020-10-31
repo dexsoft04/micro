@@ -297,6 +297,15 @@ func PublishContext(ctx context.Context) PublishOption {
 		o.Context = ctx
 	}
 }
+type serverUidKey struct {}
+func WithServerUid(u string) CallOption {
+	return func(o *CallOptions) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = context.WithValue(o.Context, serverUidKey{}, u)
+	}
+}
 
 // WithAddress sets the remote addresses to use rather than using service discovery
 func WithAddress(a ...string) CallOption {

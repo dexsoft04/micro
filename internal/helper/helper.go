@@ -84,7 +84,7 @@ func UnexpectedCommand(ctx *cli.Context) error {
 }
 
 func MissingCommand(ctx *cli.Context) error {
-	return cli.Exit(fmt.Sprintf("No command provided to micro. Please refer to 'micro --help'"), 1)
+	return cli.Exit(fmt.Sprintf("No command provided to mcbeam. Please refer to 'mcbeam --help'"), 1)
 }
 
 // MicroSubcommand returns the subcommand name

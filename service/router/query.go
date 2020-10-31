@@ -20,6 +20,7 @@ type LookupOption func(*LookupOptions)
 // LookupOptions are routing table query options
 // TODO replace with Filter(Route) bool
 type LookupOptions struct {
+	Uid string
 	// Address of the service
 	Address string
 	// Gateway is route gateway
@@ -32,6 +33,11 @@ type LookupOptions struct {
 	Link string
 }
 
+func LookupUid(id string) LookupOption {
+	return func(o *LookupOptions) {
+		o.Uid = id
+	}
+}
 // LookupAddress sets service to query
 func LookupAddress(a string) LookupOption {
 	return func(o *LookupOptions) {
@@ -71,6 +77,7 @@ func LookupLink(link string) LookupOption {
 func NewLookup(opts ...LookupOption) LookupOptions {
 	// default options
 	qopts := LookupOptions{
+		Uid: "*",
 		Address: "*",
 		Gateway: "*",
 		Network: "*",
@@ -86,7 +93,7 @@ func NewLookup(opts ...LookupOption) LookupOptions {
 }
 
 // isMatch checks if the route matches given query options
-func isMatch(route Route, address, gateway, network, rtr, link string) bool {
+func isMatch(route Route, uid, address, gateway, network, rtr, link string) bool {
 	// matches the values provided
 	match := func(a, b string) bool {
 		if a == "*" || b == "*" || a == b {
@@ -103,6 +110,7 @@ func isMatch(route Route, address, gateway, network, rtr, link string) bool {
 
 	// compare the following values
 	values := []compare{
+		{uid, route.Metadata["uid"]},
 		{gateway, route.Gateway},
 		{network, route.Network},
 		{rtr, route.Router},
@@ -122,6 +130,7 @@ func isMatch(route Route, address, gateway, network, rtr, link string) bool {
 
 // filterRoutes finds all the routes for given network and router and returns them
 func Filter(routes []Route, opts LookupOptions) []Route {
+	uid := opts.Uid
 	address := opts.Address
 	gateway := opts.Gateway
 	network := opts.Network
@@ -132,7 +141,7 @@ func Filter(routes []Route, opts LookupOptions) []Route {
 	routeMap := make(map[string][]Route)
 
 	for _, route := range routes {
-		if isMatch(route, address, gateway, network, rtr, link) {
+		if isMatch(route, uid, address, gateway, network, rtr, link) {
 			// add matchihg route to the routeMap
 			routeKey := route.Service + "@" + route.Network
 			routeMap[routeKey] = append(routeMap[routeKey], route)
