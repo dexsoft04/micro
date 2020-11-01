@@ -87,10 +87,10 @@ func Set(path, value string) error {
 		return err
 	}
 	// acquire lock
-	if err := lock.Lock(); err != nil {
-		return err
-	}
-	defer lock.Unlock()
+	//if err := lock.Lock(); err != nil {
+	//	return err
+	//}
+	//defer lock.Unlock()
 
 	// set the value
 	config.Set(path, value)

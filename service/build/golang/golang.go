@@ -74,6 +74,8 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	// build the binary
 	cmd := exec.Command(g.cmdPath, append(args, ".")...)
 	cmd.Env = append(os.Environ(), "GO111MODULE=auto")
+	cmd.Env = append(os.Environ(), "GOPROXY=https://goproxy.io,direct")
+
 	cmd.Dir = filepath.Join(dir, options.Entrypoint)
 
 	outp := bytes.NewBuffer(nil)
