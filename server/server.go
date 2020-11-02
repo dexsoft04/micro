@@ -16,7 +16,7 @@ import (
 var (
 	// list of services managed
 	services = []string{
-		"network",  // :8443
+//		"network",  // :8443
 		"runtime",  // :8088
 		"registry", // :8000
 		"config",   // :8001
@@ -122,13 +122,13 @@ func Run(context *cli.Context) error {
 		}
 
 		// set the proxy addres, default to the network running locally
-		if service != "network" {
-			proxy := context.String("proxy_address")
-			if len(proxy) == 0 {
-				proxy = "127.0.0.1:8443"
-			}
-			env = append(env, "MICRO_PROXY="+proxy)
-		}
+		//if service != "network" {
+		//	proxy := context.String("proxy_address")
+		//	if len(proxy) == 0 {
+		//		proxy = "127.0.0.1:8443"
+		//	}
+		//	env = append(env, "MICRO_PROXY="+proxy)
+		//}
 
 		// for kubernetes we want to provide a port and instruct the service to bind to it. we don't do
 		// this locally because the services are not isolated and the ports will conflict
