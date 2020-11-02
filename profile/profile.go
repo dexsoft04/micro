@@ -149,6 +149,7 @@ var Kubernetes = &Profile{
 		if ctx.Args().Get(1) == "registry" {
 			SetupRegistry(memory.NewRegistry())
 		}
+		SetupRegistry(mdns.NewRegistry())
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
