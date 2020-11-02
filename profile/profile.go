@@ -19,7 +19,6 @@ import (
 	memStream "github.com/micro/micro/v3/service/events/stream/memory"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
-	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/micro/micro/v3/service/registry/memory"
 	"github.com/micro/micro/v3/service/router"
 	k8sRouter "github.com/micro/micro/v3/service/router/kubernetes"
@@ -95,7 +94,10 @@ var Local = &Profile{
 		SetupConfigSecretKey(ctx)
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
 		SetupBroker(memBroker.NewBroker())
-		SetupRegistry(mdns.NewRegistry())
+		//SetupRegistry(mdns.NewRegistry())
+		if ctx.Args().Get(1) == "registry" {
+			SetupRegistry(memory.NewRegistry())
+		}
 		SetupJWT(ctx)
 
 		// use the local runtime, note: the local runtime is designed to run source code directly so
@@ -149,7 +151,7 @@ var Kubernetes = &Profile{
 		if ctx.Args().Get(1) == "registry" {
 			SetupRegistry(memory.NewRegistry())
 		}
-		SetupRegistry(mdns.NewRegistry())
+		//SetupRegistry(mdns.NewRegistry())
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
