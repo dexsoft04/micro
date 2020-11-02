@@ -5,6 +5,7 @@ package profile
 
 import (
 	"fmt"
+	"github.com/micro/micro/v3/service/registry/mdns"
 	"os"
 
 	"github.com/micro/micro/v3/service/auth/jwt"
@@ -94,10 +95,8 @@ var Local = &Profile{
 		SetupConfigSecretKey(ctx)
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
 		SetupBroker(memBroker.NewBroker())
-		//SetupRegistry(mdns.NewRegistry())
-		if ctx.Args().Get(1) == "registry" {
-			SetupRegistry(memory.NewRegistry())
-		}
+		SetupRegistry(mdns.NewRegistry())
+
 		SetupJWT(ctx)
 
 		// use the local runtime, note: the local runtime is designed to run source code directly so
