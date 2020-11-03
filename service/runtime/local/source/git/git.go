@@ -77,7 +77,8 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 // This aims to be a generic checkout method. Currently only tested for bitbucket,
 // see tests
 func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredentials bool) error {
-	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	repoFolder := strings.ReplaceAll(repo, "https://", "")
+	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 	err := os.MkdirAll(g.folder, 0755)
@@ -89,7 +90,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	remoteAddr := fmt.Sprintf("https://%v", strings.TrimPrefix(repo, "https://"))
 	if useCredentials {
 		remoteAddr = strings.TrimPrefix(repo, "https://")
-		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], repo)
+		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], remoteAddr)
 	}
 	logger.Infof("git clone %s --depth=1 .", remoteAddr)
 	cmd := exec.Command("git", "clone", remoteAddr, "--depth=1", ".")
@@ -119,7 +120,8 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 
 func (g *binaryGitter) checkoutGitee(repo, branchOrCommit string) error {
 	// @todo if it's a commit it must not be checked out all the time
-	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	repoFolder := strings.ReplaceAll(repo, "https://", "")
+	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 
@@ -166,7 +168,8 @@ func (g *binaryGitter) checkoutGitee(repo, branchOrCommit string) error {
 
 func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 	// @todo if it's a commit it must not be checked out all the time
-	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	repoFolder := strings.ReplaceAll(repo, "https://", "")
+	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 
@@ -213,7 +216,8 @@ func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 func (g *binaryGitter) checkoutGitLabPublic(repo, branchOrCommit string) error {
 	// Example: https://gitlab.com/micro-test/basic-micro-service/-/archive/master/basic-micro-service-master.tar.gz
 	// @todo if it's a commit it must not be checked out all the time
-	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	repoFolder := strings.ReplaceAll(repo, "https://", "")
+	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 

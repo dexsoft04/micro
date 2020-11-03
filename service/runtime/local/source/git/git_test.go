@@ -20,11 +20,21 @@ import (
 
 type parseCase struct {
 	source   string
+	secrets  map[string]string
 	expected *Source
 }
 
-func TestParseSource(t *testing.T) {
+func TestCheckoutSource(t *testing.T) {
 	cases := []parseCase{
+		{
+			source: "gitee.com/microbeam/helloworld",
+			secrets: map[string]string{credentialsKey: "18601666923:pass5871ABC"},
+			expected: &Source{
+				Repo:   "gitee.com/microbeam/helloworld",
+				Folder: "",
+				Ref:    "latest",
+			},
+		},
 		{
 			source: "github.com/micro/services/helloworld",
 			expected: &Source{
@@ -80,6 +90,81 @@ func TestParseSource(t *testing.T) {
 		if result.Ref != c.expected.Ref {
 			t.Fatalf("Ref does not match for '%v', expected '%v', got '%v'", i, c.expected.Ref, result.Ref)
 		}
+
+		_, err = CheckoutSource(result, c.secrets)
+		if err != nil {
+			t.Fatalf("Failed case %v: %v", i, err)
+		}
+	}
+}
+
+func TestParseSource(t *testing.T) {
+	cases := []parseCase{
+		{
+			source: "gitee.com/microbeam/helloworld",
+			expected: &Source{
+				Repo:   "gitee.com/microbeam/helloworld",
+				Folder: "",
+				Ref:    "latest",
+			},
+		},
+		{
+			source: "github.com/micro/services/helloworld",
+			expected: &Source{
+				Repo:   "github.com/micro/services",
+				Folder: "helloworld",
+				Ref:    "latest",
+			},
+		},
+		{
+			source: "github.com/micro/services/helloworld",
+			expected: &Source{
+				Repo:   "github.com/micro/services",
+				Folder: "helloworld",
+				Ref:    "latest",
+			},
+		},
+		{
+			source: "github.com/micro/services/helloworld@v1.12.1",
+			expected: &Source{
+				Repo:   "github.com/micro/services",
+				Folder: "helloworld",
+				Ref:    "v1.12.1",
+			},
+		},
+		{
+			source: "github.com/micro/services/helloworld@branchname",
+			expected: &Source{
+				Repo:   "github.com/micro/services",
+				Folder: "helloworld",
+				Ref:    "branchname",
+			},
+		},
+		{
+			source: "github.com/crufter/reponame/helloworld@branchname",
+			expected: &Source{
+				Repo:   "github.com/crufter/reponame",
+				Folder: "helloworld",
+				Ref:    "branchname",
+			},
+		},
+	}
+	for i, c := range cases {
+		result, err := ParseSource(c.source)
+		if err != nil {
+			t.Fatalf("Failed case %v: %v", i, err)
+		}
+		if result.Folder != c.expected.Folder {
+			t.Fatalf("Folder does not match for '%v', expected '%v', got '%v'", i, c.expected.Folder, result.Folder)
+		}
+		if result.Repo != c.expected.Repo {
+			t.Fatalf("Repo address does not match for '%v', expected '%v', got '%v'", i, c.expected.Repo, result.Repo)
+		}
+		if result.Ref != c.expected.Ref {
+			t.Fatalf("Ref does not match for '%v', expected '%v', got '%v'", i, c.expected.Ref, result.Ref)
+		}
+
+
 	}
 }
 
