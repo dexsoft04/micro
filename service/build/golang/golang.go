@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"os"
@@ -84,6 +85,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("%v: %v", err, outp.String())
 	}
+	logger.Infof("Finished build %s", cmd.Dir)
 
 	// read the bytes from the file
 	dst, err := ioutil.ReadFile(filepath.Join(cmd.Dir, "micro_build"))

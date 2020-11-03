@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 	"io"
 
 	pb "github.com/micro/micro/v3/proto/runtime"
@@ -18,6 +19,7 @@ const bufferSize = 1024
 type Build struct{}
 
 func (b *Build) Read(ctx context.Context, req *pb.Service, stream pb.Build_ReadStream) error {
+	logger.Infof("Loader preparing to Read artificial, key: build://%v:%v", req.Name, req.Version)
 	defer stream.Close()
 
 	// authorize the request
@@ -48,6 +50,7 @@ func (b *Build) Read(ctx context.Context, req *pb.Service, stream pb.Build_ReadS
 	for {
 		num, err := build.Read(buffer)
 		if err == io.EOF {
+			logger.Infof("Finished to Read artificial, key: build://%v:%v", req.Name, req.Version)
 			return nil
 		} else if err != nil {
 			return errors.InternalServerError("runtime.Build.Read", "Error reading build from store: %v", err)

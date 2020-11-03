@@ -121,6 +121,8 @@ func (m *manager) build(srv *service) error {
 			handleError(err, "Error uploading build")
 			return err
 		}
+		logger.Infof("Uploading finished ns:%v, key:%v", srv.Options.Namespace, key)
+
 	}
 
 	return nil

@@ -19,6 +19,7 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -482,7 +483,9 @@ func CheckoutSource(source *Source, secrets map[string]string) (string, error) {
 	if err := gitter.Checkout(repo, source.Ref); err != nil {
 		return "", err
 	}
-	return gitter.RepoDir(), nil
+	dir := gitter.RepoDir()
+	logger.Infof("git checkout repo:%s, ref:%s, dir:%s", dir)
+	return dir, nil
 }
 
 // code below is not used yet

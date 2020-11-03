@@ -142,8 +142,7 @@ func sourceExists(source *git.Source) error {
 		return sourceExistsAt(url, source)
 	} else if strings.Contains(source.Repo, "gitee") {
 		// Github specific existence checs
-		repo := strings.ReplaceAll(source.Repo, "github.com/", "")
-		url := fmt.Sprintf("https://api.gitee.com/repos/%v/contents/%v?ref=%v", repo, source.Folder, ref)
+		url := fmt.Sprintf("https://%v", source.Repo)
 		return sourceExistsAt(url, source)
 	} else if strings.Contains(source.Repo, "gitlab") {
 		// Gitlab specific existence checks
