@@ -28,7 +28,7 @@ func TestCheckoutSource(t *testing.T) {
 	cases := []parseCase{
 		{
 			source: "gitee.com/microbeam/helloworld",
-			secrets: map[string]string{credentialsKey: "18601666923:pass5871ABC"},
+			secrets: map[string]string{credentialsKey: ""},
 			expected: &Source{
 				Repo:   "gitee.com/microbeam/helloworld",
 				Folder: "",
