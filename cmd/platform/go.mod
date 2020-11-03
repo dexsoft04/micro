@@ -20,5 +20,5 @@ replace github.com/micro/micro/plugin/nats/stream/v3 => ../../plugin/nats/stream
 
 require (
 	github.com/micro/micro/profile/platform/v3 v3.0.0-20200928084632-c6281c58b123
-	github.com/micro/micro/v3 v3.0.0-beta.6
+	github.com/micro/micro/v3 v3.0.0-beta.7
 )

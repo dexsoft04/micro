@@ -42,9 +42,11 @@ func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, 
 	if len(opts.Network) > 0 {
 		query = append(query, router.LookupNetwork(opts.Network))
 	}
-	uid, ok := opts.Context.Value(serverUidKey{}).(string)
-	if ok && len(uid) > 0 {
-		query = append(query, router.LookupUid(uid))
+	if opts.Context != nil {
+		uid, ok := opts.Context.Value(serverUidKey{}).(string)
+		if ok && len(uid) > 0 {
+			query = append(query, router.LookupUid(uid))
+		}
 	}
 	// lookup the routes which can be used to execute the request
 	routes, err := opts.Router.Lookup(req.Service(), query...)
