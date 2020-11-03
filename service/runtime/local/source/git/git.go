@@ -58,6 +58,8 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 	}
 	if strings.Contains(repo, "github") {
 		return g.checkoutGithub(repo, branchOrCommit)
+	} else if strings.Contains(repo, "gitee") {
+		return g.checkoutGithub(repo, branchOrCommit)
 	} else if strings.Contains(repo, "gitlab") {
 		err := g.checkoutGitLabPublic(repo, branchOrCommit)
 		if err != nil && len(g.secrets[credentialsKey]) > 0 {
@@ -90,7 +92,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	if useCredentials {
 		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], repo)
 	}
-
+	logger.Infof("git clone %s --depth=1 .", remoteAddr)
 	cmd := exec.Command("git", "clone", remoteAddr, "--depth=1", ".")
 	cmd.Dir = g.folder
 	outp, err := cmd.CombinedOutput()
@@ -98,6 +100,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		return fmt.Errorf("Git clone failed: %v", string(outp))
 	}
 
+	logger.Infof("git fetch origin %s --depth=1", branchOrCommit)
 	cmd = exec.Command("git", "fetch", "origin", branchOrCommit, "--depth=1")
 	cmd.Dir = g.folder
 	outp, err = cmd.CombinedOutput()
@@ -105,6 +108,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		return fmt.Errorf("Git fetch failed: %v", string(outp))
 	}
 
+	logger.Infof("git checkout %s", branchOrCommit)
 	cmd = exec.Command("git", "checkout", branchOrCommit)
 	cmd.Dir = g.folder
 	outp, err = cmd.CombinedOutput()
