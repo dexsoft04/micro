@@ -58,8 +58,6 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 	}
 	if strings.Contains(repo, "github") {
 		return g.checkoutGithub(repo, branchOrCommit)
-	} else if strings.Contains(repo, "gitee") {
-		return g.checkoutGitee(repo, branchOrCommit)
 	} else if strings.Contains(repo, "gitlab") {
 		err := g.checkoutGitLabPublic(repo, branchOrCommit)
 		if err != nil && len(g.secrets[credentialsKey]) > 0 {
