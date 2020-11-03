@@ -67,13 +67,13 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	// check for vendor directory before setting mod to vendor. the vendor directory wasn't uploaded
 	// in early v3 betas so this enables backwards compatability
 	args := []string{"build", "-o", "micro_build"}
-	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
-		args = append(args, "-mod", "vendor")
-	}
+	//if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
+	//	args = append(args, "-mod", "vendor")
+	//}
 
 	// build the binary
 	cmd := exec.Command(g.cmdPath, append(args, ".")...)
-	cmd.Env = append(os.Environ(), "GO111MODULE=auto")
+	cmd.Env = append(os.Environ(), "GO111MODULE=on")
 	cmd.Env = append(os.Environ(), "GOPROXY=https://goproxy.io,direct")
 
 	cmd.Dir = filepath.Join(dir, options.Entrypoint)

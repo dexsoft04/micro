@@ -47,7 +47,7 @@ var (
 	// DefaultImage which should be run
 	DefaultImage = "micro/cells:v3"
 	// Git orgs we currently support for credentials
-	GitOrgs = []string{"github", "bitbucket", "gitlab"}
+	GitOrgs = []string{"github", "bitbucket", "gitlab", "gitee"}
 )
 
 const (
@@ -139,6 +139,11 @@ func sourceExists(source *git.Source) error {
 		// Github specific existence checs
 		repo := strings.ReplaceAll(source.Repo, "github.com/", "")
 		url := fmt.Sprintf("https://api.github.com/repos/%v/contents/%v?ref=%v", repo, source.Folder, ref)
+		return sourceExistsAt(url, source)
+	} else if strings.Contains(source.Repo, "gitee") {
+		// Github specific existence checs
+		repo := strings.ReplaceAll(source.Repo, "github.com/", "")
+		url := fmt.Sprintf("https://api.gitee.com/repos/%v/contents/%v?ref=%v", repo, source.Folder, ref)
 		return sourceExistsAt(url, source)
 	} else if strings.Contains(source.Repo, "gitlab") {
 		// Gitlab specific existence checks
