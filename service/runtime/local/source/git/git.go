@@ -59,7 +59,7 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 	if strings.Contains(repo, "github") {
 		return g.checkoutGithub(repo, branchOrCommit)
 	} else if strings.Contains(repo, "gitee") {
-		return g.checkoutGithub(repo, branchOrCommit)
+		return g.checkoutGitee(repo, branchOrCommit)
 	} else if strings.Contains(repo, "gitlab") {
 		err := g.checkoutGitLabPublic(repo, branchOrCommit)
 		if err != nil && len(g.secrets[credentialsKey]) > 0 {
@@ -118,6 +118,53 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	return nil
 }
 
+func (g *binaryGitter) checkoutGitee(repo, branchOrCommit string) error {
+	// @todo if it's a commit it must not be checked out all the time
+	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	g.folder = filepath.Join(os.TempDir(),
+		repoFolder+"-"+shortid.MustGenerate())
+
+	url := fmt.Sprintf("%v/repository/archive/%v.zip", repo, branchOrCommit)
+	if !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
+	}
+
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", url, nil)
+	if len(g.secrets[credentialsKey]) > 0 {
+		req.Header.Set("Authorization", "token "+g.secrets[credentialsKey])
+	}
+	logger.Infof("Prepare to checkout gitee, http get:%v", req)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Can't get zip: %v", err)
+	}
+
+	defer resp.Body.Close()
+	// Github returns 404 for tar.gz files...
+	// but still gives back a proper file so ignoring status code
+	// for now.
+	//if resp.StatusCode != 200 {
+	//	return errors.New("Status code was not 200")
+	//}
+
+	src := g.folder + ".zip"
+	// Create the file
+	out, err := os.Create(src)
+	if err != nil {
+		return fmt.Errorf("Can't create source file %v src: %v", src, err)
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+	return unzip(src, g.folder, true)
+}
+
 func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 	// @todo if it's a commit it must not be checked out all the time
 	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
@@ -133,6 +180,8 @@ func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 	if len(g.secrets[credentialsKey]) > 0 {
 		req.Header.Set("Authorization", "token "+g.secrets[credentialsKey])
 	}
+	logger.Infof("Prepare to checkout github, http get:%v", req)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("Can't get zip: %v", err)
