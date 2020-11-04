@@ -76,6 +76,16 @@ var (
 	// defaultFlags which are used on all commands
 	defaultFlags = []cli.Flag{
 		&cli.StringFlag{
+			Name:    "nats_cluster",
+			Usage:   "Set the config file: Defaults to ~/.micro/config.json",
+			EnvVars: []string{"MICRO_NATS_CLUSTER"},
+		},
+		&cli.StringFlag{
+			Name:    "etcd_cluster",
+			Usage:   "Set the config file: Defaults to ~/.micro/config.json",
+			EnvVars: []string{"MICRO_ETCD_CLUSTER"},
+		},
+		&cli.StringFlag{
 			Name:    "c",
 			Usage:   "Set the config file: Defaults to ~/.micro/config.json",
 			EnvVars: []string{"MICRO_CONFIG_FILE"},
