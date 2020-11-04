@@ -26,6 +26,7 @@ var (
 		"auth",     // :8010
 		"proxy",    // :8081
 		"api",      // :8080
+		"gate",//3250
 	}
 )
 
@@ -181,8 +182,6 @@ func Run(context *cli.Context) error {
 			runtime.WithSecret("MICRO_AUTH_PUBLIC_KEY", auth.DefaultAuth.Options().PublicKey),
 			runtime.WithSecret("MICRO_AUTH_PRIVATE_KEY", auth.DefaultAuth.Options().PrivateKey),
 		}
-
-		log.Infof("Registering %s envs", env)
 
 		// NOTE: we use Version right now to check for the latest release
 		muService := &runtime.Service{Name: service, Version: "latest"}
