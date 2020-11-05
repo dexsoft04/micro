@@ -38,6 +38,7 @@ import (
 	muregistry "github.com/micro/micro/v3/service/registry"
 	muruntime "github.com/micro/micro/v3/service/runtime"
 	mustore "github.com/micro/micro/v3/service/store"
+	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/v3/wrapper"
 )
 
 type Cmd interface {
@@ -397,6 +398,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		server.WrapHandler(wrapper.HandlerStats()),
 		server.WrapHandler(wrapper.LogHandler()),
 		server.WrapHandler(wrapper.MetricsHandler()),
+		server.WrapHandler(mcwrapper.SessionHandler()),
 	)
 
 	// setup auth
