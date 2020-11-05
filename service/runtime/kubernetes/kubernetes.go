@@ -26,6 +26,16 @@ import (
 	"github.com/micro/micro/v3/service/runtime"
 )
 
+var (
+	DefaultServiceResources = &runtime.Resources{
+		CPU:  200,
+		Mem:  200,
+		Disk: 2000,
+	}
+
+	DefaultImage = "micro/cells:v3"
+)
+
 // action to take on runtime service
 type action int
 
@@ -193,6 +203,15 @@ func (k *kubernetes) create(resource runtime.Resource, opts ...runtime.CreateOpt
 		// create a secret for the deployment
 		if err := k.createCredentials(s, options); err != nil {
 			return err
+		}
+
+		// create some default resource requests
+		if options.Resources == nil && options.Namespace != "micro" {
+			options.Resources = DefaultServiceResources
+		}
+
+		if len(options.Image) == 0 {
+			options.Image = DefaultImage
 		}
 
 		// create the deployment
