@@ -48,6 +48,8 @@ spec:
                       values:
                         - runtime
                 topologyKey: "kubernetes.io/hostname"
+      imagePullSecrets:
+      - name: qcloudregistrykey
       containers:
       - name: micro
         env:
@@ -91,7 +93,7 @@ spec:
           value: "/certs/registry/key.pem"
         - name: MICRO_STORE_ADDRESS
           value: "postgresql://root@cockroachdb-cluster-public:26257?ssl=true&sslmode=require&sslrootcert=certs/store/ca.crt&sslkey=certs/store/key.pem&sslcert=certs/store/cert.pem"
-        image: ghcr.io/m3o/platform
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam
         imagePullPolicy: Always
         args:
         - service

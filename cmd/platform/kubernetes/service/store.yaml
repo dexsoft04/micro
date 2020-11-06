@@ -43,6 +43,8 @@ spec:
                       values:
                         - runtime
                 topologyKey: "kubernetes.io/hostname"
+      imagePullSecrets:
+      - name: qcloudregistrykey
       containers:
       - name: micro
         env:
@@ -99,7 +101,7 @@ spec:
             secretKeyRef:
               name: minio-creds
               key: region
-        image: ghcr.io/m3o/platform
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam
         imagePullPolicy: Always
         args:
         - service
