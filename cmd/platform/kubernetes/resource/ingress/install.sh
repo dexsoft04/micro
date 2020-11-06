@@ -1,11 +1,11 @@
 #!/bin/bash
 # Reference: https://cert-manager.io/docs/tutorials/acme/ingress/
-
+ENV=$1
 # REQUIRED MICRO ENV CF_API_KEY
 
 # Install nginx using helm
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install nginx ingress-nginx/ingress-nginx
+helm install nginx ingress-nginx/ingress-nginx --set controller.image.repository=ccr.ccs.tencentyun.com/wolfplus/controller,controller.image.tag=v0.41.0,controller.image.digest=sha256:adeec4dfe8339769ae42eeda1bc9577cc7e2869f440d67d4643e020535792972
 kubectl wait deployment/nginx-ingress-nginx-controller --for=condition=available --timeout=120s
 
 if [ $MICRO_ENV == "dev" ]; then
