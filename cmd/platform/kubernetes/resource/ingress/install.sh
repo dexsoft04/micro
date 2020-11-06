@@ -8,6 +8,11 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm install nginx ingress-nginx/ingress-nginx
 kubectl wait deployment/nginx-ingress-nginx-controller --for=condition=available --timeout=120s
 
+if [ $MICRO_ENV == "dev" ]; then
+  sed -i '' 's/\*.m3o.app/\*.mcbeam.dev/g' ingress.yaml
+  sed -i '' 's/m3o.com/mcbeam.dev/g' ingress.yaml
+fi
+
 # Replace m3o.com with m3o.dev in staging
 if [ $MICRO_ENV == "staging" ]; then
   sed -i '' 's/\*.m3o.app/\*.m3o.dev/g' ingress.yaml

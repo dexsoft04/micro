@@ -8,10 +8,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - "*.m3o.com"
+    - "*.mcbeam.dev"
     secretName: proxy-tls
   rules:
-  - host: "proxy.m3o.com"
+  - host: "proxy.mcbeam.dev"
     http:
       paths:
       - path: /
@@ -31,11 +31,11 @@ metadata:
 spec:
   tls:
   - hosts:
-    - "*.m3o.app"
-    - "*.m3o.com"
+    - "*.mcbeam.dev"
+    - "*.mcbeam.dev"
     secretName: api-tls
   rules:
-  - host: "api.m3o.com"
+  - host: "api.mcbeam.dev"
     http:
       paths:
       - path: /
@@ -45,7 +45,7 @@ spec:
             name: micro-api
             port:
               number: 8080
-  - host: "*.m3o.app"
+  - host: "*.mcbeam.dev"
     http:
       paths:
       - path: /

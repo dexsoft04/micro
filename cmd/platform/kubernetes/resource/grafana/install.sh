@@ -12,4 +12,4 @@ helm upgrade grafana stable/grafana \
     --install \
     --namespace ${MONITORING_NAMESPACE} \
     --set persistence.enabled=true \
-    --set persistence.size=1Gi
+    --set persistence.size=10Gi

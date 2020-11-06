@@ -61,7 +61,7 @@ store:
   volume:
     enabled: true
     mount: /data/stan
-    storageSize: 3Gi
+    storageSize: 10Gi
     accessModes: ReadWriteOnce
     storageClass:
 

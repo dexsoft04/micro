@@ -18,8 +18,11 @@ kubectl create secret generic etcd-peer-certs --from-file=ca.crt=ca.pem --from-f
 # move back into the /etcd directory
 cd ../;
 
+
 if [[ $MICRO_ENV == "dev" ]]; then
-  overrides="--set statefulset.replicaCount=1"
+  overrides="--set statefulset.replicaCount=1,persistence.size=10Gi"
+else
+  overrides="--set persistence.size=10Gi"
 fi
 
 # install the cluster using helm

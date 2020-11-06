@@ -34,4 +34,4 @@ kubectl wait --for=condition=Ready pod/nats-cluster-0 --timeout=180s
 helm install nats-streaming-cluster nats/stan --version 0.5.6 -f stan-values.yaml $overrides
 
 # wait for the nats streaming cluster to start before we exit
-kubectl wait --for=condition=Ready pod/nats-streaming-cluster-0 --timeout=180s 
+kubectl wait --for=condition=Ready pod/nats-streaming-cluster-0 --timeout=180s
