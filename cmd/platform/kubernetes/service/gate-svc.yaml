@@ -1,19 +1,20 @@
  apiVersion: v1
  kind: Service
  metadata:
-   name: micro-api
+   name: micro-gate
    namespace: default
    labels:
      micro: runtime
-     name: api
+     name: gate
      version: latest
  spec:
    ports:
-   - name: http
-     port: 8080
-     targetPort: 8080
+   - name: gate
+     port: 3250
+     targetPort: 3250
    selector:
-     name: micro-api
+     name: micro-gate
      micro: runtime
      version: latest
    type: LoadBalancer
+   sessionAffinity: ClientIP

@@ -16,3 +16,4 @@ spec:
     name: micro-proxy
     micro: runtime
     version: latest
+  type: LoadBalancer
