@@ -9,13 +9,17 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 
 	"github.com/micro/micro/v3/service/build"
 	"github.com/micro/micro/v3/service/build/util/tar"
 	"github.com/micro/micro/v3/service/build/util/zip"
 )
-
+var (
+	home, _ = os.UserHomeDir()
+	tmpDir = path.Join(home, "building")
+)
 // NewBuilder returns a golang build which can build a go binary given some source
 func NewBuilder() (build.Builder, error) {
 	path, err := locateGo()
@@ -25,7 +29,7 @@ func NewBuilder() (build.Builder, error) {
 
 	return &golang{
 		cmdPath: path,
-		tmpDir:  os.TempDir(),
+		tmpDir:  tmpDir,
 	}, nil
 }
 
@@ -48,7 +52,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(dir)
+	//defer os.RemoveAll(dir)
 
 	// decode the source and write to the tmp directory
 	switch options.Archive {
@@ -68,9 +72,9 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	// check for vendor directory before setting mod to vendor. the vendor directory wasn't uploaded
 	// in early v3 betas so this enables backwards compatability
 	args := []string{"build", "-o", "micro_build"}
-	//if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
-	//	args = append(args, "-mod", "vendor")
-	//}
+	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
+		args = append(args, "-mod", "vendor")
+	}
 
 	// build the binary
 	cmd := exec.Command(g.cmdPath, append(args, ".")...)
@@ -81,6 +85,9 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 
 	outp := bytes.NewBuffer(nil)
 	cmd.Stderr = outp
+
+	logger.Infof("Befor build env: %v", cmd.Env)
+	logger.Infof("Befor build cmd: %s", cmd.String())
 
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("%v: %v", err, outp.String())
