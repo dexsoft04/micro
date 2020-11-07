@@ -1,9 +1,7 @@
-FROM alpine:latest AS builder
-RUN apk --no-cache add make git go gcc libtool musl-dev
-ENV GOROOT /usr/lib/go
-ENV GOPATH /go
-ENV PATH /go/bin:$PATH
+FROM golang:1.15-alpine AS builder
 WORKDIR loader
 COPY loader .
 RUN go build  .
+FROM alpine:latest
+COPY --from=builder /loader /loader
 CMD ./loader

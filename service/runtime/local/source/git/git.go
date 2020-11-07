@@ -34,7 +34,10 @@ import (
 )
 
 const credentialsKey = "GIT_CREDENTIALS"
-
+var (
+	home, _ = os.UserHomeDir()
+	tmpDir = home
+)
 type Gitter interface {
 	Checkout(repo, branchOrCommit string) error
 	RepoDir() string
@@ -78,7 +81,7 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredentials bool) error {
 	repoFolder := strings.ReplaceAll(repo, "https://", "")
 	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
-	g.folder = filepath.Join(os.TempDir(),
+	g.folder = filepath.Join(tmpDir,
 		repoFolder+"-"+shortid.MustGenerate())
 	err := os.MkdirAll(g.folder, 0755)
 	if err != nil {

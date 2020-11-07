@@ -45,6 +45,8 @@ require (
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.25.0
+	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20201030211035-7b29d3bd49f5
 )
 
 replace go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
+replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
