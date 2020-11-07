@@ -91,7 +91,7 @@ var Profile = &profile.Profile{
 		}
 		events.DefaultStore = evStore.NewStore(evStore.WithStore(store.DefaultStore))
 
-		kubernetes.DefaultImage = "ghcr.io/m3o/cells:v3"
+		//kubernetes.DefaultImage = "ghcr.io/m3o/cells:v3"
 		return nil
 	},
 }

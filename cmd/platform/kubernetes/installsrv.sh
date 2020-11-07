@@ -6,7 +6,10 @@ if [ $MICRO_ENV == "dev" ]; then
 fi
 
 if [ $MICRO_ENV == "dev" ]; then
-  sed -i '' 's/ccr.ccs.tencentyun.com\/wolfplus\/mcbeam/ccr.ccs.tencentyun.com\/wolfplus\/mcbeam:mcbeam-v3-202011071018/g'
+  sed -i '' 's/ccr.ccs.tencentyun.com\/wolfplus\/mcbeam/ccr.ccs.tencentyun.com\/wolfplus\/mcbeam:mcbeam-v3-202011071039/g'
   sed -i '' '/containers:/i\\      imagePullSecrets:\n      - name: qcloudregistrykey'
 
 kubectl apply -f service
+
+win:
+  sed -i 's/mcbeam-v3-202011071039:mcbeam-v3-202011071018/mcbeam-v3-202011071039/g' `ls ./service/*`

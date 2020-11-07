@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"os"
@@ -47,7 +46,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	//defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir)
 
 	// decode the source and write to the tmp directory
 	switch options.Archive {
@@ -73,7 +72,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 
 	// build the binary
 	cmd := exec.Command(g.cmdPath, append(args, ".")...)
-	cmd.Env = append(os.Environ(), "GO111MODULE=on")
+	cmd.Env = append(os.Environ(), "GO111MODULE=auto")
 	cmd.Env = append(os.Environ(), "GOPROXY=https://goproxy.io,direct")
 
 	cmd.Dir = filepath.Join(dir, options.Entrypoint)
@@ -81,13 +80,9 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	outp := bytes.NewBuffer(nil)
 	cmd.Stderr = outp
 
-	logger.Infof("Befor build env: %v", cmd.Env)
-	logger.Infof("Befor build cmd: %s", cmd.String())
-
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("%v: %v", err, outp.String())
 	}
-	logger.Infof("Finished build %s", cmd.Dir)
 
 	// read the bytes from the file
 	dst, err := ioutil.ReadFile(filepath.Join(cmd.Dir, "micro_build"))

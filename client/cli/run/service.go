@@ -46,6 +46,8 @@ var (
 	DefaultRetries = 3
 	// Git orgs we currently support for credentials
 	GitOrgs = []string{"github", "bitbucket", "gitlab", "gitee"}
+
+	DefaultImage = "micro/cells:micro"
 )
 
 const (
@@ -201,7 +203,7 @@ func runService(ctx *cli.Context) error {
 	command := strings.TrimSpace(ctx.String("command"))
 	args := strings.TrimSpace(ctx.String("args"))
 	retries := DefaultRetries
-	image := ""
+	image := DefaultImage
 	if ctx.IsSet("retries") {
 		retries = ctx.Int("retries")
 	}
@@ -218,17 +220,17 @@ func runService(ctx *cli.Context) error {
 	if source.Local {
 		// check to see if a vendor folder exists, if it doesn't we should delete the one we generate
 		// after we finish the upload
-		//vendorDir := filepath.Join(source.LocalRepoRoot, "vendor")
-		//if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
-		//	defer os.RemoveAll(vendorDir)
-		//} else if err != nil {
-		//	return err
-		//}
-		//
-		//// vendor the dependencies
-		//if err := run.VendorDependencies(source.LocalRepoRoot); err != nil {
-		//	return err
-		//}
+		vendorDir := filepath.Join(source.LocalRepoRoot, "vendor")
+		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
+			defer os.RemoveAll(vendorDir)
+		} else if err != nil {
+			return err
+		}
+
+		// vendor the dependencies
+		if err := run.VendorDependencies(source.LocalRepoRoot); err != nil {
+			return err
+		}
 
 		// for local source, upload it to the server and use the resulting source ID
 		srv.Source, err = upload(ctx, srv, source)
