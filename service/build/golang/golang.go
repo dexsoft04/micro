@@ -9,16 +9,11 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 
 	"github.com/micro/micro/v3/service/build"
 	"github.com/micro/micro/v3/service/build/util/tar"
 	"github.com/micro/micro/v3/service/build/util/zip"
-)
-var (
-	home, _ = os.UserHomeDir()
-	tmpDir = path.Join(home, "building")
 )
 // NewBuilder returns a golang build which can build a go binary given some source
 func NewBuilder() (build.Builder, error) {
@@ -29,7 +24,7 @@ func NewBuilder() (build.Builder, error) {
 
 	return &golang{
 		cmdPath: path,
-		tmpDir:  tmpDir,
+		tmpDir:  os.TempDir(),
 	}, nil
 }
 
