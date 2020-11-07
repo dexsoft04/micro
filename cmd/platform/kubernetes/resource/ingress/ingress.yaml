@@ -1,28 +1,26 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: grpc-ingress
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-spec:
-  tls:
-  - hosts:
-    - "*.m3o.com"
-    secretName: proxy-tls
-  rules:
-  - host: "proxy.m3o.com"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: micro-proxy
-            port:
-              number: 8081
+#apiVersion: networking.k8s.io/v1beta1
+#kind: Ingress
+#metadata:
+#  name: grpc-ingress
+#  annotations:
+#    kubernetes.io/ingress.class: "nginx"
+#    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+#spec:
+#  tls:
+#  - hosts:
+#    - "*.mcbeam.cc"
+#    secretName: proxy-tls
+#  rules:
+#  - host: "proxy.mcbeam.cc"
+#    http:
+#      paths:
+#      - path: /
+#        pathType: Prefix
+#        backend:
+#          serviceName: micro-proxy
+#          servicePort: 8081
 ---
-apiVersion: networking.k8s.io/v1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: http-ingress
@@ -31,27 +29,52 @@ metadata:
 spec:
   tls:
   - hosts:
-    - "*.m3o.app"
-    - "*.m3o.com"
+    - "*.mcbeam.cc"
     secretName: api-tls
   rules:
-  - host: "api.m3o.com"
+  - host: "api.mcbeam.cc"
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
-          service:
-            name: micro-api
-            port:
-              number: 8080
-  - host: "*.m3o.app"
+          serviceName: micro-api
+          servicePort: 8080
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: monitoring-ingress
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+        - "*.mcbeam.cc"
+      secretName: api-tls
+  rules:
+  - host: "grafana.mcbeam.cc"
     http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: micro-api
-            port:
-              number: 8080
+        - path: /
+          pathType: Prefix
+          backend:
+            serviceName: grafana
+            servicePort: 80
+  - host: "prometheus-server.mcbeam.cc"
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            serviceName: prometheus-server
+            servicePort: 80
+  - host: "prometheus-server.mcbeam.cc"
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            serviceName: prometheus-server
+            servicePort: 80
