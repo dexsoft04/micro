@@ -14,10 +14,7 @@ import (
 	"github.com/micro/micro/v3/service/build/util/tar"
 	"github.com/micro/micro/v3/service/build/util/zip"
 )
-var (
-	home, _ = os.UserHomeDir()
-	tmpDir = home
-)
+
 // NewBuilder returns a golang build which can build a go binary given some source
 func NewBuilder() (build.Builder, error) {
 	path, err := locateGo()

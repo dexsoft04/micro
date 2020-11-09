@@ -9,25 +9,25 @@ helm install nginx ingress-nginx/ingress-nginx -f values.yaml
 
 kubectl wait deployment/nginx-ingress-nginx-controller --for=condition=available --timeout=120s
 
-if [ $MICRO_ENV == "dev" ]; then
-  sed -i '' 's/\*.m3o.app/\*.mcbeam.dev/g' ingress.yaml
-  sed -i '' 's/m3o.com/mcbeam.dev/g' ingress.yaml
-fi
-
-# Replace m3o.com with m3o.dev in staging
-if [ $MICRO_ENV == "staging" ]; then
-  sed -i '' 's/\*.m3o.app/\*.m3o.dev/g' ingress.yaml
-  sed -i '' 's/m3o.com/m3o.dev/g' ingress.yaml
-fi
+#if [ $MICRO_ENV == "dev" ]; then
+#  sed -i '' 's/\*.m3o.app/\*.mcbeam.dev/g' ingress.yaml
+#  sed -i '' 's/m3o.com/mcbeam.dev/g' ingress.yaml
+#fi
+#
+## Replace m3o.com with m3o.dev in staging
+#if [ $MICRO_ENV == "staging" ]; then
+#  sed -i '' 's/\*.m3o.app/\*.m3o.dev/g' ingress.yaml
+#  sed -i '' 's/m3o.com/m3o.dev/g' ingress.yaml
+#fi
 
 # Install the ingress
 kubectl apply -f ingress.yaml
 
 # replace back
-if [ $MICRO_ENV == "staging" ]; then
-  sed -i '' 's/\*.m3o.dev/\*.m3o.app/g' ingress.yaml
-  sed -i '' 's/m3o.dev/m3o.com/g' ingress.yaml
-fi
+#if [ $MICRO_ENV == "staging" ]; then
+#  sed -i '' 's/\*.m3o.dev/\*.m3o.app/g' ingress.yaml
+#  sed -i '' 's/m3o.dev/m3o.com/g' ingress.yaml
+#fi
 
 # Don't use TLS locally
 if [ "$MICRO_ENV" == "dev" ]; then

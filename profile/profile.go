@@ -84,7 +84,11 @@ func Load(name string) (*Profile, error) {
 // Client profile is for any entrypoint that behaves as a client
 var Client = &Profile{
 	Name:  "client",
-	Setup: func(ctx *cli.Context) error { return nil },
+	Setup: func(ctx *cli.Context) error {
+		SetupRegistry(etcd.NewRegistry())
+
+		return nil
+	},
 }
 
 // Local profile to run locally
@@ -103,7 +107,6 @@ var Local = &Profile{
 		// use the local runtime, note: the local runtime is designed to run source code directly so
 		// the runtime builder should NOT be set when using this implementation
 		microRuntime.DefaultRuntime = local.NewRuntime()
-		microBuilder.DefaultBuilder, _ = golang.NewBuilder()
 		var err error
 		microEvents.DefaultStream, err = memStream.NewStream()
 		if err != nil {
