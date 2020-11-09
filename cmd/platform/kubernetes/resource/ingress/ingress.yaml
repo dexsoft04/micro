@@ -29,10 +29,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - "*.mcbeam.cc"
+    - "*.mcbeam.dev"
     secretName: api-tls
   rules:
-  - host: "api.mcbeam.cc"
+  - host: "*.mcbeam.cc"
     http:
       paths:
       - path: /

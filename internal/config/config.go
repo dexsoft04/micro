@@ -53,6 +53,7 @@ func Get(path string) (string, error) {
 		return "", err
 	}
 
+
 	// acquire lock
 	//if err := lock.Lock(); err != nil {
 	//	return "", err
