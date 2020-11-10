@@ -16,4 +16,3 @@
      name: micro-api
      micro: runtime
      version: latest
-   type: LoadBalancer
