@@ -5,7 +5,7 @@ package profile
 
 import (
 	"fmt"
-	"github.com/micro/micro/plugin/etcd/v3"
+	"github.com/micro/micro/v3/service/registry/mdns"
 	"os"
 	"path/filepath"
 
@@ -98,7 +98,7 @@ var Local = &Profile{
 		SetupConfigSecretKey(ctx)
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
 		SetupBroker(memBroker.NewBroker())
-		SetupRegistry(etcd.NewRegistry())
+		SetupRegistry(mdns.NewRegistry())
 
 		SetupJWT(ctx)
 
