@@ -2,7 +2,6 @@
 # Reference: https://cert-manager.io/docs/tutorials/acme/ingress/
 ENV=$1
 # REQUIRED MICRO ENV CF_API_KEY
-MICRO_ENV=$1
 # Install nginx using helm
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm install nginx ingress-nginx/ingress-nginx -f values.yaml

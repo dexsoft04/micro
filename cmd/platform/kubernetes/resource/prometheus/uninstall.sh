@@ -1,2 +1,5 @@
 #!/bin/bash
-helm uninstall prometheus 
+MONITORING_NAMESPACE="monitoring"
+
+helm uninstall prometheus \
+  --namespace ${MONITORING_NAMESPACE}

@@ -85,8 +85,6 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name:  "client",
 	Setup: func(ctx *cli.Context) error {
-		SetupRegistry(etcd.NewRegistry())
-
 		return nil
 	},
 }
