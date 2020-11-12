@@ -46,8 +46,6 @@ var (
 	DefaultRetries = 3
 	// Git orgs we currently support for credentials
 	GitOrgs = []string{"github", "bitbucket", "gitlab", "gitee"}
-
-	DefaultImage = "micro/cells:micro"
 )
 
 const (
@@ -233,7 +231,7 @@ func runService(ctx *cli.Context) error {
 	command := strings.TrimSpace(ctx.String("command"))
 	args := strings.TrimSpace(ctx.String("args"))
 	retries := DefaultRetries
-	image := DefaultImage
+	image := ""
 	if ctx.IsSet("retries") {
 		retries = ctx.Int("retries")
 	}
