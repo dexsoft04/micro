@@ -36,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
-	github.com/wolfplus2048/mcbeam-plugins/v3 v3.0.0-20201105135822-ca8a4d73dd66
+	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201113103110-bd19b597ce20
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
 	go.etcd.io/bbolt v1.3.5
@@ -45,8 +45,8 @@ require (
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.25.0
-	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20201030211035-7b29d3bd49f5
 )
 
 replace go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
+
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0

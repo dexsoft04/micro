@@ -213,7 +213,7 @@ func (k *kubernetes) create(resource runtime.Resource, opts ...runtime.CreateOpt
 		if len(options.Image) == 0 {
 			options.Image = DefaultImage
 		}
-
+		logger.Infof("options.Image:%s, default.image:%s", options.Image, DefaultImage)
 		// create the deployment
 		if err := k.client.Create(client.NewDeployment(s, options), client.CreateNamespace(options.Namespace)); err != nil {
 			if parseError(err).Reason == "AlreadyExists" {

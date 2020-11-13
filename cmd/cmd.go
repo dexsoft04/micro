@@ -38,7 +38,7 @@ import (
 	muregistry "github.com/micro/micro/v3/service/registry"
 	muruntime "github.com/micro/micro/v3/service/runtime"
 	mustore "github.com/micro/micro/v3/service/store"
-	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/v3/wrapper"
+	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
 )
 
 type Cmd interface {
