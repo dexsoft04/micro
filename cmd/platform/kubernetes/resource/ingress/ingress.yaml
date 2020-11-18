@@ -84,7 +84,14 @@ spec:
             backend:
               serviceName: apollo-portal
               servicePort: 8070
-
+    - host: "apollo-srv.mcbeam.cc"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              serviceName: apollo-service-apollo-configservice
+              servicePort: 8080
 ---
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
