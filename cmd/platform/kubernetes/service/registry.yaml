@@ -91,7 +91,7 @@ spec:
         args:
         - service
         - registry
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011171650
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011191305
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

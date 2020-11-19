@@ -7,6 +7,7 @@ import (
 	brokerSrv "github.com/micro/micro/v3/service/broker/client"
 	"github.com/micro/micro/v3/service/client"
 	grpcCli "github.com/micro/micro/v3/service/client/grpc"
+	"github.com/micro/micro/v3/service/config"
 	"github.com/micro/micro/v3/service/events"
 	eventsSrv "github.com/micro/micro/v3/service/events/client"
 	"github.com/micro/micro/v3/service/metrics"
@@ -23,6 +24,9 @@ import (
 	grpcSvr "github.com/micro/micro/v3/service/server/grpc"
 	"github.com/micro/micro/v3/service/store"
 	storeSrv "github.com/micro/micro/v3/service/store/client"
+	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
+	agoconf "github.com/zouyx/agollo/v4/env/config"
+	"os"
 )
 
 // setupDefaults sets the default auth, broker etc implementations incase they arent configured by
@@ -43,4 +47,11 @@ func setupDefaults() {
 	store.DefaultStore = storeSrv.NewStore()
 	store.DefaultBlobStore = storeSrv.NewBlobStore()
 	runtime.DefaultRuntime = runtimeSrv.NewRuntime()
+	config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agoconf.AppConfig{
+		AppID:          os.Getenv("MICRO_SERVICE_NAME"),
+		IP:             "http://apollo-service-apollo-configservice.default:8080",
+		IsBackupConfig: true,
+		Cluster:        "default",
+		NamespaceName:  "application",
+	}))
 }

@@ -36,9 +36,12 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
+	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201119050359-009b2d11189b
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201113103110-bd19b597ce20
+	github.com/wolfplus2048/mcbeam-plugins/v3 v3.0.0-20201109132823-6916c32de4fd
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
+	github.com/zouyx/agollo/v4 v4.0.1
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
