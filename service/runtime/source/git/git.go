@@ -76,7 +76,8 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 // This aims to be a generic checkout method. Currently only tested for bitbucket,
 // see tests
 func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredentials bool) error {
-	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	//repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "https://", ""), "/", "-")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 	err := os.MkdirAll(g.folder, 0755)
@@ -87,6 +88,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	// Assumes remote address format is git@gitlab.com:micro-test/monorepo-test.git
 	remoteAddr := fmt.Sprintf("https://%v", strings.TrimPrefix(repo, "https://"))
 	if useCredentials {
+		remoteAddr = strings.TrimPrefix(repo, "https://")
 		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], repo)
 	}
 
