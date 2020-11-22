@@ -89,7 +89,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	remoteAddr := fmt.Sprintf("https://%v", strings.TrimPrefix(repo, "https://"))
 	if useCredentials {
 		remoteAddr = strings.TrimPrefix(repo, "https://")
-		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], repo)
+		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], remoteAddr)
 	}
 
 	cmd := exec.Command("git", "clone", remoteAddr, "--depth=1", ".")

@@ -73,7 +73,7 @@ spec:
         args:
         - service
         - proxy
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011221721
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011222259
         imagePullPolicy: Always
         ports:
         - containerPort: 8081
