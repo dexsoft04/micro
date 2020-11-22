@@ -13,7 +13,7 @@ var (
 	BuildDate string
 
 	version    = "v3.0.0"
-	prerelease = "mcbeam-beta" // blank if full release
+	prerelease = "" // blank if full release
 )
 
 func buildVersion() string {

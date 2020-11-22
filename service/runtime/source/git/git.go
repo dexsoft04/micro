@@ -19,12 +19,12 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"fmt"
-	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -34,10 +34,7 @@ import (
 )
 
 const credentialsKey = "GIT_CREDENTIALS"
-var (
-	home, _ = os.UserHomeDir()
-	tmpDir = home
-)
+
 type Gitter interface {
 	Checkout(repo, branchOrCommit string) error
 	RepoDir() string
@@ -79,9 +76,8 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 // This aims to be a generic checkout method. Currently only tested for bitbucket,
 // see tests
 func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredentials bool) error {
-	repoFolder := strings.ReplaceAll(repo, "https://", "")
-	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
-	g.folder = filepath.Join(tmpDir,
+	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
+	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 	err := os.MkdirAll(g.folder, 0755)
 	if err != nil {
@@ -91,10 +87,9 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	// Assumes remote address format is git@gitlab.com:micro-test/monorepo-test.git
 	remoteAddr := fmt.Sprintf("https://%v", strings.TrimPrefix(repo, "https://"))
 	if useCredentials {
-		remoteAddr = strings.TrimPrefix(repo, "https://")
-		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], remoteAddr)
+		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], repo)
 	}
-	logger.Infof("git clone %s --depth=1 .", remoteAddr)
+
 	cmd := exec.Command("git", "clone", remoteAddr, "--depth=1", ".")
 	cmd.Dir = g.folder
 	outp, err := cmd.CombinedOutput()
@@ -102,7 +97,6 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		return fmt.Errorf("Git clone failed: %v", string(outp))
 	}
 
-	logger.Infof("git fetch origin %s --depth=1", branchOrCommit)
 	cmd = exec.Command("git", "fetch", "origin", branchOrCommit, "--depth=1")
 	cmd.Dir = g.folder
 	outp, err = cmd.CombinedOutput()
@@ -110,7 +104,6 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		return fmt.Errorf("Git fetch failed: %v", string(outp))
 	}
 
-	logger.Infof("git checkout %s", branchOrCommit)
 	cmd = exec.Command("git", "checkout", branchOrCommit)
 	cmd.Dir = g.folder
 	outp, err = cmd.CombinedOutput()
@@ -120,58 +113,9 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	return nil
 }
 
-func (g *binaryGitter) checkoutGitee(repo, branchOrCommit string) error {
-	// @todo if it's a commit it must not be checked out all the time
-	repoFolder := strings.ReplaceAll(repo, "https://", "")
-	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
-	g.folder = filepath.Join(os.TempDir(),
-		repoFolder+"-"+shortid.MustGenerate())
-
-	url := fmt.Sprintf("%v/repository/archive/%v.zip", repo, branchOrCommit)
-	if !strings.HasPrefix(url, "https://") {
-		url = "https://" + url
-	}
-
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
-	if len(g.secrets[credentialsKey]) > 0 {
-		req.Header.Set("Authorization", "token "+g.secrets[credentialsKey])
-	}
-	logger.Infof("Prepare to checkout gitee, http get:%v", req)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("Can't get zip: %v", err)
-	}
-
-	defer resp.Body.Close()
-	// Github returns 404 for tar.gz files...
-	// but still gives back a proper file so ignoring status code
-	// for now.
-	//if resp.StatusCode != 200 {
-	//	return errors.New("Status code was not 200")
-	//}
-
-	src := g.folder + ".zip"
-	// Create the file
-	out, err := os.Create(src)
-	if err != nil {
-		return fmt.Errorf("Can't create source file %v src: %v", src, err)
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-	return unzip(src, g.folder, true)
-}
-
 func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 	// @todo if it's a commit it must not be checked out all the time
-	repoFolder := strings.ReplaceAll(repo, "https://", "")
-	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
+	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 
@@ -184,8 +128,6 @@ func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 	if len(g.secrets[credentialsKey]) > 0 {
 		req.Header.Set("Authorization", "token "+g.secrets[credentialsKey])
 	}
-	logger.Infof("Prepare to checkout github, http get:%v", req)
-
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("Can't get zip: %v", err)
@@ -218,8 +160,7 @@ func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 func (g *binaryGitter) checkoutGitLabPublic(repo, branchOrCommit string) error {
 	// Example: https://gitlab.com/micro-test/basic-micro-service/-/archive/master/basic-micro-service-master.tar.gz
 	// @todo if it's a commit it must not be checked out all the time
-	repoFolder := strings.ReplaceAll(repo, "https://", "")
-	repoFolder = strings.ReplaceAll(repoFolder, "/", "-")
+	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
 	g.folder = filepath.Join(os.TempDir(),
 		repoFolder+"-"+shortid.MustGenerate())
 
@@ -424,35 +365,14 @@ type Source struct {
 	LocalRepoRoot string
 }
 
-func basename(path string) string {
-	if path == "" {
-		return "."
-	}
-	// Strip trailing slashes.
-	for len(path) > 0 && os.IsPathSeparator(path[len(path)-1]) {
-		path = path[0 : len(path)-1]
-	}
-	// Find the last element
-	if i := strings.LastIndex(path, "/"); i >= 0 {
-		path = path[i+1:]
-	} else if i := strings.LastIndex(path, "\\"); i >= 0 {
-		path = path[i+1:]
-	}
-	// If empty now, it had only slashes.
-	if path == "" {
-		return "/"
-	}
-	return path
-}
-
 // Name to be passed to RPC call runtime.Create Update Delete
 // eg: `helloworld/api`, `crufter/myrepo/helloworld/api`, `localfolder`
 func (s *Source) RuntimeName() string {
 	if len(s.Folder) == 0 {
 		// This is the case for top level url source ie. gitlab.com/micro-test/basic-micro-service
-		return basename(s.Repo)
+		return path.Base(s.Repo)
 	}
-	return basename(s.Folder)
+	return path.Base(s.Folder)
 }
 
 // Source to be passed to RPC call runtime.Create Update Delete
@@ -562,9 +482,7 @@ func CheckoutSource(source *Source, secrets map[string]string) (string, error) {
 	if err := gitter.Checkout(repo, source.Ref); err != nil {
 		return "", err
 	}
-	dir := gitter.RepoDir()
-	logger.Infof("git checkout repo:%s, ref:%s, dir:%s", dir)
-	return dir, nil
+	return gitter.RepoDir(), nil
 }
 
 // code below is not used yet
