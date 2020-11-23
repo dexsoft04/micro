@@ -53,7 +53,7 @@ var profiles = map[string]*Profile{
 	"test":            Test,
 	"local":           Local,
 	"kubernetes":      Kubernetes,
-	"platform_client": PlatformClient,
+	"platformClient": PlatformClient,
 }
 
 // Profile configures an environment
@@ -85,7 +85,7 @@ func Load(name string) (*Profile, error) {
 }
 
 var PlatformClient = &Profile{
-	Name: "platform_client",
+	Name: "platformClient",
 	Setup: func(ctx *cli.Context) error {
 		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agoconfig.AppConfig{
 			AppID:          os.Getenv("MICRO_NAMESPACE"),
