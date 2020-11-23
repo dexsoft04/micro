@@ -79,7 +79,7 @@ func Register(name string, p *Profile) error {
 func Load(name string) (*Profile, error) {
 	v, ok := profiles[name]
 	if !ok {
-		return nil, fmt.Errorf("profile %s does not exist", name)
+		return nil, fmt.Errorf("profile %s does not exist, %v", name, profiles)
 	}
 	return v, nil
 }
