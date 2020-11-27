@@ -6,6 +6,8 @@ package profile
 import (
 	"fmt"
 	"github.com/micro/micro/v3/service/registry/mdns"
+	"github.com/philchia/agollo/v4"
+	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"os"
 	"path/filepath"
 
@@ -51,6 +53,7 @@ var profiles = map[string]*Profile{
 	"test":            Test,
 	"local":           Local,
 	"kubernetes":      Kubernetes,
+	"platformClient":  PlatformClient,
 }
 
 // Profile configures an environment
@@ -86,6 +89,20 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
+		return nil
+	},
+}
+
+var PlatformClient = &Profile{
+	Name: "platformClient",
+	Setup: func(ctx *cli.Context) error {
+		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
+			AppID:          os.Getenv("MICRO_NAMESPACE"),
+			Cluster:        "default",
+			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME")},
+			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
+			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
+		}))
 		return nil
 	},
 }
