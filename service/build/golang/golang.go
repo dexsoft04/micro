@@ -17,7 +17,7 @@ import (
 
 // NewBuilder returns a golang build which can build a go binary given some source
 func NewBuilder() (build.Builder, error) {
-	path, err := locateGo()
+	path, err := locateMake()
 	if err != nil {
 		return nil, fmt.Errorf("Error locating go binary: %v", err)
 	}
@@ -76,7 +76,9 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	//cmd.Env = append(os.Environ(), "GO111MODULE=auto")
 	//cmd.Env = append(os.Environ(), "GOPROXY=https://goproxy.io,direct")
 
-	cmd := exec.Command("make build")
+	args := []string{"build"}
+
+	cmd := exec.Command(g.cmdPath, args...)
 
 	cmd.Dir = filepath.Join(dir, options.Entrypoint)
 
@@ -111,18 +113,15 @@ func writeFile(src io.Reader, dir string) error {
 }
 
 // locateGo locates the go command
-func locateGo() (string, error) {
-	if gr := os.Getenv("GOROOT"); len(gr) > 0 {
-		return filepath.Join(gr, "bin", "go"), nil
-	}
+func locateMake() (string, error) {
 
 	// check path
 	for _, p := range filepath.SplitList(os.Getenv("PATH")) {
-		bin := filepath.Join(p, "go")
+		bin := filepath.Join(p, "make")
 		if _, err := os.Stat(bin); err == nil {
 			return bin, nil
 		}
 	}
 
-	return exec.LookPath("go")
+	return exec.LookPath("make")
 }
