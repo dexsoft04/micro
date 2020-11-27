@@ -24,9 +24,10 @@ import (
 	grpcSvr "github.com/micro/micro/v3/service/server/grpc"
 	"github.com/micro/micro/v3/service/store"
 	storeSrv "github.com/micro/micro/v3/service/store/client"
+	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
-	agoconfig "github.com/zouyx/agollo/v4/env/config"
 	"os"
+	"path/filepath"
 )
 
 // setupDefaults sets the default auth, broker etc implementations incase they arent configured by
@@ -48,12 +49,12 @@ func setupDefaults() {
 	store.DefaultBlobStore = storeSrv.NewBlobStore()
 	runtime.DefaultRuntime = runtimeSrv.NewRuntime()
 
-	config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agoconfig.AppConfig{
+	config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
 		AppID:          os.Getenv("MICRO_NAMESPACE"),
-		IP:             "http://apollo-service-apollo-configservice.default:8080",
-		IsBackupConfig: true,
 		Cluster:        "default",
-		NamespaceName:  os.Getenv("MICRO_SERVICE_NAME"),
+		NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME")},
+		MetaAddr:       "http://apollo-srv.zhxyx.cc",
+		CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 	}))
 
 }
