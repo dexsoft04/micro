@@ -257,6 +257,7 @@ func (m *manager) runtimeEnv(srv *gorun.Service, options *gorun.CreateOptions) [
 		// set the proxy for the service to use (e.g. micro network)
 		// using the proxy which has been configured for the runtime
 		"MICRO_PROXY": client.DefaultClient.Options().Proxy,
+		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
 	}
 
 	// bind to port 8080, this is what the k8s tcp readiness check will use

@@ -8,10 +8,10 @@ metadata:
 spec:
 #  tls:
 #    - hosts:
-#        - "*.mcbeam.cc"
+#        - "*.zhxyx.cc"
 #      secretName: proxy-tls
   rules:
-    - host: "proxy.mcbeam.cc"
+    - host: "proxy.zhxyx.cc"
       http:
         paths:
           - path: /
@@ -23,16 +23,16 @@ spec:
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: http-ingress
+  name: api-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
 spec:
 #  tls:
 #  - hosts:
-#      - "*.mcbeam.cc"
+#      - "*.zhxyx.cc"
 #    secretName: api-tls
   rules:
-  - host: "api.mcbeam.cc"
+  - host: "api.zhxyx.cc"
     http:
       paths:
       - path: /
@@ -40,7 +40,7 @@ spec:
         backend:
           serviceName: micro-api
           servicePort: 8080
-  - host: "*.mcbeam.cc"
+  - host: "*.zhxyx.cc"
     http:
       paths:
         - path: /
@@ -57,7 +57,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: "*.mcbeam.cc"
+  - host: "*.zhxyx.cc"
     http:
       paths:
         - path: /websocket
@@ -67,7 +67,6 @@ spec:
             servicePort: 3250
 
 ---
----
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -76,7 +75,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: "apollo.mcbeam.cc"
+    - host: "apollo.zhxyx.cc"
       http:
         paths:
           - path: /
@@ -84,7 +83,7 @@ spec:
             backend:
               serviceName: apollo-portal
               servicePort: 8070
-    - host: "apollo-srv.mcbeam.cc"
+    - host: "apollo-srv.zhxyx.cc"
       http:
         paths:
           - path: /
@@ -103,10 +102,10 @@ metadata:
 spec:
 #  tls:
 #    - hosts:
-#        - "*.mcbeam.cc"
+#        - "*.zhxyx.cc"
 #      secretName: api-tls
   rules:
-    - host: "grafana.mcbeam.cc"
+    - host: "grafana.zhxyx.cc"
       http:
         paths:
           - path: /
