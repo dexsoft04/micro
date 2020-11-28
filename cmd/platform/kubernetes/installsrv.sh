@@ -12,4 +12,4 @@ if [ $MICRO_ENV == "dev" ]; then
 kubectl apply -f service
 
 win:
-  sed -i '' 's/mcbeam-v3.0.0-mcbeam.2-202011281342/mcbeam-v3-202011282232/g' `ls ./service/*`
+  sed -i '' 's/mcbeam-v3-202011282232/mcbeam-v3-202011282245/g' `ls ./service/*`
