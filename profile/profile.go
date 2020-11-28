@@ -96,6 +96,10 @@ var Client = &Profile{
 var PlatformClient = &Profile{
 	Name: "platformClient",
 	Setup: func(ctx *cli.Context) error {
+		config_address := os.Getenv("MICRO_CONFIG_ADDRESS")
+		if len(config_address) < 0 {
+			config_address = "http://apollo-srv.zhxyx.cc"
+		}
 		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
 			AppID:          os.Getenv("MICRO_NAMESPACE"),
 			Cluster:        "default",

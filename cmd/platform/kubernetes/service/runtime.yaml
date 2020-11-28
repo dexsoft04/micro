@@ -197,7 +197,7 @@ spec:
         args:
         - service
         - runtime
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011271621
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3.0.0-mcbeam.2-202011281342
         imagePullPolicy: Always
         ports:
         - containerPort: 8088

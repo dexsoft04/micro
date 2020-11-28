@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"os"
@@ -18,7 +17,7 @@ import (
 
 // NewBuilder returns a golang build which can build a go binary given some source
 func NewBuilder() (build.Builder, error) {
-	path, err := locateMake()
+	path, err := locateGo()
 	if err != nil {
 		return nil, fmt.Errorf("Error locating go binary: %v", err)
 	}
@@ -67,19 +66,17 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 
 	// check for vendor directory before setting mod to vendor. the vendor directory wasn't uploaded
 	// in early v3 betas so this enables backwards compatability
-	args := []string{"build"}
-	//if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
-	//	args = append(args, "-mod", "vendor")
-	//}
+	args := []string{"build", "-o", "micro_build"}
+	if _, err := os.Stat(filepath.Join(dir, "vendor")); err == nil {
+		args = append(args, "-mod", "vendor")
+	}
 
 	// build the binary
-	cmd := exec.Command(g.cmdPath, args...)
-	//cmd.Env = append(os.Environ(), "GO111MODULE=auto")
-	//cmd.Env = append(os.Environ(), "GOPROXY=https://goproxy.io,direct")
+	cmd := exec.Command(g.cmdPath, append(args, ".")...)
+	cmd.Env = append(os.Environ(), "GO111MODULE=auto")
+	cmd.Env = append(os.Environ(), "GOPROXY=https://goproxy.io,direct")
 
 	cmd.Dir = filepath.Join(dir, options.Entrypoint)
-	logger.Infof("src dir:%s", dir)
-	logger.Infof("cmd dir:%s", cmd.Dir)
 
 	outp := bytes.NewBuffer(nil)
 	cmd.Stderr = outp
@@ -112,16 +109,18 @@ func writeFile(src io.Reader, dir string) error {
 }
 
 // locateGo locates the go command
-func locateMake() (string, error) {
-
+func locateGo() (string, error) {
+	if gr := os.Getenv("GOROOT"); len(gr) > 0 {
+		return filepath.Join(gr, "bin", "go"), nil
+	}
 
 	// check path
 	for _, p := range filepath.SplitList(os.Getenv("PATH")) {
-		bin := filepath.Join(p, "make")
+		bin := filepath.Join(p, "go")
 		if _, err := os.Stat(bin); err == nil {
 			return bin, nil
 		}
 	}
 
-	return exec.LookPath("make")
+	return exec.LookPath("go")
 }
