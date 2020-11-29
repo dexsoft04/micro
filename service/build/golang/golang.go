@@ -48,7 +48,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	//defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir)
 
 	// decode the source and write to the tmp directory
 	switch options.Archive {
