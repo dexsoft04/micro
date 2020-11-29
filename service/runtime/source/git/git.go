@@ -19,6 +19,7 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -76,6 +77,7 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 // This aims to be a generic checkout method. Currently only tested for bitbucket,
 // see tests
 func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredentials bool) error {
+	logger.Infof("repo:%s, branchOrCommit:%s, credential:%s", repo, branchOrCommit, g.secrets[credentialsKey])
 	//repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "/", "-"), "https://", "")
 	repoFolder := strings.ReplaceAll(strings.ReplaceAll(repo, "https://", ""), "/", "-")
 	g.folder = filepath.Join(os.TempDir(),
@@ -91,7 +93,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		remoteAddr = strings.TrimPrefix(repo, "https://")
 		remoteAddr = fmt.Sprintf("https://%v@%v", g.secrets[credentialsKey], remoteAddr)
 	}
-
+	logger.Infof("remoteAddr:%s", remoteAddr)
 	cmd := exec.Command("git", "clone", remoteAddr, "--depth=1", ".")
 	cmd.Dir = g.folder
 	outp, err := cmd.CombinedOutput()
