@@ -65,6 +65,10 @@ kubectl create secret generic micro-secrets \
   --from-file=auth_private_key=/tmp/jwt-base64 \
   --from-literal=cloudflare=$CF_API_KEY
 
+#Crate gitee private key
+kubectl create secret generic gitee-ssh-private-key \
+  --from-file=gitee_rsa_id=~/.ssh/id_rsa
+
 # Remove the files from tmp
 rm /tmp/jwt /tmp/jwt.pub /tmp/jwt-base64 /tmp/jwt-base64.pub
 

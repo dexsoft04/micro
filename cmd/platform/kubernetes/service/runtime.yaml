@@ -220,6 +220,8 @@ spec:
         - name: cockroachdb-client-certs
           mountPath: "/certs/store"
           readOnly: true
+        - name: gitee-ssh-private-key
+          mountPath: "/root/.ssh/id_rsa"
       volumes:
       - name: etcd-client-certs
         secret:
@@ -231,3 +233,6 @@ spec:
         secret:
           secretName: cockroachdb-client-certs
           defaultMode: 0600
+      - name: gitee-ssh-private-key
+        secret:
+            secretName: gitee-ssh-private-key
