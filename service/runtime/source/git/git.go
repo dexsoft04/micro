@@ -108,7 +108,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		return fmt.Errorf("Git fetch failed: %v", string(outp))
 	}
 
-	cmd = exec.Command("git", "checkout FETCH_HEAD")
+	cmd = exec.Command("git", "checkout",  "FETCH_HEAD")
 	cmd.Dir = g.folder
 	outp, err = cmd.CombinedOutput()
 	if err != nil {
