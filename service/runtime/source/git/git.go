@@ -400,6 +400,7 @@ func (s *Source) RuntimeName() string {
 func (s *Source) RuntimeSource() string {
 	if s.Local && s.LocalRepoRoot != s.FullPath {
 		relpath, _ := filepath.Rel(s.LocalRepoRoot, s.FullPath)
+		relpath = strings.Join(strings.Split(relpath, "\\"), "/")
 		return relpath
 	}
 	if s.Local {
