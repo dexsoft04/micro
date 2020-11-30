@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 	"io"
 	"io/ioutil"
 	"os"
@@ -78,7 +79,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	cmd.Env = append(os.Environ(), "GOPRIVATE=gitee.com")
 
 	cmd.Dir = filepath.Join(dir, options.Entrypoint)
-
+	logger.Infof("env:%v, arg:%v, dir:%s, cmd:%s", cmd.Env, cmd.Args, cmd.Dir, cmd.String())
 	outp := bytes.NewBuffer(nil)
 	cmd.Stderr = outp
 

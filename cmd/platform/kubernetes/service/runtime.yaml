@@ -197,7 +197,7 @@ spec:
         args:
         - service
         - runtime
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011291610
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011301316
         imagePullPolicy: Always
         ports:
         - containerPort: 8088
@@ -221,7 +221,12 @@ spec:
           mountPath: "/certs/store"
           readOnly: true
         - name: gitee-ssh-private-key
-          mountPath: "/root/.ssh/id_rsa"
+          mountPath: "/root/.ssh"
+          readOnly: true
+        - name: git-config
+          mountPath: "/root/.gitconfig"
+          subPath: path/to/.gitconfig
+          readOnly: true
       volumes:
       - name: etcd-client-certs
         secret:
@@ -236,3 +241,9 @@ spec:
       - name: gitee-ssh-private-key
         secret:
             secretName: gitee-ssh-private-key
+      - name: git-config
+        configMap:
+          name: git-config
+          items:
+            - key: .gitconfig
+              path: path/to/.gitconfig

@@ -67,8 +67,8 @@ kubectl create secret generic micro-secrets \
 
 #Crate gitee private key
 kubectl create secret generic gitee-ssh-private-key \
-  --from-file=gitee_rsa_id=~/.ssh/id_rsa
-
+  --from-file=rsa_id=/Users/wolfplus/.ssh/id_rsa
+kubectl create configmap git-config --from-file=.gitconfig=/Users/wolfplus/.gitconfig
 # Remove the files from tmp
 rm /tmp/jwt /tmp/jwt.pub /tmp/jwt-base64 /tmp/jwt-base64.pub
 
