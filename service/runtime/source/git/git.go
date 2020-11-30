@@ -404,7 +404,8 @@ func (s *Source) RuntimeSource() string {
 		return relpath
 	}
 	if s.Local {
-		return s.FullPath
+		fullpath := strings.Join(strings.Split(s.FullPath, "\\"), "/")
+		return fullpath
 	}
 	if len(s.Folder) == 0 {
 		return s.Repo
