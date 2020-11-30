@@ -147,6 +147,8 @@ spec:
           value: runtime
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
+        - name: MICRO_CONFIG_ADDRESS
+          value: "apollo-service-apollo-configservice.default:8080"
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
