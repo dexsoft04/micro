@@ -104,7 +104,7 @@ var PlatformClient = &Profile{
 			AppID:          os.Getenv("MICRO_NAMESPACE"),
 			Cluster:        "default",
 			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME")},
-			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
+			MetaAddr:       config_address,
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
 		return nil

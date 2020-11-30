@@ -14,8 +14,8 @@ FROM alpine:3.12.1
 COPY --from=golang:1.15-alpine /usr/local/go/ /usr/local/go/
 ENV PATH="/usr/local/go/bin:${PATH}"
 
-RUN apk --no-cache add make git gcc libtool musl-dev
+RUN apk --no-cache add make git gcc libtool musl-dev openssh-client
 RUN apk --no-cache add ca-certificates && rm -rf /var/cache/apk/* /tmp/* 
-
+RUN ssh-keyscan gitee.com >> /root/.ssh/known_hosts
 COPY --from=builder /micro /micro
 ENTRYPOINT ["/micro"]
