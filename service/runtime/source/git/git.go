@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -368,15 +367,32 @@ type Source struct {
 	// blank for non local
 	LocalRepoRoot string
 }
-
+func Base(path string) string {
+	if path == "" {
+		return "."
+	}
+	// Strip trailing slashes.
+	for len(path) > 0 && path[len(path)-1] == os.PathSeparator {
+		path = path[0 : len(path)-1]
+	}
+	// Find the last element
+	if i := strings.LastIndex(path, string(os.PathSeparator)); i >= 0 {
+		path = path[i+1:]
+	}
+	// If empty now, it had only slashes.
+	if path == "" {
+		return string(os.PathSeparator)
+	}
+	return path
+}
 // Name to be passed to RPC call runtime.Create Update Delete
 // eg: `helloworld/api`, `crufter/myrepo/helloworld/api`, `localfolder`
 func (s *Source) RuntimeName() string {
 	if len(s.Folder) == 0 {
 		// This is the case for top level url source ie. gitlab.com/micro-test/basic-micro-service
-		return path.Base(s.Repo)
+		return Base(s.Repo)
 	}
-	return path.Base(s.Folder)
+	return Base(s.Folder)
 }
 
 // Source to be passed to RPC call runtime.Create Update Delete
