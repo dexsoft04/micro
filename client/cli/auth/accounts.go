@@ -107,7 +107,9 @@ func deleteAccount(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error getting namespace: %v", err)
 	}
-
+	if len(ctx.String("namespace")) > 0 {
+		ns = ctx.String("namespace")
+	}
 	_, err = cli.Delete(context.DefaultContext, &pb.DeleteAccountRequest{
 		Id:      ctx.Args().First(),
 		Options: &pb.Options{Namespace: ns},
