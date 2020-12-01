@@ -14,6 +14,8 @@
 
 package router
 
+import "github.com/micro/micro/v3/service/logger"
+
 // LookupOption sets routing table query options
 type LookupOption func(*LookupOptions)
 
@@ -139,12 +141,15 @@ func Filter(routes []Route, opts LookupOptions) []Route {
 
 	// routeMap stores the routes we're going to advertise
 	routeMap := make(map[string][]Route)
-
+	logger.Debugf("find route uid:%s, address:%s, gateway:%s, network:%s, router:%s, link:%s", uid, address, gateway, network, rtr, link)
 	for _, route := range routes {
+		logger.Debugf("route:%v", route)
 		if isMatch(route, uid, address, gateway, network, rtr, link) {
 			// add matchihg route to the routeMap
 			routeKey := route.Service + "@" + route.Network
 			routeMap[routeKey] = append(routeMap[routeKey], route)
+			logger.Debugf("ismatch true:%v", route)
+
 		}
 	}
 

@@ -69,10 +69,12 @@ spec:
           value: client
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
+        - name: MICRO_LOG_LEVEL
+          value: "debug"
         args:
         - service
         - gate
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202011302021
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012011340
         imagePullPolicy: Always
         ports:
         - containerPort: 3250
