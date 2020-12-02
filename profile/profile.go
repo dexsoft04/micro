@@ -34,6 +34,7 @@ import (
 	mem "github.com/micro/micro/v3/service/store/memory"
 	"github.com/urfave/cli/v2"
 
+	"github.com/micro/micro/plugin/etcd/v3"
 	inAuth "github.com/micro/micro/v3/internal/auth"
 	"github.com/micro/micro/v3/internal/user"
 	microAuth "github.com/micro/micro/v3/service/auth"
@@ -43,20 +44,18 @@ import (
 	microRouter "github.com/micro/micro/v3/service/router"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
-	"github.com/micro/micro/plugin/etcd/v3"
-
 )
 
 // profiles which when called will configure micro to run in that environment
 var profiles = map[string]*Profile{
 	// built in profiles
-	"client":          Client,
-	"service":         Service,
-	"test":            Test,
-	"local":           Local,
-	"kubernetes":      Kubernetes,
-	"platformClient":  PlatformClient,
-	"dev": Dev,
+	"client":         Client,
+	"service":        Service,
+	"test":           Test,
+	"local":          Local,
+	"kubernetes":     Kubernetes,
+	"platformClient": PlatformClient,
+	"dev":            Dev,
 }
 
 // Profile configures an environment
@@ -87,11 +86,12 @@ func Load(name string) (*Profile, error) {
 	return v, nil
 }
 
-
 // Client profile is for any entrypoint that behaves as a client
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
+		//SetupRegistry(etcd.NewRegistry())
+
 		return nil
 	},
 }
@@ -120,6 +120,7 @@ var Dev = &Profile{
 		return nil
 	},
 }
+
 // Local profile to run locally
 var Local = &Profile{
 	Name: "local",
@@ -130,6 +131,7 @@ var Local = &Profile{
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
 		SetupBroker(memBroker.NewBroker())
 		SetupRegistry(mdns.NewRegistry())
+		//SetupRegistry(etcd.NewRegistry())
 
 		SetupJWT(ctx)
 

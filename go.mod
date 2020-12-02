@@ -41,7 +41,7 @@ require (
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201127065418-b3faa9791121
-	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201118150201-38501db6e3c5
+	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201202145207-cbe1bd916536
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
 	go.etcd.io/bbolt v1.3.5
@@ -55,4 +55,4 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.3
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
-	)
+)
