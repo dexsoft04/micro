@@ -43,6 +43,8 @@ import (
 	microRouter "github.com/micro/micro/v3/service/router"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
+	"github.com/micro/micro/plugin/etcd/v3"
+
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -54,6 +56,7 @@ var profiles = map[string]*Profile{
 	"local":           Local,
 	"kubernetes":      Kubernetes,
 	"platformClient":  PlatformClient,
+	"dev": Dev,
 }
 
 // Profile configures an environment
@@ -106,7 +109,17 @@ var PlatformClient = &Profile{
 		return nil
 	},
 }
-
+var Dev = &Profile{
+	Name: "dev",
+	Setup: func(ctx *cli.Context) error {
+		microAuth.DefaultAuth = jwt.NewAuth()
+		microStore.DefaultStore = mem.NewStore()
+		microStore.DefaultBlobStore, _ = file.NewBlobStore()
+		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
+		SetupRegistry(etcd.NewRegistry())
+		return nil
+	},
+}
 // Local profile to run locally
 var Local = &Profile{
 	Name: "local",

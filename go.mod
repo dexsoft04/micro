@@ -24,6 +24,7 @@ require (
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/kr/pretty v0.2.0
+	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20201130152419-2eb19c2e97d9
 	github.com/miekg/dns v1.1.27
 	github.com/minio/minio-go/v7 v7.0.5
 	github.com/olekukonko/tablewriter v0.0.4
@@ -50,3 +51,8 @@ require (
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.25.0
 )
+
+replace (
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.3
+	google.golang.org/grpc => google.golang.org/grpc v1.26.0
+	)
