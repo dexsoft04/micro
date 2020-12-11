@@ -258,7 +258,8 @@ func (m *manager) runtimeEnv(srv *gorun.Service, options *gorun.CreateOptions) [
 		// using the proxy which has been configured for the runtime
 		"MICRO_PROXY": client.DefaultClient.Options().Proxy,
 		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
-		"MICRO_STORE_ADDRESS": os.Getenv("MICRO_STORE_ADDRESS"),
+		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS"),
+		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS"),
 	}
 
 	// bind to port 8080, this is what the k8s tcp readiness check will use

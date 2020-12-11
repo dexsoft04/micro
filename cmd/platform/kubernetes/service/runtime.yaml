@@ -147,8 +147,6 @@ spec:
           value: runtime
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
-        - name: MICRO_CONFIG_ADDRESS
-          value: "apollo-service-apollo-configservice.default:8080"
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
@@ -196,6 +194,12 @@ spec:
           value: "debug"
         - name: MICRO_STORE_ADDRESS
           value: "postgresql://root@cockroachdb-cluster-public:26257?ssl=true&sslmode=require&sslrootcert=certs/store/ca.crt&sslkey=certs/store/key.pem&sslcert=certs/store/cert.pem"
+        - name: MICRO_CONFIG_ADDRESS
+          value: "apollo-service-apollo-configservice.default:8080"
+        - name: MICRO_MONGODB_ADDRESS
+          value: ""
+        - name: MICRO_POSTGRESQL_ADDRESS
+          value: ""
         args:
         - service
         - runtime
