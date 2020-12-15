@@ -261,7 +261,7 @@ func (m *manager) runtimeEnv(srv *gorun.Service, options *gorun.CreateOptions) [
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
 		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin",
 	}
-
+	logger.Infof("env:%v", env)
 	// bind to port 8080, this is what the k8s tcp readiness check will use
 	if runtime.DefaultRuntime.String() == "kubernetes" {
 		env["MICRO_SERVICE_ADDRESS"] = ":8080"
@@ -280,6 +280,7 @@ func (m *manager) runtimeEnv(srv *gorun.Service, options *gorun.CreateOptions) [
 	for k, v := range env {
 		vars = append(vars, k+"="+v)
 	}
+	logger.Infof("final env:%s", vars)
 
 	// setup the runtime env
 	return vars
