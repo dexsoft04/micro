@@ -13,4 +13,4 @@ fi
 
 # install the cluster using helm
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install my-release bitnami/mongodb $overrides -f values.yaml
+helm install mongodb-cluster bitnami/mongodb $overrides -f values.yaml

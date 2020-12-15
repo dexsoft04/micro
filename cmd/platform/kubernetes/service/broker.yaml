@@ -91,7 +91,7 @@ spec:
         args:
         - service
         - broker
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012022257
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012111405
         imagePullPolicy: Always
         ports:
         - containerPort: 8003

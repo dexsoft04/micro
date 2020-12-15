@@ -12,4 +12,32 @@ if [ $MICRO_ENV == "dev" ]; then
 kubectl apply -f service
 
 win:
-  sed -i '' 's/mcbeam-v3-202012011340/mcbeam-v3-202012022257/g' `ls ./service/*`
+  sed -i '' 's/mcbeam-v3-202012022257/mcbeam-v3-202012111405/g' `ls ./service/*`
+
+kubectl run cockroachdb --image=ubuntu -it --rm --restart=Never --overrides='
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "image": "ubuntu",
+            "volumeMounts": [{
+              "readOnly": true,
+              "mountPath": "/certs/store",
+              "name": "cockroachdb-client-certs"
+            }]
+          }
+        ],
+        "volumes": [{
+          "name":"cockroachdb-client-certs",
+          "secret": {
+            "secretName": "cockroachdb-client-certs",
+            "defaultMode": "0600"
+          }
+        }]
+      }
+    }
+  }
+}
+' -- bash

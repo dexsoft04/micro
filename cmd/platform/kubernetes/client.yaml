@@ -2,54 +2,32 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: default
-  name: micro-config-latest
+  name: micro-client-latest
   labels:
-    micro: runtime
-    name: config
+    micro: client
+    name: client
     version: latest
   annotations:
-    name: "config"
+    name: "client"
     version: "latest"
     source: "github.com/micro/micro"
-    owner: "micro"
-    group: "micro"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: micro-config
+      name: micro-client
       micro: runtime
   template:
     metadata:
       labels:
-        name: micro-config
+        name: micro-client
         micro: runtime
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
         prometheus.io/port: "9000"
-        name: "config"
-        version: "latest"
-        source: "github.com/micro/micro"
-        owner: "micro"
-        group: "micro"
     spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: name
-                      operator: In
-                      values:
-                        - micro-config
-                    - key: micro
-                      operator: In
-                      values:
-                        - runtime
-                topologyKey: "kubernetes.io/hostname"
+
       imagePullSecrets:
       - name: qcloudregistrykey
       containers:
@@ -58,7 +36,7 @@ spec:
         - name: MICRO_PROFILE
           value: platform
         - name: MICRO_SERVICE_NAME
-          value: config
+          value: store
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_AUTH_PUBLIC_KEY
@@ -93,19 +71,26 @@ spec:
           value: "/certs/registry/key.pem"
         - name: MICRO_STORE_ADDRESS
           value: "postgresql://root@cockroachdb-cluster-public:26257?ssl=true&sslmode=require&sslrootcert=certs/store/ca.crt&sslkey=certs/store/key.pem&sslcert=certs/store/cert.pem"
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012111405
+        - name: MICRO_BLOB_STORE_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-creds
+              key: access_key
+        - name: MICRO_BLOB_STORE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-creds
+              key: secret_key
+        - name: MICRO_BLOB_STORE_REGION
+          valueFrom:
+            secretKeyRef:
+              name: minio-creds
+              key: region
+        image: cockroachdb/cockroach
         imagePullPolicy: Always
         args:
-        - service
-        - config
-        ports:
-        - containerPort: 8001
-          name: config-port
-        readinessProbe:
-          tcpSocket:
-            port: config-port
-          initialDelaySeconds: 5
-          periodSeconds: 10
+          - start-single-node
+          - --insecure
         volumeMounts:
         - name: etcd-client-certs
           mountPath: "/certs/registry"
