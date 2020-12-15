@@ -313,8 +313,8 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 	// pass the env vars
 	env := make([]EnvVar, 0, len(opts.Env))
 	for _, evar := range opts.Env {
-		if comps := strings.Split(evar, "="); len(comps) == 2 {
-			env = append(env, EnvVar{Name: comps[0], Value: comps[1]})
+		if comps := strings.Split(evar, "="); len(comps) >= 2 {
+			env = append(env, EnvVar{Name: comps[0], Value: strings.Join(comps[1:], "=")})
 		}
 	}
 
