@@ -24,6 +24,7 @@ type Option func(o *Options)
 
 //Web basic Defaults
 var (
+	DefaultServer Service
 	// For serving
 	DefaultName    = "go-web"
 	DefaultVersion = "latest"

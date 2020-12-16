@@ -4,9 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	maddr "github.com/micro/micro/v3/internal/addr"
+	mhttp "github.com/micro/micro/v3/internal/http"
 	"github.com/micro/micro/v3/internal/backoff"
-	mnet "github.com/micro/micro/v3/internal/net"
-	mls "github.com/micro/micro/v3/internal/tls"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
 	"github.com/urfave/cli/v2"
@@ -367,19 +366,19 @@ func (s *service) Init(opts ...Option) error {
 		o(&s.opts)
 	}
 
-	serviceOpts := []micro.Option{}
+	serviceOpts := []Option{}
 
 	if len(s.opts.Flags) > 0 {
-		serviceOpts = append(serviceOpts, micro.Flags(s.opts.Flags...))
+		serviceOpts = append(serviceOpts, Flags(s.opts.Flags...))
 	}
 
 	if s.opts.Registry != nil {
-		serviceOpts = append(serviceOpts, micro.Registry(s.opts.Registry))
+		serviceOpts = append(serviceOpts, Registry(s.opts.Registry))
 	}
 
 	s.Unlock()
 
-	serviceOpts = append(serviceOpts, micro.Action(func(ctx *cli.Context) error {
+	serviceOpts = append(serviceOpts, Action(func(ctx *cli.Context) error {
 		s.Lock()
 		defer s.Unlock()
 
@@ -420,10 +419,9 @@ func (s *service) Init(opts ...Option) error {
 
 	s.RLock()
 	// pass in own name and version
-	if s.opts.Service.Name() == "" {
-		serviceOpts = append(serviceOpts, micro.Name(s.opts.Name))
-	}
-	serviceOpts = append(serviceOpts, micro.Version(s.opts.Version))
+		serviceOpts = append(serviceOpts, Name(s.opts.Name))
+
+	serviceOpts = append(serviceOpts, Version(s.opts.Version))
 	s.RUnlock()
 
 	s.opts.Service.Init(serviceOpts...)
