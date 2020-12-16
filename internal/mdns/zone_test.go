@@ -35,7 +35,7 @@ func makeServiceWithServiceName(t *testing.T, service string) *MDNSService {
 		"testhost.",
 		80, // port
 		[]net.IP{net.IP([]byte{192, 168, 0, 42}), net.ParseIP("2620:0:1000:1900:b0c2:d0b2:c411:18bc")},
-		[]string{"Local web server"}) // TXT
+		[]string{"Local http server"}) // TXT
 
 	if err != nil {
 		t.Fatalf("err: %v", err)
@@ -68,7 +68,7 @@ func TestNewMDNSService_BadParams(t *testing.T) {
 			test.hostName,
 			80, // port
 			[]net.IP{net.IP([]byte{192, 168, 0, 42})},
-			[]string{"Local web server"}) // TXT
+			[]string{"Local http server"}) // TXT
 		if err == nil {
 			t.Fatalf("%s: error expected, but got none", test.testName)
 		}

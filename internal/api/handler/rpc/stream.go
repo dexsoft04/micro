@@ -238,7 +238,7 @@ func writeLoop(rw io.ReadWriter, stream client.Stream) {
 }
 
 func isStream(r *http.Request, srv *api.Service) bool {
-	// check if it's a web socket
+	// check if it's a http socket
 	if !isWebSocket(r) {
 		return false
 	}

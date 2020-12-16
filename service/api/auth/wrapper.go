@@ -57,7 +57,7 @@ func (a authWrapper) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		endpoint.Domain = r.Domain(req)
 	}
 
-	// Set the metadata so we can access it in micro api / web
+	// Set the metadata so we can access it in micro api / http
 	req = req.WithContext(ctx.FromRequest(req))
 
 	// Extract the token from the request

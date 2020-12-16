@@ -12,7 +12,7 @@ if [ $MICRO_ENV == "dev" ]; then
 kubectl apply -f service
 
 win:
-  sed -i '' 's/mcbeam-v3-202012151058/mcbeam-v3-202012151134/g' `ls ./service/*`
+  sed -i '' 's/mcbeam-v3-202012151134/mcbeam-v3-202012151201/g' `ls ./service/*`
 
 kubectl run cockroachdb --image=ubuntu -it --rm --restart=Never --overrides='
 {

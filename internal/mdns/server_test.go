@@ -47,7 +47,7 @@ func TestServer_Lookup(t *testing.T) {
 			if e.Port != 80 {
 				t.Fatalf("bad: %v", e)
 			}
-			if e.Info != "Local web server" {
+			if e.Info != "Local http server" {
 				t.Fatalf("bad: %v", e)
 			}
 			found = true

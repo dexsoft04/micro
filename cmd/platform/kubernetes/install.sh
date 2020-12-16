@@ -14,7 +14,7 @@ arrayGet() {
 # Run this script to install the platform on a kubernetes cluster. 
 
 # NOTE: This script will not set the cloudflare or slack tokens in the secret. Hence, the 
-# clients (web, api, proxy, bot) will have a status of "CreateContainerConfigError" until these
+# clients (http, api, proxy, bot) will have a status of "CreateContainerConfigError" until these
 # secrets are manually added.
 
 # expect an env to be specified

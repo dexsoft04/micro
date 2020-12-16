@@ -195,15 +195,15 @@ spec:
         - name: MICRO_STORE_ADDRESS
           value: "postgresql://root@cockroachdb-cluster-public:26257?ssl=true&sslmode=require&sslrootcert=certs/store/ca.crt&sslkey=certs/store/key.pem&sslcert=certs/store/cert.pem"
         - name: MICRO_CONFIG_ADDRESS
-          value: "apollo-service-apollo-configservice.default:8080"
+          value: "apollo-service-apollo-configservice.default:8080/"
         - name: MICRO_MONGODB_ADDRESS
-          value: "mongodb://wolfplus:passthis@mongodb-cluster.default:27017"
+          value: "mongodb://wolfplus:passthis@mongodb-cluster-0.mongodb-cluster-headless.default.svc.cluster.local:27017,mongodb-cluster-1.mongodb-cluster-headless.default.svc.cluster.local:27017,mongodb-cluster-2.mongodb-cluster-headless.default.svc.cluster.local:27017,mongodb-cluster-3.mongodb-cluster-headless.default.svc.cluster.local:27017"
         - name: MICRO_POSTGRESQL_ADDRESS
           value: "postgres://wolfplus:passthis@cockroachdb-cluster-public.default:26257"
         args:
         - service
         - runtime
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012151134
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012151201
         imagePullPolicy: Always
         ports:
         - containerPort: 8088

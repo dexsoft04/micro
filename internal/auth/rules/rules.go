@@ -34,7 +34,7 @@ func VerifyAccess(rules []*auth.Rule, acc *auth.Account, res *auth.Resource) err
 	// the rule is only to be applied if the name matches the resource or is catch-all (*)
 	validNames := []string{"*", res.Name}
 
-	// rules can have wildcard excludes on endpoints since this can also be a path for web services,
+	// rules can have wildcard excludes on endpoints since this can also be a path for http services,
 	// e.g. /foo/* would include /foo/bar. We also want to check for wildcards and the exact endpoint
 	validEndpoints := []string{"*", res.Endpoint}
 	if comps := strings.Split(res.Endpoint, "/"); len(comps) > 1 {

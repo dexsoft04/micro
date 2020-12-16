@@ -23,7 +23,7 @@ type Resolver struct {
 }
 
 func (r *Resolver) String() string {
-	return "web/resolver"
+	return "http/resolver"
 }
 
 // Resolve replaces the values of Host, Path, Scheme to calla backend service

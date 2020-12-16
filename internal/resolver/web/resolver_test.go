@@ -28,16 +28,16 @@ func TestWebResolver(t *testing.T) {
 	t.Run("WithServicePrefix", func(t *testing.T) {
 		res := &Resolver{
 			Options: resolver.NewOptions(
-				resolver.WithServicePrefix("web"),
+				resolver.WithServicePrefix("http"),
 			),
 			Router: router.DefaultRouter,
 		}
 
 		testCases := []testCase{
-			{"localhost:8082", "/foobar", "web.foobar"},
-			{"web.micro.mu", "/foobar", "web.foobar"},
-			{"127.0.0.1:8082", "/hello", "web.hello"},
-			{"demo.m3o.app", "/bar", "web.bar"},
+			{"localhost:8082", "/foobar", "http.foobar"},
+			{"http.micro.mu", "/foobar", "http.foobar"},
+			{"127.0.0.1:8082", "/hello", "http.hello"},
+			{"demo.m3o.app", "/bar", "http.bar"},
 		}
 
 		runTests(t, res, testCases)
@@ -51,7 +51,7 @@ func TestWebResolver(t *testing.T) {
 
 		testCases := []testCase{
 			{"localhost:8082", "/foobar", "foobar"},
-			{"web.micro.mu", "/foobar", "foobar"},
+			{"http.micro.mu", "/foobar", "foobar"},
 			{"127.0.0.1:8082", "/hello", "hello"},
 			{"demo.m3o.app", "/bar", "bar"},
 		}

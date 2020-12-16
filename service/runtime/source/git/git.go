@@ -509,7 +509,7 @@ func CheckoutSource(source *Source, secrets map[string]string) (string, error) {
 
 // code below is not used yet
 
-var nameExtractRegexp = regexp.MustCompile(`((micro|web)\.Name\(")(.*)("\))`)
+var nameExtractRegexp = regexp.MustCompile(`((micro|http)\.Name\(")(.*)("\))`)
 
 func extractServiceName(fileContent []byte) string {
 	hits := nameExtractRegexp.FindAll(fileContent, 1)

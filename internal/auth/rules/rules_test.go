@@ -31,7 +31,7 @@ func TestVerify(t *testing.T) {
 
 	webResource := &auth.Resource{
 		Type:     "service",
-		Name:     "go.micro.web.foo",
+		Name:     "go.micro.http.foo",
 		Endpoint: "/foo/bar",
 	}
 

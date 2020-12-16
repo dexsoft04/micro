@@ -15,7 +15,7 @@ const (
 
 // FromContext gets the namespace from the context
 func FromContext(ctx context.Context) string {
-	// get the namespace which is set at ingress by micro web / api / proxy etc. The go-micro auth
+	// get the namespace which is set at ingress by micro http / api / proxy etc. The go-micro auth
 	// wrapper will ensure the account making the request has the necessary issuer.
 	ns, _ := metadata.Get(ctx, NamespaceKey)
 	return ns

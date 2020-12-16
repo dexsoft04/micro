@@ -319,7 +319,7 @@ func (s *srv) setupJWT() {
 	// if we have a JWT private key passed as an option,
 	// we can generate accounts locally and not have to make
 	// an RPC call, this is used for micro clients such as
-	// api, web, proxy.
+	// api, http, proxy.
 	if key := s.options.PrivateKey; len(key) > 0 {
 		tokenOpts = append(tokenOpts, token.WithPrivateKey(key))
 	}

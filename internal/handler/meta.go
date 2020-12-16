@@ -35,7 +35,7 @@ func (m *metaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: don't do this ffs
 	switch service.Endpoint.Handler {
-	// web socket handler
+	// http socket handler
 	case aweb.Handler:
 		aweb.WithService(service, handler.WithClient(m.c)).ServeHTTP(w, r)
 	// proxy handler

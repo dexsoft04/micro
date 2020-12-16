@@ -922,15 +922,15 @@ func (g *grpcServer) Start() error {
 		}
 	}
 
-	// Create a tcp mux that can server both grpc and grpc+web on the same port
+	// Create a tcp mux that can server both grpc and grpc+http on the same port
 	m := cmux.New(ts)
 
-	// If the request isn't HTTP2 at all, then it's local grpc+web
-	// If the request IS http2 and has the right header, then also grpc+web
+	// If the request isn't HTTP2 at all, then it's local grpc+http
+	// If the request IS http2 and has the right header, then also grpc+http
 	grpcl := m.MatchWithWriters(func(w io.Writer, r io.Reader) bool {
 		return !hasHTTP2Preface(r)
 	},
-		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc-web+proto"),
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc-http+proto"),
 		cmux.HTTP2MatchHeaderFieldSendSettings("method", "OPTIONS"))
 
 	// Else just match all gRPC traffic

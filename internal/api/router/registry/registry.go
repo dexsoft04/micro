@@ -479,7 +479,7 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 			Services: services,
 		}, nil
 	// http handler
-	case "http", "proxy", "web":
+	case "http", "proxy", "http":
 		// construct api service
 		return &api.Service{
 			Name: name,
