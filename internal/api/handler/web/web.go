@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	Handler = "http"
+	Handler = "web"
 )
 
 type webHandler struct {

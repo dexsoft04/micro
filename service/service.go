@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/micro/micro/v3/service/web"
-	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -210,12 +208,13 @@ func (s *Service) Run() error {
 func Handle(h interface{}, opts ...server.HandlerOption) error {
 	return server.DefaultServer.Handle(server.DefaultServer.NewHandler(h, opts...))
 }
-func HttpHandle(pattern string, handler http.Handler) {
-	web.DefaultServer.Handle(pattern, handler)
-}
-func HttpHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-	web.DefaultServer.HandleFunc(pattern, handler)
-}
+
+//func HttpHandle(pattern string, handler http.Handler) {
+//	web.DefaultServer.Handle(pattern, handler)
+//}
+//func HttpHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+//	web.DefaultServer.HandleFunc(pattern, handler)
+//}
 // Subscribe is syntactic sugar for registering a subscriber
 func Subscribe(topic string, h interface{}, opts ...server.SubscriberOption) error {
 	return server.DefaultServer.Subscribe(server.DefaultServer.NewSubscriber(topic, h, opts...))
