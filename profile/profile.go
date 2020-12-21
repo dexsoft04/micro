@@ -129,12 +129,14 @@ var Local = &Profile{
 		microStore.DefaultStore = file.NewStore(file.WithDir(filepath.Join(user.Dir, "server", "store")))
 		SetupConfigSecretKey(ctx)
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
-		SetupBroker(memBroker.NewBroker())
 		SetupRegistry(mdns.NewRegistry())
 		//SetupRegistry(etcd.NewRegistry())
 
 		SetupJWT(ctx)
 
+		if ctx.Args().Get(1) == "broker" {
+			SetupBroker(memBroker.NewBroker())
+		}
 		// use the local runtime, note: the local runtime is designed to run source code directly so
 		// the runtime builder should NOT be set when using this implementation
 		microRuntime.DefaultRuntime = local.NewRuntime()
