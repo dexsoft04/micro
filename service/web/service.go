@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	maddr "github.com/micro/micro/v3/internal/addr"
-	mhttp "github.com/micro/micro/v3/internal/http"
 	"github.com/micro/micro/v3/internal/backoff"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
@@ -290,12 +289,7 @@ func (s *service) stop() error {
 }
 
 func (s *service) Client() *http.Client {
-	rt := mhttp.NewRoundTripper(
-		mhttp.WithRegistry(s.opts.Registry),
-	)
-	return &http.Client{
-		Transport: rt,
-	}
+	return nil
 }
 
 func (s *service) Handle(pattern string, handler http.Handler) {
