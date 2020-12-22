@@ -569,11 +569,12 @@ func (g *grpcServer) newGRPCCodec(contentType string) (encoding.Codec, error) {
 }
 
 func (g *grpcServer) Options() server.Options {
-	g.RLock()
-	opts := g.opts
-	g.RUnlock()
-
-	return opts
+	//g.RLock()
+	//opts := g.opts
+	//g.RUnlock()
+	//
+	//return opts
+	return g.opts
 }
 
 func (g *grpcServer) Init(opts ...server.Option) error {
