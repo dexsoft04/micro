@@ -36,6 +36,10 @@ func extractValue(v reflect.Type, d int) *registry.Value {
 		v = v.Elem()
 	}
 
+	if len(v.Name()) == 0 {
+		return nil
+	}
+
 	arg := &registry.Value{
 		Name: v.Name(),
 		Type: v.Name(),
@@ -57,11 +61,13 @@ func extractValue(v reflect.Type, d int) *registry.Value {
 					continue
 				}
 				val.Name = parts[0]
+			} else {
+				continue
 			}
 
 			// if there's no name default it
 			if len(val.Name) == 0 {
-				val.Name = v.Field(i).Name
+				continue
 			}
 
 			arg.Values = append(arg.Values, val)
