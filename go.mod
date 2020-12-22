@@ -45,7 +45,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
-	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201202145207-cbe1bd916536
+	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201222064548-216177d0224b
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201202145207-cbe1bd916536
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca

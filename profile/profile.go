@@ -44,6 +44,7 @@ import (
 	microRouter "github.com/micro/micro/v3/service/router"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
+
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -102,7 +103,7 @@ var PlatformClient = &Profile{
 		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
 			AppID:          os.Getenv("MICRO_NAMESPACE"),
 			Cluster:        "default",
-			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME")},
+			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
