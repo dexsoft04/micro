@@ -5,6 +5,7 @@ package profile
 
 import (
 	"fmt"
+	natsBroker "github.com/micro/micro/plugin/nats/broker/v3"
 	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
@@ -44,7 +45,6 @@ import (
 	microRouter "github.com/micro/micro/v3/service/router"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
-
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -107,6 +107,8 @@ var PlatformClient = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
+		SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
+
 		return nil
 	},
 }
@@ -132,12 +134,13 @@ var Local = &Profile{
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
 		SetupRegistry(mdns.NewRegistry())
 		//SetupRegistry(etcd.NewRegistry())
+		SetupBroker(natsBroker.NewBroker())
 
 		SetupJWT(ctx)
 
-		if ctx.Args().Get(1) == "broker" {
-			SetupBroker(memBroker.NewBroker())
-		}
+		//if ctx.Args().Get(1) == "broker" {
+		//	SetupBroker(memBroker.NewBroker())
+		//}
 		// use the local runtime, note: the local runtime is designed to run source code directly so
 		// the runtime builder should NOT be set when using this implementation
 		microRuntime.DefaultRuntime = local.NewRuntime()
