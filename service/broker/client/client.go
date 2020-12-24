@@ -7,6 +7,7 @@ import (
 	"github.com/micro/micro/v3/service/broker"
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/context"
+	"github.com/micro/micro/v3/service/context/metadata"
 	"github.com/micro/micro/v3/service/logger"
 )
 
@@ -67,7 +68,13 @@ func (b *serviceBroker) Subscribe(topic string, handler broker.Handler, opts ...
 	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 		logger.Debugf("Subscribing to topic %s queue %s broker %v", topic, options.Queue, b.Addrs)
 	}
-	stream, err := b.Client.Subscribe(context.DefaultContext, &pb.SubscribeRequest{
+	ctx := context.DefaultContext
+	if options.Context != nil {
+		md, _ := metadata.FromContext(options.Context)
+		ctx = metadata.MergeContext(ctx, md, true)
+	}
+
+	stream, err := b.Client.Subscribe(ctx, &pb.SubscribeRequest{
 		Topic: topic,
 		Queue: options.Queue,
 	}, client.WithAuthToken(), client.WithAddress(b.Addrs...), client.WithRequestTimeout(time.Hour))
@@ -101,10 +108,10 @@ func (b *serviceBroker) Subscribe(topic string, handler broker.Handler, opts ...
 					if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 						logger.Debugf("Resubscribing to topic %s broker %v", topic, b.Addrs)
 					}
-					stream, err := b.Client.Subscribe(context.DefaultContext, &pb.SubscribeRequest{
+					stream, err := b.Client.Subscribe(ctx, &pb.SubscribeRequest{
 						Topic: topic,
 						Queue: options.Queue,
-					}, client.WithAddress(b.Addrs...), client.WithRequestTimeout(time.Hour))
+					}, client.WithAuthToken(), client.WithAddress(b.Addrs...), client.WithRequestTimeout(time.Hour))
 					if err != nil {
 						if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 							logger.Debugf("Failed to resubscribe to topic %s: %v", topic, err)

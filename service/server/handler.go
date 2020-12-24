@@ -16,7 +16,10 @@
 
 package server
 
-import "context"
+import (
+	"context"
+	"github.com/micro/micro/v3/service/context/metadata"
+)
 
 type HandlerOption func(*HandlerOptions)
 
@@ -92,5 +95,13 @@ func SubscriberQueue(n string) SubscriberOption {
 func SubscriberContext(ctx context.Context) SubscriberOption {
 	return func(o *SubscriberOptions) {
 		o.Context = ctx
+	}
+}
+func SubscriberNamespace(ns string) SubscriberOption {
+	return func(o *SubscriberOptions) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = metadata.Set(o.Context, "Micro-Sub-Namespace", ns)
 	}
 }

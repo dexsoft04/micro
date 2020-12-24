@@ -5,7 +5,6 @@ package profile
 
 import (
 	"fmt"
-	natsBroker "github.com/micro/micro/plugin/nats/broker/v3"
 	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
@@ -107,7 +106,7 @@ var PlatformClient = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
-		SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
+		//SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
 
 		return nil
 	},
@@ -134,8 +133,9 @@ var Local = &Profile{
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
 		SetupRegistry(mdns.NewRegistry())
 		//SetupRegistry(etcd.NewRegistry())
-		SetupBroker(natsBroker.NewBroker())
-
+		if ctx.Args().Get(1) == "broker" {
+			SetupBroker(memBroker.NewBroker())
+		}
 		SetupJWT(ctx)
 
 		//if ctx.Args().Get(1) == "broker" {

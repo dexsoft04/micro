@@ -89,9 +89,10 @@ func (s *Service) Handle(v interface{}) error {
 }
 
 // Subscribe registers a subscriber
-func (s *Service) Subscribe(topic string, v interface{}) error {
-	return s.Server().Subscribe(s.Server().NewSubscriber(topic, v))
+func (s *Service) Subscribe(topic string, v interface{}, opts ...server.SubscriberOption) error {
+	return s.Server().Subscribe(s.Server().NewSubscriber(topic, v, opts...))
 }
+
 
 func (s *Service) Init(opts ...Option) {
 	for _, o := range opts {

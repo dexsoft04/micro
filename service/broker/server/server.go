@@ -99,6 +99,11 @@ func (h *handler) Subscribe(ctx context.Context, req *pb.SubscribeRequest, strea
 	}
 	ns := acc.Issuer
 
+	subns, ok := metadata.Get(ctx, "Micro-Sub-Namespace")
+	if ok {
+		ns = subns
+		logger.Infof("sub namespace:%s", ns)
+	}
 	errChan := make(chan error, 1)
 
 	// message handler to stream back messages from broker
