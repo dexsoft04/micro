@@ -123,7 +123,13 @@ func (h *handler) Subscribe(ctx context.Context, req *pb.SubscribeRequest, strea
 	}
 
 	log.Debugf("Subscribing to %s topic in namespace %v", req.Topic, ns)
-	sub, err := broker.DefaultBroker.Subscribe(ns+"."+req.Topic, handler, broker.Queue(ns+"."+req.Queue))
+	var sub broker.Subscriber
+	var err error
+	if len(req.Queue) > 0 {
+		sub, err = broker.DefaultBroker.Subscribe(ns+"."+req.Topic, handler, broker.Queue(ns+"."+req.Queue))
+	} else {
+		sub, err = broker.DefaultBroker.Subscribe(ns+"."+req.Topic, handler)
+	}
 	if err != nil {
 		return errors.InternalServerError("broker.Broker.Subscribe", err.Error())
 	}
