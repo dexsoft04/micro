@@ -402,7 +402,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	client.DefaultClient = wrapper.LogClient(client.DefaultClient)
 
 	// wrap the server
-	server.DefaultServer.Init(
+	_ = server.DefaultServer.Init(
 		server.WrapHandler(wrapper.AuthHandler()),
 		server.WrapHandler(wrapper.TraceHandler()),
 		server.WrapHandler(wrapper.HandlerStats()),

@@ -78,9 +78,14 @@ func (h *handler) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.E
 			}
 		}
 	}
-
+	ns := acc.Issuer
+	subns, ok := metadata.Get(ctx, "Micro-Sub-Namespace")
+	if !ok {
+		ns = subns
+		logger.Infof("sub namespace:%s", ns)
+	}
 	log.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, acc.Issuer)
-	err := broker.DefaultBroker.Publish(acc.Issuer+"."+req.Topic, &broker.Message{
+	err := broker.DefaultBroker.Publish(ns+"."+req.Topic, &broker.Message{
 		Header: req.Message.Header,
 		Body:   req.Message.Body,
 	})

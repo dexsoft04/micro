@@ -47,10 +47,17 @@ func (b *serviceBroker) Options() broker.Options {
 }
 
 func (b *serviceBroker) Publish(topic string, msg *broker.Message, opts ...broker.PublishOption) error {
+	var options broker.PublishOptions
 	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 		logger.Debugf("Publishing to topic %s broker %v", topic, b.Addrs)
 	}
-	_, err := b.Client.Publish(context.DefaultContext, &pb.PublishRequest{
+	ctx := context.DefaultContext
+	if options.Context != nil {
+		md, _ := metadata.FromContext(options.Context)
+		ctx = metadata.MergeContext(ctx, md, true)
+	}
+
+	_, err := b.Client.Publish(ctx, &pb.PublishRequest{
 		Topic: topic,
 		Message: &pb.Message{
 			Header: msg.Header,

@@ -21,7 +21,7 @@ var (
 		"registry", // :8000
 		"config",   // :8001
 		"store",    // :8002
-		"broker",   // :8003
+		"broker",   // :1
 		"events",   // :unset
 		"auth",     // :8010
 		"proxy",    // :8081

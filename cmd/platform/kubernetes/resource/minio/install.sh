@@ -13,7 +13,6 @@ kubectl create secret generic minio-creds --from-literal=access_key=$accessKey -
 
 # add the nats helm chart
 helm repo add minio https://helm.min.io/
-
 if [[ $MICRO_ENV == "dev" ]]; then
   overrides="--set persistence.size=10Gi --set s3gateway.enabled=false"
 else
