@@ -93,7 +93,7 @@ spec:
           args:
             - service
             - router
-          image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012311054
+          image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012311301
           imagePullPolicy: Always
           ports:
             - containerPort: 8084

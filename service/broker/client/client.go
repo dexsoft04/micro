@@ -48,6 +48,9 @@ func (b *serviceBroker) Options() broker.Options {
 
 func (b *serviceBroker) Publish(topic string, msg *broker.Message, opts ...broker.PublishOption) error {
 	var options broker.PublishOptions
+	for _, o := range opts {
+		o(&options)
+	}
 	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 		logger.Debugf("Publishing to topic %s broker %v", topic, b.Addrs)
 	}
