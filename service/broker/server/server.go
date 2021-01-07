@@ -84,12 +84,11 @@ func (h *handler) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.E
 		ns = subns
 		logger.Infof("sub namespace:%s", ns)
 	}
-	log.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, acc.Issuer)
+	log.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, ns)
 	err := broker.DefaultBroker.Publish(ns+"."+req.Topic, &broker.Message{
 		Header: req.Message.Header,
 		Body:   req.Message.Body,
 	})
-	log.Debugf("Published message to %s topic in the %v namespace", req.Topic, acc.Issuer)
 	if err != nil {
 		return errors.InternalServerError("broker.Broker.Publish", err.Error())
 	}
