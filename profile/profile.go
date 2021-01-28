@@ -5,6 +5,8 @@ package profile
 
 import (
 	"fmt"
+	"github.com/micro/micro/plugin/prometheus/v3"
+	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
@@ -107,6 +109,14 @@ var PlatformClient = &Profile{
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
 		//SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
+
+		if !metrics.IsSet() {
+			prometheusReporter, err := prometheus.New()
+			if err != nil {
+				return err
+			}
+			metrics.SetDefaultMetricsReporter(prometheusReporter)
+		}
 
 		return nil
 	},

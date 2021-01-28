@@ -49,6 +49,23 @@ spec:
             serviceName: micro-api
             servicePort: 8080
 ---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: http-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+    - host: "*.mcbeam.cc"
+      http:
+        paths:
+          - path: /web
+            pathType: Prefix
+            backend:
+              serviceName: micro-http
+              servicePort: 8080
+---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
