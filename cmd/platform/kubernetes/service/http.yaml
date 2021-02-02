@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: default
-  name: micro-api-latest
+  name: micro-http-latest
   labels:
     micro: runtime
     name: api
@@ -17,7 +17,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      name: micro-api
+      name: micro-http
       micro: runtime
   template:
     metadata:
@@ -74,7 +74,7 @@ spec:
         args:
         - service
         - api
-        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202012311451
+        image: ccr.ccs.tencentyun.com/wolfplus/mcbeam:mcbeam-v3-202101281136
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

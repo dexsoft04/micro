@@ -163,6 +163,11 @@ func (m *manager) createServiceInRuntime(srv *service) error {
 		gorun.WithEnv(m.runtimeEnv(srv.Service, srv.Options)),
 	}
 
+	//add annotations
+	srv.Service.Metadata["prometheus.io/scrape"] = "true"
+	srv.Service.Metadata["prometheus.io/path"] = "/metrics"
+	srv.Service.Metadata["prometheus.io/port"] = "9000"
+
 	// add the secrets
 	for key, value := range srv.Options.Secrets {
 		options = append(options, gorun.WithSecret(key, value))
@@ -250,6 +255,7 @@ func (m *manager) runtimeEnv(srv *gorun.Service, options *gorun.CreateOptions) [
 	env := map[string]string{
 		// ensure a profile for the services isn't set, they
 		// should use the default RPC clients
+		"TZ": "Asia/Shanghai",
 		"MICRO_PROFILE": "platformClient",
 		// pass the service's name and version
 		"MICRO_SERVICE_NAME":    srv.Name,
