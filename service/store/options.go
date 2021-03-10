@@ -24,6 +24,8 @@ type Options struct {
 	Limit uint
 	// Offset when combined with Limit supports pagination
 	Offset uint
+	Context context.Context
+
 }
 
 // Option sets values in Options
@@ -108,6 +110,8 @@ type ReadOptions struct {
 	Limit uint
 	// Offset when combined with Limit supports pagination
 	Offset uint
+	Context context.Context
+
 }
 
 // ReadOption sets values in ReadOptions
@@ -153,6 +157,8 @@ func ReadOffset(o uint) ReadOption {
 // If Expiry and TTL are set TTL takes precedence
 type WriteOptions struct {
 	Database, Table string
+	Context context.Context
+
 }
 
 // WriteOption sets values in WriteOptions
@@ -194,6 +200,8 @@ type ListOptions struct {
 	Limit uint
 	// Offset when combined with Limit supports pagination
 	Offset uint
+	Context context.Context
+
 }
 
 // ListOption sets values in ListOptions
