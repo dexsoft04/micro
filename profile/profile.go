@@ -93,7 +93,13 @@ var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
 		//SetupRegistry(etcd.NewRegistry())
-
+		if !metrics.IsSet() {
+			prometheusReporter, err := prometheus.New()
+			if err != nil {
+				return err
+			}
+			metrics.SetDefaultMetricsReporter(prometheusReporter)
+		}
 		return nil
 	},
 }
