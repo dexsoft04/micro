@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/google/uuid"
 	configCli "github.com/micro/micro/v3/service/config/client"
 	"io/ioutil"
 	"math/rand"
@@ -414,7 +413,6 @@ func (c *command) Before(ctx *cli.Context) error {
 		server.WrapHandler(mcwrapper.SessionHandler()),
 		server.WrapHandler(opentrace.NewHandlerWrapper(nil)),
 	)
-	uuid.New()
 	// setup auth
 	authOpts := []auth.Option{}
 	if len(ctx.String("namespace")) > 0 {
