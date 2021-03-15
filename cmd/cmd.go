@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/google/uuid"
 	configCli "github.com/micro/micro/v3/service/config/client"
 	"io/ioutil"
 	"math/rand"
@@ -39,6 +40,7 @@ import (
 	muruntime "github.com/micro/micro/v3/service/runtime"
 	mustore "github.com/micro/micro/v3/service/store"
 	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
+	opentrace "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 )
 
 type Cmd interface {
@@ -400,6 +402,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	client.DefaultClient = wrapper.TraceCall(client.DefaultClient)
 	client.DefaultClient = wrapper.FromService(client.DefaultClient)
 	client.DefaultClient = wrapper.LogClient(client.DefaultClient)
+	client.DefaultClient = opentrace.NewClientWrapper(nil)(client.DefaultClient)
 
 	// wrap the server
 	_ = server.DefaultServer.Init(
@@ -409,8 +412,9 @@ func (c *command) Before(ctx *cli.Context) error {
 		server.WrapHandler(wrapper.LogHandler()),
 		server.WrapHandler(wrapper.MetricsHandler()),
 		server.WrapHandler(mcwrapper.SessionHandler()),
+		server.WrapHandler(opentrace.NewHandlerWrapper(nil)),
 	)
-
+	uuid.New()
 	// setup auth
 	authOpts := []auth.Option{}
 	if len(ctx.String("namespace")) > 0 {
