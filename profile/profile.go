@@ -101,7 +101,7 @@ var Client = &Profile{
 					return err
 				}
 				metrics.SetDefaultMetricsReporter(prometheusReporter)
-				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local")
+				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local:6831")
 			}
 		}
 
