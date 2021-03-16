@@ -42,12 +42,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/go-github-selfupdate v1.2.2
 	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201222064548-216177d0224b
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201202145207-cbe1bd916536
-	github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210315054706-4befe0c4f41e
+	github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210316063950-b689c0b7ef5a
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
 	go.etcd.io/bbolt v1.3.5

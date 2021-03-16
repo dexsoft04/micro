@@ -46,6 +46,7 @@ import (
 	microRouter "github.com/micro/micro/v3/service/router"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
+	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -93,13 +94,14 @@ var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
 		//SetupRegistry(etcd.NewRegistry())
-		//if !metrics.IsSet() {
-		//	prometheusReporter, err := prometheus.New()
-		//	if err != nil {
-		//		return err
-		//	}
-		//	metrics.SetDefaultMetricsReporter(prometheusReporter)
-		//}
+		if !metrics.IsSet() {
+			prometheusReporter, err := prometheus.New()
+			if err != nil {
+				return err
+			}
+			metrics.SetDefaultMetricsReporter(prometheusReporter)
+			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local")
+		}
 		return nil
 	},
 }
@@ -117,6 +119,7 @@ var PlatformClient = &Profile{
 		//SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
 
 		if !metrics.IsSet() {
+			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local")
 			prometheusReporter, err := prometheus.New()
 			if err != nil {
 				return err
