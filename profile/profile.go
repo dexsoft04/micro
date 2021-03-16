@@ -94,14 +94,17 @@ var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
 		//SetupRegistry(etcd.NewRegistry())
-		if !metrics.IsSet() {
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				return err
+		if len(os.Getenv("MICRO_SERVICE_NAME")) != 0 {
+			if !metrics.IsSet() {
+				prometheusReporter, err := prometheus.New()
+				if err != nil {
+					return err
+				}
+				metrics.SetDefaultMetricsReporter(prometheusReporter)
+				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local")
 			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
-			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local")
 		}
+
 		return nil
 	},
 }
