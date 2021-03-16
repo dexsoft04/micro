@@ -101,7 +101,8 @@ var Client = &Profile{
 					return err
 				}
 				metrics.SetDefaultMetricsReporter(prometheusReporter)
-				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local:6831")
+				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
+					os.Getenv("MICRO_JAEGER_ADDRESS"))
 			}
 		}
 
@@ -122,7 +123,8 @@ var PlatformClient = &Profile{
 		//SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
 
 		if !metrics.IsSet() {
-			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"), " jaeger-agent.monitoring.svc.cluster.local")
+			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
+				os.Getenv("MICRO_JAEGER_ADDRESS"))
 			prometheusReporter, err := prometheus.New()
 			if err != nil {
 				return err

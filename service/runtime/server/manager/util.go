@@ -266,6 +266,7 @@ func (m *manager) runtimeEnv(srv *gorun.Service, options *gorun.CreateOptions) [
 		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
 		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin",
+		"MICRO_JAEGER_ADDRESS": os.Getenv("MICRO_JAEGER_ADDRESS"),
 	}
 	logger.Infof("env:%v", env)
 	// bind to port 8080, this is what the k8s tcp readiness check will use
