@@ -47,7 +47,7 @@ require (
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201222064548-216177d0224b
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201202145207-cbe1bd916536
-	github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210316063950-b689c0b7ef5a
+	github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210322080546-8cf269d38a96
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
 	go.etcd.io/bbolt v1.3.5

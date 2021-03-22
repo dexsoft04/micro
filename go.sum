@@ -601,8 +601,8 @@ github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201222064548-21
 github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20201222064548-216177d0224b/go.mod h1:SOpECXW6oRUvwoGjOOTxZKs5Ip/KYXF9rxzVtrJdO/I=
 github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201202145207-cbe1bd916536 h1:aZ6DA/kLo5hM2B0/V6iVFKsiXVqnVZJ/XYxUd4qg7HQ=
 github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20201202145207-cbe1bd916536/go.mod h1:ZJrtzFt/AVyYtCYhNtO5q8+jJfU6TSbKX32U/WWV+88=
-github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210316063950-b689c0b7ef5a h1:Z9nTNr3Al6mnbIjhfgY1TA+7UGvIXLd46HqjqVMgjfQ=
-github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210316063950-b689c0b7ef5a/go.mod h1:L6O6/2CW9BhqU65YF+6iGvBr28a3+9cPL/GbVU5fweI=
+github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210322080546-8cf269d38a96 h1:Zqo4VorOLYgpGYqnsXGP54Zsew9c5yy1jRlkygCDkBE=
+github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210322080546-8cf269d38a96/go.mod h1:L6O6/2CW9BhqU65YF+6iGvBr28a3+9cPL/GbVU5fweI=
 github.com/xanzy/go-gitlab v0.35.1 h1:jJSgT0NxjCvrSZf7Gvn2NxxV9xAYkTjYrKW8XwWhrfY=
 github.com/xanzy/go-gitlab v0.35.1/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
