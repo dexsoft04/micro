@@ -26,7 +26,6 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/model"
 	"github.com/micro/micro/v3/service/registry"
-	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/micro/micro/v3/service/registry/memory"
 	"github.com/micro/micro/v3/service/router"
 	k8sRouter "github.com/micro/micro/v3/service/router/kubernetes"
@@ -265,8 +264,8 @@ var Test = &Profile{
 
 // SetupRegistry configures the registry
 func SetupRegistry(reg registry.Registry) {
-	microRegistry.DefaultRegistry = reg
-	microRouter.DefaultRouter = regRouter.NewRouter(router.Registry(reg))
+	registry.DefaultRegistry = reg
+	router.DefaultRouter = regRouter.NewRouter(router.Registry(reg))
 	client.DefaultClient.Init(client.Registry(reg))
 	server.DefaultServer.Init(server.Registry(reg))
 }
