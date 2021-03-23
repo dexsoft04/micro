@@ -47,17 +47,17 @@ var (
 	re = regexp.MustCompile("[^a-zA-Z0-9]+")
 
 	statements = map[string]string{
-		"list":       "SELECT key, value, metadata, expiry FROM %s.%s WHERE key LIKE $1 ORDER BY key DESC LIMIT $2 OFFSET $3;",
+		"list":       "SELECT key, value, metadata, expiry FROM %s.%s WHERE key LIKE $1 ORDER BY key ASC LIMIT $2 OFFSET $3;",
 		"read":       "SELECT key, value, metadata, expiry FROM %s.%s WHERE key = $1;",
 		"readMany":   "SELECT key, value, metadata, expiry FROM %s.%s WHERE key LIKE $1;",
-		"readOffset": "SELECT key, value, metadata, expiry FROM %s.%s WHERE key LIKE $1 ORDER BY key DESC LIMIT $2 OFFSET $3;",
+		"readOffset": "SELECT key, value, metadata, expiry FROM %s.%s WHERE key LIKE $1 ORDER BY key ASC LIMIT $2 OFFSET $3;",
 		"write":      "INSERT INTO %s.%s(key, value, metadata, expiry) VALUES ($1, $2::bytea, $3, $4) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, metadata = EXCLUDED.metadata, expiry = EXCLUDED.expiry;",
 		"delete":     "DELETE FROM %s.%s WHERE key = $1;",
 	}
 )
 
 type sqlStore struct {
-	options store.StoreOptions
+	options store.Options
 	dbConn  *sql.DB
 
 	sync.RWMutex
@@ -253,7 +253,7 @@ func (s *sqlStore) Close() error {
 	return nil
 }
 
-func (s *sqlStore) Init(opts ...store.StoreOption) error {
+func (s *sqlStore) Init(opts ...store.Option) error {
 	for _, o := range opts {
 		o(&s.options)
 	}
@@ -541,7 +541,7 @@ func (s *sqlStore) Delete(key string, opts ...store.DeleteOption) error {
 	return nil
 }
 
-func (s *sqlStore) Options() store.StoreOptions {
+func (s *sqlStore) Options() store.Options {
 	return s.options
 }
 
@@ -550,8 +550,8 @@ func (s *sqlStore) String() string {
 }
 
 // NewStore returns a new micro Store backed by sql
-func NewStore(opts ...store.StoreOption) store.Store {
-	options := store.StoreOptions{
+func NewStore(opts ...store.Option) store.Store {
+	options := store.Options{
 		Database: DefaultDatabase,
 		Table:    DefaultTable,
 	}

@@ -40,13 +40,13 @@ The server is composed of the following services.
 - **Events** - Event streaming with ordered messaging, replay from offsets and persistent storage
 - **Network** - Inter-service networking, isolation and routing plane for all internal request traffic
 - **Proxy** - An identity aware proxy used for remote access and any external grpc request traffic
-- **Runtime** - Service lifecyle and process management with support for source to running auto build
+- **Runtime** - Service lifecycle and process management with support for source to running auto build
 - **Registry** - Centralised service discovery and API endpoint explorer with feature rich metadata
 - **Store** - Key-Value storage with TTL expiry and persistent crud to keep microservices stateless
 
 **Framework**
 
-Micro additionaly now contains the incredibly popular Go Micro framework built in for service development. 
+Micro additionally now contains the incredibly popular Go Micro framework built in for service development. 
 The Go framework makes it drop dead simple to write your services without having to piece together lines and lines of boilerplate. Auto 
 configured and initialised by default, just import and get started quickly.
 
@@ -223,6 +223,12 @@ helloworld := pb.NewHelloworldService("helloworld", client.DefaultClient)
 rsp, err := helloworld.Call(context.Background(), &pb.Request{Name: "Alice"})
 ```
 
+Curl it via the API
+
+```
+curl http://localhost:8080/helloworld?name=Alice
+```
+
 ## Usage
 
 See the [docs](https://micro.mu) for detailed information on the architecture, installation and use of the platform.
@@ -233,8 +239,8 @@ See [LICENSE](LICENSE) which makes use of [Polyform Shield](https://polyformproj
 
 ## Hosting
 
-For a hosted Micro Platform aka M3O see [m3o.com](https://m3o.com).
+For the hosted Micro Platform aka M3O see [m3o.com](https://m3o.com).
 
 ## Community
 
-Join us in the [Discussions](https://github.com/micro/micro/discussions) or follow on [Twitter](https://twitter.com/microhq) for updates.
+Join us on GitHub [Discussions](https://github.com/micro/micro/discussions) or [Slack](https://slack.micro.mu).

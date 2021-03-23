@@ -24,17 +24,39 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/gobwas/httphead"
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
+	"github.com/gorilla/websocket"
 	raw "github.com/micro/micro/v3/internal/codec/bytes"
 	"github.com/micro/micro/v3/internal/router"
 	"github.com/micro/micro/v3/service/api"
 	"github.com/micro/micro/v3/service/client"
+	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
 )
+
+const (
+	// Time allowed to write a message to the client.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the client.
+	pongWait = 60 * time.Second
+
+	// Send pings to client with this period. Must be less than pongWait.
+	pingPeriod = 15 * time.Second
+
+	// Maximum message size allowed from client.
+	maxMessageSize = 512
+)
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 func serveStream(ctx context.Context, w http.ResponseWriter, r *http.Request, service *api.Service, c client.Client) {
 	// serve as websocket if thats the case
@@ -42,8 +64,6 @@ func serveStream(ctx context.Context, w http.ResponseWriter, r *http.Request, se
 		serveWebsocket(ctx, w, r, service, c)
 		return
 	}
-
-	// otherwise serve the stream as http long poll
 
 	ct := r.Header.Get("Content-Type")
 	// Strip charset from Content-Type (like `application/json; charset=UTF-8`)
@@ -94,13 +114,13 @@ func serveStream(ctx context.Context, w http.ResponseWriter, r *http.Request, se
 		return
 	}
 
-	if request != nil {
-		if err = stream.Send(request); err != nil {
-			if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-				logger.Error(err)
-			}
-			return
+	// send request even if nil because it triggers the call in case server expects no input
+	// without this, we establish a connection but don't kick off the stream of communication
+	if err = stream.Send(request); err != nil {
+		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
+			logger.Error(err)
 		}
+		return
 	}
 
 	rsp := stream.Response()
@@ -116,6 +136,10 @@ func serveStream(ctx context.Context, w http.ResponseWriter, r *http.Request, se
 			// read backend response body
 			buf, err := rsp.Read()
 			if err != nil {
+				// clean exit
+				if err == io.EOF {
+					return
+				}
 				// wants to avoid import  grpc/status.Status
 				if strings.Contains(err.Error(), "context canceled") {
 					return
@@ -123,9 +147,13 @@ func serveStream(ctx context.Context, w http.ResponseWriter, r *http.Request, se
 				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 					logger.Error(err)
 				}
+				merr, ok := err.(*errors.Error)
+				if ok {
+					w.WriteHeader(int(merr.Code))
+					w.Write([]byte(merr.Error()))
+				}
 				return
 			}
-
 			// send the buffer
 			_, err = fmt.Fprint(w, string(buf))
 			if err != nil {
@@ -143,102 +171,168 @@ func serveStream(ctx context.Context, w http.ResponseWriter, r *http.Request, se
 	}
 }
 
+type stream struct {
+	// message type requested (binary or text)
+	messageType int
+	// request context
+	ctx context.Context
+	// the websocket connection.
+	conn *websocket.Conn
+	// the downstream connection.
+	stream client.Stream
+}
+
+func (s *stream) processWSReadsAndWrites() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		s.conn.Close()
+	}()
+
+	msgs := make(chan []byte)
+
+	stopCtx, cancel := context.WithCancel(context.Background())
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	go s.rspToBufLoop(cancel, &wg, stopCtx, msgs)
+	go s.bufToClientLoop(cancel, &wg, stopCtx, ticker, msgs)
+	go s.clientToServerLoop(cancel, &wg, stopCtx)
+	wg.Wait()
+}
+
+func (s *stream) clientToServerLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context) {
+	defer func() {
+		s.conn.Close()
+		cancel()
+		wg.Done()
+	}()
+	s.conn.SetReadLimit(maxMessageSize)
+	s.conn.SetReadDeadline(time.Now().Add(pongWait))
+	s.conn.SetPongHandler(func(string) error { s.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+
+	for {
+		select {
+		case <-stopCtx.Done():
+			return
+		default:
+		}
+
+		_, msg, err := s.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
+					logger.Error(err)
+				}
+			}
+			return
+		}
+
+		var request interface{}
+		switch s.messageType {
+		case websocket.TextMessage:
+			m := json.RawMessage(msg)
+			request = &m
+		default:
+			request = &raw.Frame{Data: msg}
+		}
+
+		if err := s.stream.Send(request); err != nil {
+			if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
+				logger.Error(err)
+			}
+			return
+		}
+	}
+
+}
+
+func (s *stream) rspToBufLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context, msgs chan []byte) {
+	defer func() {
+		cancel()
+		wg.Done()
+	}()
+	rsp := s.stream.Response()
+	for {
+		select {
+		case <-stopCtx.Done():
+			return
+		default:
+		}
+		bytes, err := rsp.Read()
+		if err != nil {
+			if err == io.EOF {
+				// clean exit
+				return
+			}
+			s.conn.WriteMessage(websocket.CloseAbnormalClosure, []byte{})
+			return
+		}
+		msgs <- bytes
+
+	}
+
+}
+
+func (s *stream) bufToClientLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context, ticker *time.Ticker, msgs chan []byte) {
+	defer func() {
+		cancel()
+		wg.Done()
+	}()
+	for {
+		select {
+		case <-stopCtx.Done():
+			return
+		case <-s.ctx.Done():
+			return
+		case <-s.stream.Context().Done():
+			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			return
+		case <-ticker.C:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		case msg := <-msgs:
+			// read response body
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			w, err := s.conn.NextWriter(s.messageType)
+			if err != nil {
+				return
+			}
+			if _, err := w.Write(msg); err != nil {
+				return
+			}
+			if err := w.Close(); err != nil {
+				return
+			}
+		}
+	}
+
+}
+
 // serveWebsocket will stream rpc back over websockets assuming json
 func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, service *api.Service, c client.Client) {
-	var op ws.OpCode
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
+			logger.Error(err)
+		}
+		return
+	}
 
+	// determine the content type
 	ct := r.Header.Get("Content-Type")
-	// Strip charset from Content-Type (like `application/json; charset=UTF-8`)
+	// strip charset from Content-Type (like `application/json; charset=UTF-8`)
 	if idx := strings.IndexRune(ct, ';'); idx >= 0 {
 		ct = ct[:idx]
 	}
-
-	// check proto from request
-	switch ct {
-	case "application/json":
-		op = ws.OpText
-	default:
-		op = ws.OpBinary
-	}
-
-	hdr := make(http.Header)
-	if proto, ok := r.Header["Sec-WebSocket-Protocol"]; ok {
-		for _, p := range proto {
-			switch p {
-			case "binary":
-				hdr["Sec-WebSocket-Protocol"] = []string{"binary"}
-				op = ws.OpBinary
-			}
-		}
-	}
-	payload, err := requestPayload(r)
-	if err != nil {
-		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-			logger.Error(err)
-		}
-		return
-	}
-
-	upgrader := ws.HTTPUpgrader{Timeout: 5 * time.Second,
-		Protocol: func(proto string) bool {
-			if strings.Contains(proto, "binary") {
-				return true
-			}
-			// fallback to support all protocols now
-			return true
-		},
-		Extension: func(httphead.Option) bool {
-			// disable extensions for compatibility
-			return false
-		},
-		Header: hdr,
-	}
-
-	conn, rw, _, err := upgrader.Upgrade(r, w)
-	if err != nil {
-		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-			logger.Error(err)
-		}
-		return
-	}
-
-	defer func() {
-		if err := conn.Close(); err != nil {
-			if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-				logger.Error(err)
-			}
-			return
-		}
-	}()
-
-	var request interface{}
-	if !bytes.Equal(payload, []byte(`{}`)) {
-		switch ct {
-		case "application/json", "":
-			m := json.RawMessage(payload)
-			request = &m
-		default:
-			request = &raw.Frame{Data: payload}
-		}
-	}
-
-	// we always need to set content type for message
-	if ct == "" {
+	if len(ct) == 0 {
 		ct = "application/json"
 	}
-	req := c.NewRequest(
-		service.Name,
-		service.Endpoint.Name,
-		request,
-		client.WithContentType(ct),
-		client.StreamingRequest(),
-	)
 
-	// create custom router
-	callOpt := client.WithRouter(router.New(service.Services))
-
-	// create a new stream
-	stream, err := c.Stream(ctx, req, callOpt)
+	// create stream
+	req := c.NewRequest(service.Name, service.Endpoint.Name, nil, client.WithContentType(ct), client.StreamingRequest())
+	str, err := c.Stream(ctx, req, client.WithRouter(router.New(service.Services)))
 	if err != nil {
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Error(err)
@@ -246,104 +340,14 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if request != nil {
-		if err = stream.Send(request); err != nil {
-			if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-				logger.Error(err)
-			}
-			return
-		}
+	// determine the message type
+	msgType := websocket.BinaryMessage
+	if ct == "application/json" {
+		msgType = websocket.TextMessage
 	}
 
-	go writeLoop(rw, stream)
-
-	rsp := stream.Response()
-
-	// receive from stream and send to client
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-stream.Context().Done():
-			return
-		default:
-			// read backend response body
-			buf, err := rsp.Read()
-			if err != nil {
-				// wants to avoid import  grpc/status.Status
-				if strings.Contains(err.Error(), "context canceled") {
-					return
-				}
-				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-					logger.Error(err)
-				}
-				return
-			}
-
-			// write the response
-			if err := wsutil.WriteServerMessage(rw, op, buf); err != nil {
-				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-					logger.Error(err)
-				}
-				return
-			}
-			if err = rw.Flush(); err != nil {
-				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-					logger.Error(err)
-				}
-				return
-			}
-		}
-	}
-}
-
-// writeLoop
-func writeLoop(rw io.ReadWriter, stream client.Stream) {
-	// close stream when done
-	defer stream.Close()
-
-	for {
-		select {
-		case <-stream.Context().Done():
-			return
-		default:
-			buf, op, err := wsutil.ReadClientData(rw)
-			if err != nil {
-				if wserr, ok := err.(wsutil.ClosedError); ok {
-					switch wserr.Code {
-					case ws.StatusGoingAway:
-						// this happens when user leave the page
-						return
-					case ws.StatusNormalClosure, ws.StatusNoStatusRcvd:
-						// this happens when user close ws connection, or we don't get any status
-						return
-					}
-				}
-				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-					logger.Error(err)
-				}
-				return
-			}
-			switch op {
-			default:
-				// not relevant
-				continue
-			case ws.OpText, ws.OpBinary:
-				break
-			}
-
-			// send to backend
-			// default to trying json
-			// if the extracted payload isn't empty lets use it
-			request := &raw.Frame{Data: buf}
-			if err := stream.Send(request); err != nil {
-				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-					logger.Error(err)
-				}
-				return
-			}
-		}
-	}
+	s := stream{ctx: ctx, conn: conn, stream: str, messageType: msgType}
+	s.processWSReadsAndWrites()
 }
 
 func isStream(r *http.Request, srv *api.Service) bool {

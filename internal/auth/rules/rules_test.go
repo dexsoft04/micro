@@ -47,6 +47,7 @@ func TestVerify(t *testing.T) {
 		Account  *auth.Account
 		Resource *auth.Resource
 		Error    error
+		Options  []auth.VerifyOption
 	}{
 		{
 			Name:     "NoRules",
@@ -294,11 +295,120 @@ func TestVerify(t *testing.T) {
 			},
 			Error: auth.ErrForbidden,
 		},
+		{
+			Name:     "CrossNamespaceForbidden",
+			Resource: srvResource,
+			Account:  &auth.Account{Issuer: "foo"},
+			Rules: []*auth.Rule{
+				&auth.Rule{
+					Scope:    "*",
+					Resource: catchallResource,
+				},
+			},
+			Error:   auth.ErrForbidden,
+			Options: []auth.VerifyOption{auth.VerifyNamespace("bar")},
+		},
+		{
+			Name:     "CrossNamespaceNilAccountForbidden",
+			Resource: srvResource,
+			Account:  &auth.Account{},
+			Rules: []*auth.Rule{
+				&auth.Rule{
+					Scope:    "*",
+					Resource: catchallResource,
+				},
+			},
+			Error:   auth.ErrForbidden,
+			Options: []auth.VerifyOption{auth.VerifyNamespace("bar")},
+		},
+		{
+			Name:     "CrossNamespacePublic",
+			Resource: srvResource,
+			Account:  &auth.Account{Issuer: "foo"},
+			Rules: []*auth.Rule{
+				&auth.Rule{
+					Scope:    auth.ScopePublic,
+					Resource: catchallResource,
+				},
+			},
+			Options: []auth.VerifyOption{auth.VerifyNamespace("bar")},
+		},
+		{
+			Name:     "CrossNamespacePublicNilAccount",
+			Resource: srvResource,
+			Account:  &auth.Account{},
+			Rules: []*auth.Rule{
+				&auth.Rule{
+					Scope:    auth.ScopePublic,
+					Resource: catchallResource,
+				},
+			},
+			Options: []auth.VerifyOption{auth.VerifyNamespace("bar")},
+		},
+		{
+			Name: "CrossNamespaceCrossIssuerTrue",
+			Resource: &auth.Resource{
+				Type:     "service",
+				Name:     "runtime",
+				Endpoint: "Runtime.Read",
+			},
+			Account: &auth.Account{
+				ID:     "admin",
+				Type:   "user",
+				Issuer: "foo-bar-baz",
+				Scopes: []string{"admin"},
+				Name:   "admin",
+			},
+			Rules: []*auth.Rule{
+				&auth.Rule{
+					ID:    "runtimepublic",
+					Scope: auth.ScopeAnyNamespaceAccount,
+					Resource: &auth.Resource{
+						Name:     "runtime",
+						Type:     "service",
+						Endpoint: "*",
+					},
+					Access:   auth.AccessGranted,
+					Priority: 1,
+				},
+			},
+			Options: []auth.VerifyOption{auth.VerifyNamespace("my-user-ns")},
+		},
+		{
+			Name: "CrossNamespaceCrossIssuerFalse",
+			Resource: &auth.Resource{
+				Type:     "service",
+				Name:     "runtime",
+				Endpoint: "Runtime.Read",
+			},
+			Account: &auth.Account{
+				ID:     "admin",
+				Type:   "user",
+				Issuer: "foo-bar-baz",
+				Scopes: []string{"admin"},
+				Name:   "admin",
+			},
+			Rules: []*auth.Rule{
+				&auth.Rule{
+					ID:    "runtimepublic",
+					Scope: auth.ScopeAccount,
+					Resource: &auth.Resource{
+						Name:     "runtime",
+						Type:     "service",
+						Endpoint: "*",
+					},
+					Access:   auth.AccessGranted,
+					Priority: 1,
+				},
+			},
+			Options: []auth.VerifyOption{auth.VerifyNamespace("my-user-ns")},
+			Error:   auth.ErrForbidden,
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
-			if err := VerifyAccess(tc.Rules, tc.Account, tc.Resource); err != tc.Error {
+			if err := VerifyAccess(tc.Rules, tc.Account, tc.Resource, tc.Options...); err != tc.Error {
 				t.Errorf("Expected %v but got %v", tc.Error, err)
 			}
 		})

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	inauth "github.com/micro/micro/v3/internal/auth"
-	"github.com/micro/micro/v3/internal/auth/namespace"
 	"github.com/micro/micro/v3/internal/debug/trace"
 	"github.com/micro/micro/v3/service/auth"
 	"github.com/micro/micro/v3/service/client"
@@ -88,27 +87,9 @@ func AuthHandler() server.HandlerWrapper {
 			ns := auth.DefaultAuth.Options().Issuer
 
 			var acc *auth.Account
-			if a, err := auth.Inspect(token); err == nil && a.Issuer == ns {
-				// We only use accounts issued by the same namespace as the service when verifying against
-				// the rule set.
+			if a, err := auth.Inspect(token); err == nil {
 				ctx = auth.ContextWithAccount(ctx, a)
 				acc = a
-			} else if err == nil && ns == namespace.DefaultNamespace {
-				// for the default domain, we want to inject the account into the context so that the
-				// server can access it (since it's designed for multi-tenancy), however we don't want to
-				// use it when verifying against the auth rules, since this will allow any user access to the
-				// services running in the micro namespace
-				ctx = auth.ContextWithAccount(ctx, a)
-			}
-
-			// ensure only accounts with the correct namespace can access this namespace,
-			// since the auth package will verify access below, and some endpoints could
-			// be public, we allow nil accounts access using the namespace.Public option.
-			err := namespace.Authorize(ctx, ns, namespace.Public(ns))
-			if err == namespace.ErrForbidden {
-				return errors.Forbidden(req.Service(), err.Error())
-			} else if err != nil {
-				return errors.InternalServerError(req.Service(), err.Error())
 			}
 
 			// construct the resource
@@ -119,7 +100,7 @@ func AuthHandler() server.HandlerWrapper {
 			}
 
 			// Verify the caller has access to the resource.
-			err = auth.Verify(acc, res, auth.VerifyNamespace(ns))
+			err := auth.Verify(acc, res, auth.VerifyNamespace(ns))
 			if err == auth.ErrForbidden && acc != nil {
 				return errors.Forbidden(req.Service(), "Forbidden call made to %v:%v by %v", req.Service(), req.Endpoint(), acc.ID)
 			} else if err == auth.ErrForbidden {
@@ -134,40 +115,6 @@ func AuthHandler() server.HandlerWrapper {
 	}
 }
 
-type fromServiceWrapper struct {
-	client.Client
-}
-
-var (
-	HeaderPrefix = "Micro-"
-)
-
-func (f *fromServiceWrapper) setHeaders(ctx context.Context) context.Context {
-	return metadata.MergeContext(ctx, metadata.Metadata{
-		HeaderPrefix + "From-Service": server.DefaultServer.Options().Name,
-	}, false)
-}
-
-func (f *fromServiceWrapper) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
-	ctx = f.setHeaders(ctx)
-	return f.Client.Call(ctx, req, rsp, opts...)
-}
-
-func (f *fromServiceWrapper) Stream(ctx context.Context, req client.Request, opts ...client.CallOption) (client.Stream, error) {
-	ctx = f.setHeaders(ctx)
-	return f.Client.Stream(ctx, req, opts...)
-}
-
-func (f *fromServiceWrapper) Publish(ctx context.Context, p client.Message, opts ...client.PublishOption) error {
-	ctx = f.setHeaders(ctx)
-	return f.Client.Publish(ctx, p, opts...)
-}
-
-// FromService wraps a client to inject service and auth metadata
-func FromService(c client.Client) client.Client {
-	return &fromServiceWrapper{c}
-}
-
 type logWrapper struct {
 	client.Client
 }
@@ -175,6 +122,11 @@ type logWrapper struct {
 func (l *logWrapper) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
 	logger.Debugf("Calling service %s endpoint %s", req.Service(), req.Endpoint())
 	return l.Client.Call(ctx, req, rsp, opts...)
+}
+
+func (l *logWrapper) Stream(ctx context.Context, req client.Request, opts ...client.CallOption) (client.Stream, error) {
+	logger.Debugf("Streaming service %s endpoint %s", req.Service(), req.Endpoint())
+	return l.Client.Stream(ctx, req, opts...)
 }
 
 func LogClient(c client.Client) client.Client {

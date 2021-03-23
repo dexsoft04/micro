@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	configCli "github.com/micro/micro/v3/service/config/client"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -28,6 +27,7 @@ import (
 	"github.com/micro/micro/v3/service/broker"
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/config"
+	configCli "github.com/micro/micro/v3/service/config/client"
 	storeConf "github.com/micro/micro/v3/service/config/store"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
@@ -35,9 +35,7 @@ import (
 	"github.com/micro/micro/v3/service/store"
 	"github.com/urfave/cli/v2"
 
-	muregistry "github.com/micro/micro/v3/service/registry"
 	muruntime "github.com/micro/micro/v3/service/runtime"
-	mustore "github.com/micro/micro/v3/service/store"
 	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
 	opentrace "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 )
@@ -350,6 +348,11 @@ func (c *command) Before(ctx *cli.Context) error {
 		}
 	}
 
+	// certain commands don't require loading
+	if ctx.Args().First() == "env" {
+		return nil
+	}
+
 	// default the profile for the server
 	prof := ctx.String("profile")
 
@@ -399,12 +402,11 @@ func (c *command) Before(ctx *cli.Context) error {
 	client.DefaultClient = wrapper.AuthClient(client.DefaultClient)
 	client.DefaultClient = wrapper.CacheClient(client.DefaultClient)
 	client.DefaultClient = wrapper.TraceCall(client.DefaultClient)
-	client.DefaultClient = wrapper.FromService(client.DefaultClient)
 	client.DefaultClient = wrapper.LogClient(client.DefaultClient)
 	client.DefaultClient = opentrace.NewClientWrapper(nil)(client.DefaultClient)
 
 	// wrap the server
-	_ = server.DefaultServer.Init(
+	server.DefaultServer.Init(
 		server.WrapHandler(wrapper.AuthHandler()),
 		server.WrapHandler(wrapper.TraceHandler()),
 		server.WrapHandler(wrapper.HandlerStats()),
@@ -413,6 +415,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		server.WrapHandler(mcwrapper.SessionHandler()),
 		server.WrapHandler(opentrace.NewHandlerWrapper(nil)),
 	)
+
 	// setup auth
 	authOpts := []auth.Option{}
 	if len(ctx.String("namespace")) > 0 {
@@ -486,7 +489,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		addresses := strings.Split(ctx.String("registry_address"), ",")
 		registryOpts = append(registryOpts, registry.Addrs(addresses...))
 	}
-	if err := muregistry.DefaultRegistry.Init(registryOpts...); err != nil {
+	if err := registry.DefaultRegistry.Init(registryOpts...); err != nil {
 		logger.Fatalf("Error configuring registry: %v", err)
 	}
 
@@ -540,18 +543,18 @@ func (c *command) Before(ctx *cli.Context) error {
 	if len(ctx.String("service_name")) > 0 {
 		storeOpts = append(storeOpts, store.Table(ctx.String("service_name")))
 	}
-	if err := mustore.DefaultStore.Init(storeOpts...); err != nil {
+	if err := store.DefaultStore.Init(storeOpts...); err != nil {
 		logger.Fatalf("Error configuring store: %v", err)
 	}
 
 	// set the registry and broker in the client and server
 	client.DefaultClient.Init(
 		client.Broker(broker.DefaultBroker),
-		client.Registry(muregistry.DefaultRegistry),
+		client.Registry(registry.DefaultRegistry),
 	)
 	server.DefaultServer.Init(
 		server.Broker(broker.DefaultBroker),
-		server.Registry(muregistry.DefaultRegistry),
+		server.Registry(registry.DefaultRegistry),
 	)
 
 	// Setup config. Do this after auth is configured since it'll load the config
@@ -560,7 +563,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	if c.service && config.DefaultConfig == nil {
 		config.DefaultConfig = configCli.NewConfig(ctx.String("namespace"))
 	} else if config.DefaultConfig == nil {
-		config.DefaultConfig, _ = storeConf.NewConfig(mustore.DefaultStore, ctx.String("namespace"))
+		config.DefaultConfig, _ = storeConf.NewConfig(store.DefaultStore, ctx.String("namespace"))
 	}
 
 	return nil
