@@ -35,12 +35,12 @@ import (
 )
 
 func init() {
-	profile.Register("platform", Profile)
+	profile.Register("platform_micro", Profile)
 }
 
 // Profile is for running the micro platform
 var Profile = &profile.Profile{
-	Name: "platform",
+	Name: "platform_micro",
 	Setup: func(ctx *cli.Context) error {
 		auth.DefaultAuth = jwt.NewAuth()
 		// the cockroach store will connect immediately so the address must be passed
