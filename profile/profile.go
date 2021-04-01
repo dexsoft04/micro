@@ -8,8 +8,6 @@ import (
 	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/registry/mdns"
-	"github.com/philchia/agollo/v4"
-	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"os"
 	"path/filepath"
 
@@ -217,15 +215,6 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name:  "service",
 	Setup: func(ctx *cli.Context) error {
-		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
-			AppID:          os.Getenv("MICRO_NAMESPACE"),
-			Cluster:        "default",
-			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
-			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
-			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
-		}))
-		//SetupBroker(natsBroker.NewBroker(broker.Addrs("nats-cluster")))
-
 		if !metrics.IsSet() {
 			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
 				os.Getenv("MICRO_JAEGER_ADDRESS"))

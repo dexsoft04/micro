@@ -22,7 +22,6 @@ import (
 	"github.com/micro/micro/v3/server/api"
 	"github.com/micro/micro/v3/server/auth"
 	"github.com/micro/micro/v3/server/broker"
-	"github.com/micro/micro/v3/server/config"
 	"github.com/micro/micro/v3/server/events"
 	"github.com/micro/micro/v3/server/network"
 	"github.com/micro/micro/v3/server/proxy"
@@ -154,11 +153,11 @@ var srvCommands = []srvCommand{
 		Name:    "broker",
 		Command: broker.Run,
 	},
-	{
-		Name:    "config",
-		Command: config.Run,
-		Flags:   config.Flags,
-	},
+	//{
+	//	Name:    "config",
+	//	Command: config.Run,
+	//	Flags:   config.Flags,
+	//},
 	{
 		Name:    "events",
 		Command: events.Run,
