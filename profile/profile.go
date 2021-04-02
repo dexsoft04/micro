@@ -4,13 +4,17 @@
 package profile
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/micro/micro/v3/service/sync"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/micro/micro/v3/service/auth/jwt"
 	"github.com/micro/micro/v3/service/auth/noop"
@@ -45,6 +49,7 @@ import (
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
 	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
+	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -225,7 +230,10 @@ var Service = &Profile{
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
-		sync.Default =
+		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
+		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
+			logger.Fatal("Error configuring etcd sync: %v", err)
+		}
 		return nil },
 }
 
@@ -279,4 +287,37 @@ func SetupConfigSecretKey(ctx *cli.Context) {
 		}
 		os.Setenv("MICRO_CONFIG_SECRET_KEY", k)
 	}
+}
+
+// natsStreamOpts returns a slice of options which should be used to configure nats
+func syncEtcdOpts(ctx *cli.Context) []sync.Option {
+	// setup registry
+	opts := []sync.Option{}
+
+	// Parse registry TLS certs
+	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
+		cert, err := tls.LoadX509KeyPair(ctx.String("registry_tls_cert"), ctx.String("registry_tls_key"))
+		if err != nil {
+			logger.Fatalf("Error loading registry tls cert: %v", err)
+		}
+
+		// load custom certificate authority
+		caCertPool := x509.NewCertPool()
+		if len(ctx.String("registry_tls_ca")) > 0 {
+			crt, err := ioutil.ReadFile(ctx.String("registry_tls_ca"))
+			if err != nil {
+				logger.Fatalf("Error loading registry tls certificate authority: %v", err)
+			}
+			caCertPool.AppendCertsFromPEM(crt)
+		}
+
+		cfg := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: caCertPool}
+		opts = append(opts, sync.TLSConfig(cfg))
+	}
+	if len(ctx.String("registry_address")) > 0 {
+		addresses := strings.Split(ctx.String("registry_address"), ",")
+		opts = append(opts, sync.Nodes(addresses...))
+	}
+	opts = append(opts, sync.Prefix(os.Getenv("MICRO_SERVICE_NAME")))
+	return opts
 }

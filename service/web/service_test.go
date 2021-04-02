@@ -3,6 +3,8 @@ package web
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/micro/micro/v3/service/registry"
+	"github.com/micro/micro/v3/service/registry/memory"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,9 +12,6 @@ import (
 	"syscall"
 	"testing"
 	"time"
-
-	"github.com/micro/go-micro/v2/registry"
-	"github.com/micro/go-micro/v2/registry/memory"
 )
 
 func TestService(t *testing.T) {
