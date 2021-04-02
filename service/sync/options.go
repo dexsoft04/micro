@@ -1,12 +1,22 @@
 package sync
 
 import (
+	"context"
+	"crypto/tls"
 	"time"
 )
 
 type Options struct {
 	Nodes  []string
 	Prefix string
+
+	Timeout   time.Duration
+	Secure    bool
+	TLSConfig *tls.Config
+	// Other options for implementations of the interface
+	// can be stored in a context
+	Context context.Context
+
 }
 
 type Option func(o *Options)
@@ -27,6 +37,27 @@ type LockOption func(o *LockOptions)
 func Nodes(a ...string) Option {
 	return func(o *Options) {
 		o.Nodes = a
+	}
+}
+
+
+func Timeout(t time.Duration) Option {
+	return func(o *Options) {
+		o.Timeout = t
+	}
+}
+
+// Secure communication with the registry
+func Secure(b bool) Option {
+	return func(o *Options) {
+		o.Secure = b
+	}
+}
+
+// Specify TLS Config
+func TLSConfig(t *tls.Config) Option {
+	return func(o *Options) {
+		o.TLSConfig = t
 	}
 }
 

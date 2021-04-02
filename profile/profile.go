@@ -8,6 +8,7 @@ import (
 	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/registry/mdns"
+	"github.com/micro/micro/v3/service/sync"
 	"os"
 	"path/filepath"
 
@@ -224,6 +225,7 @@ var Service = &Profile{
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
+		sync.Default =
 		return nil },
 }
 
