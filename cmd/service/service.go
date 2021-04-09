@@ -3,6 +3,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/micro/micro/v3/server/config"
 	"os"
 	"strings"
 
@@ -153,11 +154,11 @@ var srvCommands = []srvCommand{
 		Name:    "broker",
 		Command: broker.Run,
 	},
-	//{
-	//	Name:    "config",
-	//	Command: config.Run,
-	//	Flags:   config.Flags,
-	//},
+	{
+		Name:    "config",
+		Command: config.Run,
+		Flags:   config.Flags,
+	},
 	{
 		Name:    "events",
 		Command: events.Run,
