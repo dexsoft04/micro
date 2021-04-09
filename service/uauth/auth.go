@@ -11,11 +11,11 @@ var (
 
 	ErrUnauthorized = errors.New("Unauthorized")
 	// ErrNotFound is returned when a utoken cannot be found
-	ErrNotFound = errors.New("utoken not found")
+	ErrNotFound = errors.New("user token not found")
 	// ErrEncodingToken is returned when the service encounters an error during encoding
-	ErrEncodingToken = errors.New("error encoding the utoken")
+	ErrEncodingToken = errors.New("error encoding the user token")
 	// ErrInvalidToken is returned when the utoken provided is not valid
-	ErrInvalidToken = errors.New("invalid utoken provided")
+	ErrInvalidToken = errors.New("invalid user token provided")
 )
 
 type Account struct {
@@ -28,7 +28,7 @@ type Account struct {
 
 type Token struct {
 	// The actual utoken
-	Token string `json:"utoken"`
+	Token string `json:"token"`
 	// Time of utoken creation
 	Created time.Time `json:"created"`
 	// Time of utoken expiry
