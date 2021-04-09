@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/micro/micro/v3/service/uauth"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -445,6 +446,22 @@ func (c *command) Before(ctx *cli.Context) error {
 	}
 
 	auth.DefaultAuth.Init(authOpts...)
+
+
+	uauthOpts := []uauth.Option{}
+	if len(ctx.String("auth_public_key")) > 0 || len(ctx.String("auth_private_key")) > 0 {
+		uauthOpts = append(uauthOpts, uauth.WithPublicKey(ctx.String("auth_public_key")))
+		uauthOpts = append(uauthOpts, uauth.WithPrivateKey(ctx.String("auth_private_key")))
+	} else if ctx.Args().First() == "server" || ctx.Args().First() == "service" {
+		privKey, pubKey, err := user.GetJWTCerts()
+		if err != nil {
+			logger.Fatalf("Error getting keys: %v", err)
+		}
+		uauthOpts = append(uauthOpts, uauth.WithPublicKey(string(pubKey)), uauth.WithPrivateKey(string(privKey)))
+	}
+	uauth.Default.Init(uauthOpts...)
+
+
 
 	// setup auth credentials, use local credentials for the CLI and injected creds
 	// for the service.
