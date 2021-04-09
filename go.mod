@@ -15,11 +15,13 @@ require (
 	github.com/getkin/kin-openapi v0.26.0
 	github.com/go-acme/lego/v3 v3.4.0
 	github.com/gofrs/uuid v3.2.0+incompatible
+	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/go-hclog v0.14.1 // indirect
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hpcloud/tail v1.0.0
 	github.com/improbable-eng/grpc-web v0.13.0
@@ -27,18 +29,18 @@ require (
 	github.com/kr/pretty v0.2.0
 	github.com/micro/cli/v2 v2.1.2
 	github.com/micro/go-micro/v2 v2.9.1
-	github.com/micro/micro/plugin/cockroach/v3 v3.0.0-20210402071817-9bdcf2d25eff
 	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20210312134408-88a44d2d5231
-	github.com/micro/micro/plugin/nats/broker/v3 v3.0.0-20210402071817-9bdcf2d25eff
-	github.com/micro/micro/plugin/nats/stream/v3 v3.0.0-20210402071817-9bdcf2d25eff
 	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210312134408-88a44d2d5231
 	github.com/miekg/dns v1.1.27
 	github.com/minio/minio-go/v7 v7.0.5
+	github.com/nats-io/nats-server/v2 v2.1.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/gomega v1.7.1
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/philchia/agollo/v4 v4.1.3
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/procfs v0.2.0 // indirect
 	github.com/rhysd/go-github-selfupdate v1.2.2
 	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516
 	github.com/stoewer/go-strcase v1.2.0
@@ -46,6 +48,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
+	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210409032929-0a096edb8232
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210322080546-8cf269d38a96
 	github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3 v3.0.0-20210402084304-ea1cd8aa89aa
 	github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210322080546-8cf269d38a96
@@ -54,6 +57,7 @@ require (
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.25.0

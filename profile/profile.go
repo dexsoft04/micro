@@ -11,6 +11,8 @@ import (
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/micro/micro/v3/service/sync"
+	"github.com/philchia/agollo/v4"
+	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -48,8 +50,8 @@ import (
 	microEvents "github.com/micro/micro/v3/service/events"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
-	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
+	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -234,6 +236,13 @@ var Service = &Profile{
 		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
 			logger.Fatal("Error configuring etcd sync: %v", err)
 		}
+		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
+			AppID:          os.Getenv("MICRO_NAMESPACE"),
+			Cluster:        "default",
+			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
+			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
+			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
+		}))
 		return nil },
 }
 
