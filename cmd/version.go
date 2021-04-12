@@ -12,14 +12,14 @@ var (
 	GitTag    string
 	BuildDate string
 
-	version    = "v3.0.0"
+	version    = "v3.2.0"
 	prerelease = "mcbeam-v0.0.1" // blank if full release
 )
 
 func buildVersion() string {
 	verStr := version
 	if prerelease != "" {
-		verStr = fmt.Sprintf("%s-%s", version, prerelease)
+		verStr = fmt.Sprintf("%s-%s:%s:%s", version, GitTag, BuildDate, GitCommit)
 	}
 
 	// check for git tag via ldflags
