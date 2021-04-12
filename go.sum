@@ -559,8 +559,8 @@ github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/urfave/cli/v2 v2.2.0 h1:JTTnM6wKzdA0Jqodd966MVj4vWbbquZykeX1sKbe2C4=
 github.com/urfave/cli/v2 v2.2.0/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
 github.com/vultr/govultr v0.1.4/go.mod h1:9H008Uxr/C4vFNGLqKx232C206GL0PBHzOP0809bGNA=
-github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210409032929-0a096edb8232 h1://2B5VrjnILhhdSlPDInuG2j+lI8fA96p8cEDp3igbI=
-github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210409032929-0a096edb8232/go.mod h1:LnaxZNejSSVUnsIOj48uCffMXVeQswmi4C8sSCnLoHY=
+github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210412064007-bb8d25babe64 h1:daZAsQNgkqYId0Y+Uo4k3HxTme8KDZIjZZeFnZ4hZpk=
+github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210412064007-bb8d25babe64/go.mod h1:LnaxZNejSSVUnsIOj48uCffMXVeQswmi4C8sSCnLoHY=
 github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210322080546-8cf269d38a96 h1:YyeZdN0jbrnKhxwlcxuEZlwFpjhhCJtOBgOIJIXr2FI=
 github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210322080546-8cf269d38a96/go.mod h1:ZJrtzFt/AVyYtCYhNtO5q8+jJfU6TSbKX32U/WWV+88=
 github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3 v3.0.0-20210402084304-ea1cd8aa89aa h1:K17KtKG9qbQhyGoUAg9lhbn1dpYtbY7J1sGKOQl5ORQ=
