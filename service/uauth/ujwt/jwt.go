@@ -27,10 +27,10 @@ import (
 
 // authClaims to be encoded in the JWT
 type authClaims struct {
-	openId   string
-	nickname string
-	headUri  string
-	metadata map[string]string
+	OpenId   string `json:"openid"`
+	Nickname string `json:"nickname"`
+	HeadUri  string `json:"headuri"`
+	Metadata map[string]string `json:"metadata"`
 	jwt.StandardClaims
 }
 
@@ -76,7 +76,7 @@ func (j *JWT) Generate(acc *uauth.Account, opts ...uauth.GenerateOption) (*uauth
 	expiry := time.Now().Add(options.Expiry)
 
 	t := jwt.NewWithClaims(jwt.SigningMethodRS256, authClaims{
-		openId: acc.OpenId, nickname: acc.Nickname, metadata: acc.Metadata,
+		OpenId: acc.OpenId, Nickname: acc.Nickname, Metadata: acc.Metadata,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiry.Unix(),
 		},
@@ -98,7 +98,7 @@ func (j *JWT) Generate(acc *uauth.Account, opts ...uauth.GenerateOption) (*uauth
 // Inspect a JWT
 func (j *JWT) Inspect(t string) (*uauth.Account, error) {
 	var pub []byte
-	if strings.HasPrefix(j.opts.PublicKey, "-----BEGIN PUBLIC KEY-----") {
+	if strings.HasPrefix(j.opts.PublicKey, "-----BEGIN CERTIFICATE-----") {
 		pub = []byte(j.opts.PublicKey)
 	} else {
 		var err error
@@ -127,10 +127,10 @@ func (j *JWT) Inspect(t string) (*uauth.Account, error) {
 
 	// return the utoken
 	return &uauth.Account{
-		OpenId:   claims.openId,
-		Nickname: claims.nickname,
-		HeadUri:  claims.headUri,
-		Metadata: claims.metadata,
+		OpenId:   claims.OpenId,
+		Nickname: claims.Nickname,
+		HeadUri:  claims.HeadUri,
+		Metadata: claims.Metadata,
 	}, nil
 }
 
