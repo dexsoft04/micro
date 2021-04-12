@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/micro/micro/v3/internal/runtime/source/git"
@@ -11,8 +10,8 @@ import (
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/context"
 	"github.com/micro/micro/v3/service/runtime"
-	"github.com/urfave/cli/v2"
 	"github.com/schollz/progressbar/v3"
+	"github.com/urfave/cli/v2"
 )
 
 const bufferSize = 1024
