@@ -98,7 +98,7 @@ func (j *JWT) Generate(acc *uauth.Account, opts ...uauth.GenerateOption) (*uauth
 // Inspect a JWT
 func (j *JWT) Inspect(t string) (*uauth.Account, error) {
 	var pub []byte
-	if strings.HasPrefix(j.opts.PublicKey, "-----BEGIN CERTIFICATE-----") {
+	if strings.HasPrefix(j.opts.PublicKey, "-----BEGIN PUBLIC KEY-----") {
 		pub = []byte(j.opts.PublicKey)
 	} else {
 		var err error
