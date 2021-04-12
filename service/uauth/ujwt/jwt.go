@@ -76,7 +76,7 @@ func (j *JWT) Generate(acc *uauth.Account, opts ...uauth.GenerateOption) (*uauth
 	expiry := time.Now().Add(options.Expiry)
 
 	t := jwt.NewWithClaims(jwt.SigningMethodRS256, authClaims{
-		OpenId: acc.OpenId, Nickname: acc.Nickname, Metadata: acc.Metadata,
+		OpenId: acc.OpenId, Nickname: acc.Nickname, HeadUri:acc.HeadUri, Metadata: acc.Metadata,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiry.Unix(),
 		},
@@ -131,6 +131,7 @@ func (j *JWT) Inspect(t string) (*uauth.Account, error) {
 		Nickname: claims.Nickname,
 		HeadUri:  claims.HeadUri,
 		Metadata: claims.Metadata,
+		ExpiresAt: claims.StandardClaims.ExpiresAt,
 	}, nil
 }
 
