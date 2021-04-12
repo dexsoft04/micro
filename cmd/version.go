@@ -19,7 +19,7 @@ var (
 func buildVersion() string {
 	verStr := version
 	if prerelease != "" {
-		verStr = fmt.Sprintf("%s-%s:%s:%s", version, GitTag, BuildDate, GitCommit)
+		verStr = fmt.Sprintf("%s-%s-%s-%s", version, GitTag, BuildDate, GitCommit)
 	}
 
 	// check for git tag via ldflags
