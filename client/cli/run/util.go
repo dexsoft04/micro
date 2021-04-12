@@ -1,9 +1,7 @@
 package runtime
 
 import (
-	"io"
-	"os"
-
+	"bytes"
 	"github.com/micro/micro/v3/internal/runtime/source/git"
 	pb "github.com/micro/micro/v3/proto/runtime"
 	"github.com/micro/micro/v3/service/build/util/tar"
@@ -12,6 +10,7 @@ import (
 	"github.com/micro/micro/v3/service/runtime"
 	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
+	"io"
 )
 
 const bufferSize = 1024
@@ -23,16 +22,7 @@ func upload(ctx *cli.Context, srv *runtime.Service, source *git.Source) (string,
 	// just archive the folder
 	var data io.Reader
 	var err error
-	var size int64
-	var file *os.File
-	if len(source.LocalRepoRoot) > 0 {
-		file, _ = os.Open(source.LocalRepoRoot)
-	} else {
-		file, _ = os.Open(source.FullPath)
-	}
 
-	fi, _ := file.Stat()
-	size = fi.Size()
 
 	if len(source.LocalRepoRoot) > 0 {
 		data, err = tar.Archive(source.LocalRepoRoot)
@@ -43,19 +33,20 @@ func upload(ctx *cli.Context, srv *runtime.Service, source *git.Source) (string,
 	if err != nil {
 		return "", err
 	}
-
+	buf := &bytes.Buffer{}
+	size, _ := io.Copy(buf, data)
 	// create an upload stream
 	cli := pb.NewSourceService("runtime", client.DefaultClient)
 	stream, err := cli.Upload(context.DefaultContext, client.WithAuthToken())
 	if err != nil {
 		return "", err
 	}
-	bar := progressbar.Default(size)
+	bar := progressbar.DefaultBytes(size, "upload:")
 	// read bytes from the tar and stream it to the server
 	buffer := make([]byte, bufferSize)
 	var sentService bool
 	for {
-		num, err := data.Read(buffer)
+		num, err := buf.Read(buffer)
 		if err == io.EOF {
 			break
 		} else if err != nil {
