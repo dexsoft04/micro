@@ -41,6 +41,6 @@ var (
 )
 
 // NewService returns a new web.Service
-func NewService(opts ...Option) Service {
+func New(opts ...Option) Service {
 	return newService(opts...)
 }

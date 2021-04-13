@@ -5,9 +5,12 @@ import (
 	"fmt"
 	maddr "github.com/micro/micro/v3/internal/addr"
 	"github.com/micro/micro/v3/internal/backoff"
+	mnet "github.com/micro/micro/v3/internal/net"
+	signalutil "github.com/micro/micro/v3/internal/signal"
+	mls "github.com/micro/micro/v3/internal/tls"
+	micro "github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
-	"github.com/urfave/cli/v2"
 	"net"
 	"net/http"
 	"os"
@@ -16,7 +19,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 )
 
 type service struct {
@@ -39,6 +41,9 @@ func newService(opts ...Option) Service {
 		static: true,
 	}
 	s.srv = s.genSrv()
+
+	s.Init(opts...)
+
 	return s
 }
 
@@ -360,67 +365,10 @@ func (s *service) Init(opts ...Option) error {
 		o(&s.opts)
 	}
 
-	serviceOpts := []Option{}
-
-	if len(s.opts.Flags) > 0 {
-		serviceOpts = append(serviceOpts, Flags(s.opts.Flags...))
+	if s.opts.Service == nil {
+		s.opts.Service = micro.New(micro.Name(s.opts.Name))
 	}
 
-	if s.opts.Registry != nil {
-		serviceOpts = append(serviceOpts, Registry(s.opts.Registry))
-	}
-
-	s.Unlock()
-
-	serviceOpts = append(serviceOpts, Action(func(ctx *cli.Context) error {
-		s.Lock()
-		defer s.Unlock()
-
-		if ttl := ctx.Int("register_ttl"); ttl > 0 {
-			s.opts.RegisterTTL = time.Duration(ttl) * time.Second
-		}
-
-		if interval := ctx.Int("register_interval"); interval > 0 {
-			s.opts.RegisterInterval = time.Duration(interval) * time.Second
-		}
-
-		if name := ctx.String("server_name"); len(name) > 0 {
-			s.opts.Name = name
-		}
-
-		if ver := ctx.String("server_version"); len(ver) > 0 {
-			s.opts.Version = ver
-		}
-
-		if id := ctx.String("server_id"); len(id) > 0 {
-			s.opts.Id = id
-		}
-
-		if addr := ctx.String("server_address"); len(addr) > 0 {
-			s.opts.Address = addr
-		}
-
-		if adv := ctx.String("server_advertise"); len(adv) > 0 {
-			s.opts.Advertise = adv
-		}
-
-		if s.opts.Action != nil {
-			s.opts.Action(ctx)
-		}
-
-		return nil
-	}))
-
-	s.RLock()
-	// pass in own name and version
-		serviceOpts = append(serviceOpts, Name(s.opts.Name))
-
-	serviceOpts = append(serviceOpts, Version(s.opts.Version))
-	s.RUnlock()
-
-	s.opts.Service.Init(serviceOpts...)
-
-	s.Lock()
 	srv := s.genSrv()
 	srv.Endpoints = s.srv.Endpoints
 	s.srv = srv
@@ -431,11 +379,11 @@ func (s *service) Init(opts ...Option) error {
 
 func (s *service) Run() error {
 	// generate an auth account
-	srvID := s.opts.Service.Server().Options().Id
-	srvName := s.Options().Name
-	if err := authutil.Generate(srvID, srvName, s.opts.Service.Options().Auth); err != nil {
-		return err
-	}
+	//srvID := s.opts.Service.Server().Options().Id
+	//srvName := s.Options().Name
+	//if err := authutil.Generate(srvID, srvName, s.opts.Service.Options().Auth); err != nil {
+	//	return err
+	//}
 
 	if err := s.start(); err != nil {
 		return err

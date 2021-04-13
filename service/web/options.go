@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"net/http"
 	"time"
-
+	micro "github.com/micro/micro/v3/service"
 )
 
 //Options for web
@@ -35,6 +35,7 @@ type Options struct {
 	Context context.Context
 
 	Registry registry.Registry
+	Service *micro.Service
 
 	Secure      bool
 	TLSConfig   *tls.Config
