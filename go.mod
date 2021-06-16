@@ -49,7 +49,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/urfave/cli/v2 v2.2.0
-	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210616080948-6abfa5c5533e
+	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210616081621-5eb72b8bc1dc
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210322080546-8cf269d38a96
 	github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3 v3.0.0-20210402084304-ea1cd8aa89aa
 	github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3 v3.0.0-20210322080546-8cf269d38a96
