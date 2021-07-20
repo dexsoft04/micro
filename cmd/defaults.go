@@ -23,11 +23,14 @@ import (
 	grpcSvr "github.com/micro/micro/v3/service/server/grpc"
 	"github.com/micro/micro/v3/service/store"
 	storeSrv "github.com/micro/micro/v3/service/store/client"
+	"github.com/micro/micro/v3/service/uauth"
+	"github.com/micro/micro/v3/service/uauth/ujwt"
 )
 
 // setupDefaults sets the default auth, broker etc implementations incase they arent configured by
 // a profile. The default implementations are always the RPC implementations.
 func setupDefaults() {
+	uauth.Default = ujwt.NewAuth()
 	client.DefaultClient = grpcCli.NewClient()
 	server.DefaultServer = grpcSvr.NewServer()
 	network.DefaultNetwork = mucpNet.NewNetwork()
@@ -43,4 +46,7 @@ func setupDefaults() {
 	store.DefaultStore = storeSrv.NewStore()
 	store.DefaultBlobStore = storeSrv.NewBlobStore()
 	runtime.DefaultRuntime = runtimeSrv.NewRuntime()
+
+
+
 }

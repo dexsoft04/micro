@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/micro/micro/v3/service/uauth"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -37,6 +38,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	muruntime "github.com/micro/micro/v3/service/runtime"
+	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
 )
 
 type Cmd interface {
@@ -71,9 +73,9 @@ var (
 	onceBefore sync.Once
 
 	// name of the binary
-	name = "micro"
+	name = "mcbeam"
 	// description of the binary
-	description = "A framework for cloud native development\n\n	 Use `micro [command] --help` to see command specific help."
+	description = "A framework for cloud native development\n\n	 Use `mcbeam [command] --help` to see command specific help."
 	// defaultFlags which are used on all commands
 	defaultFlags = []cli.Flag{
 		&cli.StringFlag{
@@ -122,6 +124,16 @@ var (
 			Name:    "auth_private_key",
 			EnvVars: []string{"MICRO_AUTH_PRIVATE_KEY"},
 			Usage:   "Private key for JWT auth (base64 encoded PEM)",
+		},
+		&cli.StringFlag{
+			Name:    "user_public_key",
+			EnvVars: []string{"MICRO_USER_PUBLIC_KEY"},
+			Usage:   "Public key for JWT user (base64 encoded PEM)",
+		},
+		&cli.StringFlag{
+			Name:    "user_private_key",
+			EnvVars: []string{"MICRO_USER_PRIVATE_KEY"},
+			Usage:   "Private key for JWT user (base64 encoded PEM)",
 		},
 		&cli.StringFlag{
 			Name:    "registry_address",
@@ -389,6 +401,8 @@ func (c *command) Before(ctx *cli.Context) error {
 			server.WrapHandler(wrapper.LogHandler()),
 			server.WrapHandler(wrapper.MetricsHandler()),
 			server.WrapHandler(wrapper.OpenTraceHandler()),
+			server.WrapHandler(mcwrapper.SessionHandler()),
+
 		)
 	})
 
@@ -421,6 +435,22 @@ func (c *command) Before(ctx *cli.Context) error {
 	}
 
 	auth.DefaultAuth.Init(authOpts...)
+
+
+	uauthOpts := []uauth.Option{}
+	if len(ctx.String("user_public_key")) > 0 || len(ctx.String("user_private_key")) > 0 {
+		uauthOpts = append(uauthOpts, uauth.WithPublicKey(ctx.String("user_public_key")))
+		uauthOpts = append(uauthOpts, uauth.WithPrivateKey(ctx.String("user_private_key")))
+	} else if ctx.Args().First() == "server" || ctx.Args().First() == "service" {
+		privKey, pubKey, err := user.GetJWTCerts()
+		if err != nil {
+			logger.Fatalf("Error getting keys: %v", err)
+		}
+		uauthOpts = append(uauthOpts, uauth.WithPublicKey(string(pubKey)), uauth.WithPrivateKey(string(privKey)))
+	}
+	uauth.Default.Init(uauthOpts...)
+
+
 
 	// setup auth credentials, use local credentials for the CLI and injected creds
 	// for the service.

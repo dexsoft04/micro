@@ -4,9 +4,19 @@
 package profile
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"github.com/micro/micro/plugin/prometheus/v3"
+	"github.com/micro/micro/v3/service/metrics"
+	"github.com/micro/micro/v3/service/registry/mdns"
+	"github.com/micro/micro/v3/service/sync"
+	"github.com/philchia/agollo/v4"
+	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/micro/micro/v3/service/auth/jwt"
 	"github.com/micro/micro/v3/service/auth/noop"
@@ -41,6 +51,8 @@ import (
 	microStore "github.com/micro/micro/v3/service/store"
 	inAuth "github.com/micro/micro/v3/util/auth"
 	"github.com/micro/micro/v3/util/user"
+	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
+	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -83,9 +95,25 @@ func Load(name string) (*Profile, error) {
 
 // Client profile is for any entrypoint that behaves as a client
 var Client = &Profile{
-	Name:  "client",
-	Setup: func(ctx *cli.Context) error { return nil },
+	Name: "client",
+	Setup: func(ctx *cli.Context) error {
+		//SetupRegistry(etcd.NewRegistry())
+		if len(os.Getenv("MICRO_SERVICE_NAME")) != 0 {
+			if !metrics.IsSet() {
+				prometheusReporter, err := prometheus.New()
+				if err != nil {
+					return err
+				}
+				metrics.SetDefaultMetricsReporter(prometheusReporter)
+				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
+					os.Getenv("MICRO_JAEGER_ADDRESS"))
+			}
+		}
+
+		return nil
+	},
 }
+
 
 // Local profile to run locally
 var Local = &Profile{
@@ -234,7 +262,28 @@ var Kubernetes = &Profile{
 // Service is the default for any services run
 var Service = &Profile{
 	Name:  "service",
-	Setup: func(ctx *cli.Context) error { return nil },
+	Setup: func(ctx *cli.Context) error {
+		if !metrics.IsSet() {
+			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
+				os.Getenv("MICRO_JAEGER_ADDRESS"))
+			prometheusReporter, err := prometheus.New()
+			if err != nil {
+				return err
+			}
+			metrics.SetDefaultMetricsReporter(prometheusReporter)
+		}
+		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
+		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
+			logger.Fatal("Error configuring etcd sync: %v", err)
+		}
+		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
+			AppID:          os.Getenv("MICRO_NAMESPACE"),
+			Cluster:        "default",
+			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
+			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
+			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
+		}))
+		return nil },
 }
 
 // Test profile is used for the go test suite
@@ -287,4 +336,37 @@ func SetupConfigSecretKey(ctx *cli.Context) {
 		}
 		os.Setenv("MICRO_CONFIG_SECRET_KEY", k)
 	}
+}
+
+// natsStreamOpts returns a slice of options which should be used to configure nats
+func syncEtcdOpts(ctx *cli.Context) []sync.Option {
+	// setup registry
+	opts := []sync.Option{}
+
+	// Parse registry TLS certs
+	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
+		cert, err := tls.LoadX509KeyPair(ctx.String("registry_tls_cert"), ctx.String("registry_tls_key"))
+		if err != nil {
+			logger.Fatalf("Error loading registry tls cert: %v", err)
+		}
+
+		// load custom certificate authority
+		caCertPool := x509.NewCertPool()
+		if len(ctx.String("registry_tls_ca")) > 0 {
+			crt, err := ioutil.ReadFile(ctx.String("registry_tls_ca"))
+			if err != nil {
+				logger.Fatalf("Error loading registry tls certificate authority: %v", err)
+			}
+			caCertPool.AppendCertsFromPEM(crt)
+		}
+
+		cfg := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: caCertPool}
+		opts = append(opts, sync.TLSConfig(cfg))
+	}
+	if len(ctx.String("registry_address")) > 0 {
+		addresses := strings.Split(ctx.String("registry_address"), ",")
+		opts = append(opts, sync.Nodes(addresses...))
+	}
+	opts = append(opts, sync.Prefix(os.Getenv("MICRO_SERVICE_NAME")))
+	return opts
 }

@@ -26,6 +26,7 @@ var (
 		"auth",     // :8010
 		"proxy",    // :8081
 		"api",      // :8080
+		"gate",//3250
 	}
 )
 
@@ -199,6 +200,8 @@ func Run(context *cli.Context) error {
 	}
 
 	log.Info("Starting server runtime")
+
+
 
 	// start the runtime
 	if err := runtimeServer.Start(); err != nil {

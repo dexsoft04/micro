@@ -2,6 +2,7 @@ package wrapper
 
 import (
 	"context"
+	"github.com/micro/micro/v3/service/uauth"
 	"reflect"
 	"strings"
 	"time"
@@ -90,6 +91,12 @@ func AuthHandler() server.HandlerWrapper {
 			if a, err := auth.Inspect(token); err == nil {
 				ctx = auth.ContextWithAccount(ctx, a)
 				acc = a
+			}
+			if user, ok := metadata.Get(ctx, "user-token"); ok {
+				// Ensure the correct scheme is being used
+				if u, err := uauth.Inspect(user); err == nil {
+					ctx = uauth.ContextWithAccount(ctx, u)
+				}
 			}
 
 			// construct the resource

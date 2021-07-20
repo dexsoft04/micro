@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"github.com/micro/micro/v3/service/context/metadata"
 	"time"
 
 	"github.com/micro/micro/v3/service/broker"
@@ -295,6 +296,24 @@ func WithExchange(e string) PublishOption {
 func PublishContext(ctx context.Context) PublishOption {
 	return func(o *PublishOptions) {
 		o.Context = ctx
+	}
+}
+func PublishNamespace(ns string) PublishOption {
+	return func(o *PublishOptions) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = metadata.Set(o.Context, "Micro-Sub-Namespace", ns)
+	}
+}
+
+type serverUidKey struct {}
+func WithServerUid(u string) CallOption {
+	return func(o *CallOptions) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = context.WithValue(o.Context, serverUidKey{}, u)
 	}
 }
 

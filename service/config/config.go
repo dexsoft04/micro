@@ -16,6 +16,7 @@
 package config
 
 import (
+	"context"
 	"time"
 )
 
@@ -45,6 +46,7 @@ type Value interface {
 
 type Options struct {
 	Secret bool
+	Context context.Context
 }
 
 type Option func(o *Options)

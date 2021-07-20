@@ -33,10 +33,11 @@ import (
 const defaultNamespace = "micro"
 
 var (
+	h, _ = os.UserHomeDir()
 	// The directory for logs to be output
-	LogDir = filepath.Join(os.TempDir(), "micro", "logs")
+	LogDir = filepath.Join(h, ".micro", "logs")
 	// The source directory where code lives
-	SourceDir = filepath.Join(os.TempDir(), "micro", "uploads")
+	SourceDir = filepath.Join(h, ".micro", "uploads")
 )
 
 type localRuntime struct {

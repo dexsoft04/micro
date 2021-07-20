@@ -165,7 +165,7 @@ func (r *registryRouter) createRoutes(service *registry.Service, network string)
 	var routes []router.Route
 
 	for _, node := range service.Nodes {
-		routes = append(routes, router.Route{
+		rt := router.Route{
 			Service:  service.Name,
 			Address:  node.Address,
 			Gateway:  "",
@@ -174,7 +174,9 @@ func (r *registryRouter) createRoutes(service *registry.Service, network string)
 			Link:     router.DefaultLink,
 			Metric:   router.DefaultMetric,
 			Metadata: node.Metadata,
-		})
+		}
+		rt.Metadata["uid"] = node.Id
+		routes = append(routes, rt)
 	}
 
 	return routes

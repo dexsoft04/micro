@@ -80,11 +80,11 @@ func UnexpectedSubcommand(ctx *cli.Context) error {
 
 func UnexpectedCommand(ctx *cli.Context) error {
 	commandName := ctx.Args().First()
-	return cli.Exit(fmt.Sprintf("Unrecognized micro command: %s. Please refer to 'micro --help'", commandName), 1)
+	return cli.Exit(fmt.Sprintf("Unrecognized micro command: %s. Please refer to 'mcbeam --help'", commandName), 1)
 }
 
 func MissingCommand(ctx *cli.Context) error {
-	return cli.Exit(fmt.Sprintf("No command provided to micro. Please refer to 'micro --help'"), 1)
+	return cli.Exit(fmt.Sprintf("No command provided to mcbeam. Please refer to 'mcbeam --help'"), 1)
 }
 
 // MicroSubcommand returns the subcommand name

@@ -14,6 +14,7 @@ import (
 	"github.com/micro/micro/v3/service/context"
 	"github.com/micro/micro/v3/service/runtime"
 	"github.com/micro/micro/v3/service/runtime/source/git"
+	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,19 +35,20 @@ func upload(ctx *cli.Context, srv *runtime.Service, source *git.Source) (string,
 	if err != nil {
 		return "", err
 	}
-
+	buf := &bytes.Buffer{}
+	size, _ := io.Copy(buf, data)
 	// create an upload stream
 	cli := pb.NewSourceService("runtime", client.DefaultClient)
 	stream, err := cli.Upload(context.DefaultContext, client.WithAuthToken())
 	if err != nil {
 		return "", err
 	}
-
+	bar := progressbar.DefaultBytes(size, "upload:")
 	// read bytes from the tar and stream it to the server
 	buffer := make([]byte, bufferSize)
 	var sentService bool
 	for {
-		num, err := data.Read(buffer)
+		num, err := buf.Read(buffer)
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -65,6 +67,7 @@ func upload(ctx *cli.Context, srv *runtime.Service, source *git.Source) (string,
 		if err := stream.Send(req); err != nil {
 			return "", err
 		}
+		bar.Add(num)
 	}
 
 	// wait for the server to process the source

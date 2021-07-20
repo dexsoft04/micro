@@ -324,7 +324,12 @@ func (m *manager) createServiceInRuntime(srv *service) error {
 		options = append(options, runtime.WithSecret("MICRO_AUTH_ID", acc.ID))
 		options = append(options, runtime.WithSecret("MICRO_AUTH_SECRET", acc.Secret))
 	}
-
+	if len(os.Getenv("MICRO_USER_PUBLIC_KEY")) > 0 {
+		options = append(options, runtime.WithSecret("MICRO_USER_PUBLIC_KEY", os.Getenv("MICRO_USER_PUBLIC_KEY")))
+	}
+	if len(os.Getenv("MICRO_USER_PRIVATE_KEY")) > 0 {
+		options = append(options, runtime.WithSecret("MICRO_USER_PRIVATE_KEY", os.Getenv("MICRO_USER_PRIVATE_KEY")))
+	}
 	// create the service
 	return m.Runtime.Create(srv.Service, options...)
 }
@@ -401,6 +406,7 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 	env := map[string]string{
 		// ensure a profile for the services isn't set, they
 		// should use the default RPC clients
+		"TZ": "Asia/Shanghai",
 		"MICRO_PROFILE": "service",
 		// pass the service's name and version
 		"MICRO_SERVICE_NAME":    srv.Name,
@@ -408,6 +414,10 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		// set the proxy for the service to use (e.g. micro network)
 		// using the proxy which has been configured for the runtime
 		"MICRO_PROXY": client.DefaultClient.Options().Proxy,
+		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
+		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
+		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin",
+		"MICRO_JAEGER_ADDRESS": os.Getenv("MICRO_JAEGER_ADDRESS"),
 	}
 
 	// bind to port 8080, this is what the k8s tcp readiness check will use

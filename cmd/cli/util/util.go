@@ -17,6 +17,8 @@ import (
 const (
 	// EnvLocal is a builtin environment, it represents your local `micro server`
 	EnvLocal = "local"
+	// EnvDev is a builtin staging / dev environment in the cloud
+	EnvDev = "dev"
 	// EnvPlatform is a builtin highly available environment in the cloud,
 	EnvPlatform = "platform"
 )
@@ -24,6 +26,8 @@ const (
 const (
 	// localProxyAddress is the default proxy address for environment server
 	localProxyAddress = "127.0.0.1:8081"
+	// deprecated dev env
+	devProxyAddress = "proxy.m3o.dev"
 	// platformProxyAddress is the default proxy address for environment platform
 	platformProxyAddress = "proxy.m3o.com"
 )
@@ -43,6 +47,7 @@ var (
 		"auth",     // :8010
 		"proxy",    // :8081
 		"api",      // :8080
+		"gate",     // :3250
 		"events",
 	}
 )
@@ -52,6 +57,11 @@ var defaultEnvs = map[string]Env{
 		Name:         EnvLocal,
 		ProxyAddress: localProxyAddress,
 		Description:  "Local running Micro Server",
+	},
+	EnvDev: {
+		Name:         EnvDev,
+		ProxyAddress: devProxyAddress,
+		Description:  "Deprecated: Please use platform environment",
 	},
 	EnvPlatform: {
 		Name:         EnvPlatform,

@@ -87,6 +87,7 @@ func Archive(dir string) (io.Reader, error) {
 		// Since os.FileInfo's Name method only returns the base name of the file it describes, it is
 		// necessary to modify Header.Name to provide the full path name of the file. See:
 		// https://golang.org/src/archive/tar/common.go?s=22088:22153#L626
+		relpath = strings.Join(strings.Split(relpath, "\\"), "/")
 		header.Name = relpath
 
 		// write the header to the archive
@@ -132,6 +133,9 @@ func shouldArchive(file string) bool {
 		return true
 	}
 	if strings.HasSuffix(file, "go.mod") {
+		return true
+	}
+	if strings.HasSuffix(file, "Makefile") {
 		return true
 	}
 	return false

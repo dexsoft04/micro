@@ -113,7 +113,6 @@ func (l *defaultLogger) Log(level Level, v ...interface{}) {
 		Message:   fmt.Sprint(v...),
 		Metadata:  make(map[string]string, len(fields)),
 	}
-
 	keys := make([]string, 0, len(fields))
 	for k, v := range fields {
 		keys = append(keys, k)

@@ -89,9 +89,10 @@ func (s *Service) Handle(v interface{}) error {
 }
 
 // Subscribe registers a subscriber
-func (s *Service) Subscribe(topic string, v interface{}) error {
-	return s.Server().Subscribe(s.Server().NewSubscriber(topic, v))
+func (s *Service) Subscribe(topic string, v interface{}, opts ...server.SubscriberOption) error {
+	return s.Server().Subscribe(s.Server().NewSubscriber(topic, v, opts...))
 }
+
 
 func (s *Service) Init(opts ...Option) {
 	for _, o := range opts {
@@ -213,6 +214,12 @@ func Handle(h interface{}, opts ...server.HandlerOption) error {
 	return server.DefaultServer.Handle(server.DefaultServer.NewHandler(h, opts...))
 }
 
+//func HttpHandle(pattern string, handler http.Handler) {
+//	web.DefaultServer.Handle(pattern, handler)
+//}
+//func HttpHandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+//	web.DefaultServer.HandleFunc(pattern, handler)
+//}
 // Subscribe is syntactic sugar for registering a subscriber
 func Subscribe(topic string, h interface{}, opts ...server.SubscriberOption) error {
 	return server.DefaultServer.Subscribe(server.DefaultServer.NewSubscriber(topic, h, opts...))

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Original source: github.com/micro/go-micro/v3/api/handler/web.go
+// Original source: github.com/micro/go-micro/v3/api/handler/http.go
 
-// Package web contains the web handler including websocket support
+// Package http contains the http handler including websocket support
 package web
 
 import (
@@ -102,7 +102,7 @@ func (wh *webHandler) getService(r *http.Request) (string, error) {
 	return fmt.Sprintf("http://%s", node.Address), nil
 }
 
-// serveWebSocket used to serve a web socket proxied connection
+// serveWebSocket used to serve a http socket proxied connection
 func (wh *webHandler) serveWebSocket(host string, w http.ResponseWriter, r *http.Request) {
 	req := new(http.Request)
 	*req = *r
@@ -178,7 +178,7 @@ func isWebSocket(r *http.Request) bool {
 }
 
 func (wh *webHandler) String() string {
-	return "web"
+	return "http"
 }
 
 func NewHandler(opts ...handler.Option) handler.Handler {

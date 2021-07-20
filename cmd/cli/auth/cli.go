@@ -28,6 +28,10 @@ var (
 			Usage: "The priority level, default is 0, the greater the number the higher the priority",
 			Value: 0,
 		},
+		&cli.StringFlag{
+			Name:  "namespace",
+			Usage: "Namespace to use when creating the account",
+		},
 	}
 	// accountFlags are provided to the create account command
 	accountFlags = []cli.Flag{

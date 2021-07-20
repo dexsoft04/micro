@@ -1,9 +1,9 @@
-FROM alpine:latest AS builder
-RUN apk --no-cache add make git go gcc libtool musl-dev
-ENV GOROOT /usr/lib/go
-ENV GOPATH /go
-ENV PATH /go/bin:$PATH
-WORKDIR loader
+FROM golang:1.15-alpine AS builder
+RUN mkdir -p /src
+WORKDIR /src
 COPY loader .
-RUN go build  .
+RUN go env -w GOPROXY=https://goproxy.io,direct \
+    && go build  .
+FROM alpine:latest
+COPY --from=builder /src/loader /loader
 CMD ./loader
