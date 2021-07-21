@@ -51,8 +51,7 @@ import (
 	microStore "github.com/micro/micro/v3/service/store"
 	inAuth "github.com/micro/micro/v3/util/auth"
 	"github.com/micro/micro/v3/util/user"
-	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
-	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
+
 )
 
 // profiles which when called will configure micro to run in that environment
