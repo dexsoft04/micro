@@ -329,6 +329,14 @@ func (m *manager) createServiceInRuntime(srv *service) error {
 	if len(os.Getenv("MICRO_USER_PRIVATE_KEY")) > 0 {
 		options = append(options, runtime.WithSecret("MICRO_USER_PRIVATE_KEY", os.Getenv("MICRO_USER_PRIVATE_KEY")))
 	}
+	//add prometheus matedata
+	if srv.Service.Metadata == nil {
+		srv.Service.Metadata = map[string]string{}
+	}
+	srv.Service.Metadata["prometheus.io/scrape"] = "true"
+	srv.Service.Metadata["prometheus.io/path"] = "/metrics"
+	srv.Service.Metadata["prometheus.io/port"] = "9000"
+
 	// create the service
 	return m.Runtime.Create(srv.Service, options...)
 }
@@ -415,7 +423,7 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		"MICRO_PROXY": client.DefaultClient.Options().Proxy,
 		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
-		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin",
+		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
 		"MICRO_JAEGER_ADDRESS": os.Getenv("MICRO_JAEGER_ADDRESS"),
 	}
 
