@@ -7,12 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/micro/micro/plugin/prometheus/v3"
-	"github.com/micro/micro/v3/service/metrics"
-	"github.com/micro/micro/v3/service/registry/mdns"
 	"github.com/micro/micro/v3/service/sync"
-	"github.com/philchia/agollo/v4"
-	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -51,7 +46,6 @@ import (
 	microStore "github.com/micro/micro/v3/service/store"
 	inAuth "github.com/micro/micro/v3/util/auth"
 	"github.com/micro/micro/v3/util/user"
-
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -96,23 +90,22 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
-		//SetupRegistry(etcd.NewRegistry())
-		if len(os.Getenv("MICRO_SERVICE_NAME")) != 0 {
-			if !metrics.IsSet() {
-				prometheusReporter, err := prometheus.New()
-				if err != nil {
-					return err
-				}
-				metrics.SetDefaultMetricsReporter(prometheusReporter)
-				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
-					os.Getenv("MICRO_JAEGER_ADDRESS"))
-			}
-		}
-
+		////SetupRegistry(etcd.NewRegistry())
+		//if len(os.Getenv("MICRO_SERVICE_NAME")) != 0 {
+		//	if !metrics.IsSet() {
+		//		prometheusReporter, err := prometheus.New()
+		//		if err != nil {
+		//			return err
+		//		}
+		//		metrics.SetDefaultMetricsReporter(prometheusReporter)
+		//		opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
+		//			os.Getenv("MICRO_JAEGER_ADDRESS"))
+		//	}
+		//}
+		//
 		return nil
 	},
 }
-
 
 // Local profile to run locally
 var Local = &Profile{
@@ -260,29 +253,30 @@ var Kubernetes = &Profile{
 
 // Service is the default for any services run
 var Service = &Profile{
-	Name:  "service",
+	Name: "service",
 	Setup: func(ctx *cli.Context) error {
-		if !metrics.IsSet() {
-			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
-				os.Getenv("MICRO_JAEGER_ADDRESS"))
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				return err
-			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
-		}
-		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
-		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
-			logger.Fatal("Error configuring etcd sync: %v", err)
-		}
-		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
-			AppID:          os.Getenv("MICRO_NAMESPACE"),
-			Cluster:        "default",
-			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
-			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
-			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
-		}))
-		return nil },
+		//if !metrics.IsSet() {
+		//	opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
+		//		os.Getenv("MICRO_JAEGER_ADDRESS"))
+		//	prometheusReporter, err := prometheus.New()
+		//	if err != nil {
+		//		return err
+		//	}
+		//	metrics.SetDefaultMetricsReporter(prometheusReporter)
+		//}
+		//sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
+		//if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
+		//	logger.Fatal("Error configuring etcd sync: %v", err)
+		//}
+		//config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
+		//	AppID:          os.Getenv("MICRO_NAMESPACE"),
+		//	Cluster:        "default",
+		//	NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
+		//	MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
+		//	CacheDir:       filepath.Join(os.TempDir(), "apollo"),
+		//}))
+		return nil
+	},
 }
 
 // Test profile is used for the go test suite
