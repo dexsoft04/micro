@@ -136,8 +136,8 @@ spec:
                       values:
                         - runtime
                 topologyKey: "kubernetes.io/hostname"
-      imagePullSecrets:
-      - name: qcloudregistrykey
+      
+      
       containers:
       - name: micro
         env:
@@ -197,13 +197,17 @@ spec:
         - name: MICRO_CONFIG_ADDRESS
           value: "apollo-service-apollo-configservice.default:8080/"
         - name: MICRO_MONGODB_ADDRESS
-          value: "mongodb://wolfplus:passthis@mongodb-cluster-0.mongodb-cluster-headless.default.svc.cluster.local:27017,mongodb-cluster-1.mongodb-cluster-headless.default.svc.cluster.local:27017,mongodb-cluster-2.mongodb-cluster-headless.default.svc.cluster.local:27017,mongodb-cluster-3.mongodb-cluster-headless.default.svc.cluster.local:27017"
+          value: "mongodb://wolfplus:passthis@10.0.0.6:27017,10.0.0.8:27017,10.0.0.3:27017"
         - name: MICRO_POSTGRESQL_ADDRESS
           value: "postgres://wolfplus:passthis@cockroachdb-cluster-public.default:26257"
+        - name: MICRO_REDIS_ADDRESS
+          value: "redis://:passthis@redis-cluster-0.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-1.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-2.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-3.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-4.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-5.redis-cluster-headless.default.svc.cluster.local:6379"
+        - name: MICRO_JAEGER_ADDRESS
+          value: "jaeger-tracing-agent.monitoring.svc.cluster.local:6831"
         args:
         - service
         - runtime
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-0311
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210810-f95008e34b07919faf9e3f6efb37b4acfe732903
         imagePullPolicy: Always
         ports:
         - containerPort: 8088

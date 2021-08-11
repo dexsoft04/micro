@@ -16,3 +16,4 @@
      name: micro-gate
      micro: runtime
      version: latest
+   type: LoadBalancer
