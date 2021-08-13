@@ -157,6 +157,17 @@ spec:
             secretKeyRef:
               name: micro-secrets
               key: auth_private_key
+        - name: MICRO_USER_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: micro-user-secrets
+              key: micro_user_public_key
+        - name: MICRO_USER_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: micro-user-secrets
+              key: micro_user_private_key
+
         - name: MICRO_BROKER_TLS_CA
           value: "/certs/broker/ca.crt"
         - name: MICRO_BROKER_TLS_CERT
@@ -207,7 +218,7 @@ spec:
         args:
         - service
         - runtime
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210810-f95008e34b07919faf9e3f6efb37b4acfe732903
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210811-674017d1aa55f365720c609f99e276b56821534d
         imagePullPolicy: Always
         ports:
         - containerPort: 8088

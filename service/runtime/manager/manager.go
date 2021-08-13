@@ -324,6 +324,7 @@ func (m *manager) createServiceInRuntime(srv *service) error {
 		options = append(options, runtime.WithSecret("MICRO_AUTH_ID", acc.ID))
 		options = append(options, runtime.WithSecret("MICRO_AUTH_SECRET", acc.Secret))
 	}
+	logger.Infof("user pub key:%s", os.Getenv("MICRO_USER_PUBLIC_KEY"))
 	if len(os.Getenv("MICRO_USER_PUBLIC_KEY")) > 0 {
 		options = append(options, runtime.WithSecret("MICRO_USER_PUBLIC_KEY", os.Getenv("MICRO_USER_PUBLIC_KEY")))
 	}
