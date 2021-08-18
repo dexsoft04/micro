@@ -206,10 +206,7 @@ var Kubernetes = &Profile{
 			logger.Fatalf("Error configuring file blob store: %v", err)
 		}
 
-		// set the store in the model
-		model.DefaultModel = model.NewModel(
-			model.WithStore(microStore.DefaultStore),
-		)
+
 
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service

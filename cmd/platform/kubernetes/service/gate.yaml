@@ -74,7 +74,7 @@ spec:
         args:
         - service
         - gate
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210811-674017d1aa55f365720c609f99e276b56821534d
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210816-26a062ecc045bd86bf092da9c40898fab2990c86
         imagePullPolicy: Always
         ports:
         - containerPort: 3250
