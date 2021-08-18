@@ -93,7 +93,7 @@ spec:
           args:
             - service
             - router
-          image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210810-f95008e34b07919faf9e3f6efb37b4acfe732903
+          image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210818-465d90b7a0e1abe19326fbcb6fb4866ebfe2ad6e
           imagePullPolicy: Always
           ports:
             - containerPort: 8084
