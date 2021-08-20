@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"github.com/micro/micro/v3/service/logger"
 	"sort"
 
 	"github.com/micro/micro/v3/service/errors"
@@ -31,6 +32,7 @@ type LookupFunc func(context.Context, Request, CallOptions) ([]string, error)
 func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, error) {
 	// check to see if an address was provided as a call option
 	if len(opts.Address) > 0 {
+		logger.Infof("LookupRoute service:%s, proxy: %s", req.Service(), opts.Address)
 		return opts.Address, nil
 	}
 
