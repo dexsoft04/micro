@@ -438,7 +438,7 @@ func (c *command) Before(ctx *cli.Context) error {
 
 
 	uauthOpts := []uauth.Option{}
-	logger.Infof("cmd:user pub key:%s", ctx.String("user_public_key"))
+	//logger.Infof("cmd:user pub key:%s", ctx.String("user_public_key"))
 	if len(ctx.String("user_public_key")) > 0 || len(ctx.String("user_private_key")) > 0 {
 		uauthOpts = append(uauthOpts, uauth.WithPublicKey(ctx.String("user_public_key")))
 		uauthOpts = append(uauthOpts, uauth.WithPrivateKey(ctx.String("user_private_key")))

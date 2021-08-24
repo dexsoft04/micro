@@ -73,7 +73,7 @@ spec:
         args:
         - service
         - proxy
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210816-26a062ecc045bd86bf092da9c40898fab2990c86
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210820-8536876f9a0851aac17deab31250f6a5b82d9e34
         imagePullPolicy: Always
         ports:
         - containerPort: 8081
