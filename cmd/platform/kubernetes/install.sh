@@ -59,16 +59,30 @@ openssl rsa -in /tmp/jwt -pubout -outform PEM -out /tmp/jwt.pub
 base64 /tmp/jwt > /tmp/jwt-base64
 base64 /tmp/jwt.pub > /tmp/jwt-base64.pub
 
+
 # Create the k8s secret
 kubectl create secret generic micro-secrets \
+  --namespace=default \
   --from-file=auth_public_key=/tmp/jwt-base64.pub \
   --from-file=auth_private_key=/tmp/jwt-base64 \
   --from-literal=cloudflare=$CF_API_KEY
 
+###create micro_user key
+
+openssl genrsa -out rsa_private_key.pem 1024
+openssl rsa -in rsa_private_key.pem  -pubout -out rsa_public_key.pem
+
+###deploy k8s secret for micro_user key
+kubectl create secret generic micro-user-secrets \
+  --namespace=default \
+  --from-file=micro_user_private_key=./rsa_private_key.pem \
+  --from-file=micro_user_public_key=./rsa_public_key.pem
+
 #Crate gitee private key
 kubectl create secret generic gitee-ssh-private-key \
+  --namespace=default \
   --from-file=id_rsa=/Users/wolfplus/.ssh/id_rsa
-kubectl create configmap git-config --from-file=.gitconfig=/Users/wolfplus/.gitconfig
+kubectl create configmap git-config --namespace=default --from-file=.gitconfig=/Users/wolfplus/.gitconfig
 # Remove the files from tmp
 rm /tmp/jwt /tmp/jwt.pub /tmp/jwt-base64 /tmp/jwt-base64.pub
 
@@ -76,11 +90,11 @@ rm /tmp/jwt /tmp/jwt.pub /tmp/jwt-base64 /tmp/jwt-base64.pub
 declare resource_args_cockroachdb="$DB_SIZE"
 
 # install the resources
-for d in ./resource/*/; do
-  pushd $d
-  MICRO_ENV=$ENV bash install.sh $(arrayGet resource_args $(basename $d))
-  popd
-done
+#for d in ./resource/*/; do
+#  pushd $d
+#  MICRO_ENV=$ENV bash install.sh $(arrayGet resource_args $(basename $d))
+#  popd
+#done
 
 # execute the yaml
 kubectl apply -f service

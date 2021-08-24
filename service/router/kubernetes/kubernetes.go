@@ -53,7 +53,7 @@ func (k *kubernetes) Table() router.Table {
 func (k *kubernetes) Lookup(service string, opts ...router.LookupOption) ([]router.Route, error) {
 	options := router.NewLookup(opts...)
 	if len(options.Network) == 0 {
-		options.Network = "micro"
+		options.Network = "default"
 	}
 
 	address := fmt.Sprintf("%v.%v.svc.cluster.local:8080", service, options.Network)
