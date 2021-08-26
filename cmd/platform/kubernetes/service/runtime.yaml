@@ -218,7 +218,7 @@ spec:
         args:
         - service
         - runtime
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210825-64b40b2178bac133575e62d30e5ec4202b17703f
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210826-4e693d57605824b66db980865be403feafa3bb0e
         imagePullPolicy: Always
         ports:
         - containerPort: 8088
