@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 	"net"
 	"reflect"
 	"strings"
@@ -431,6 +432,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	if err != nil {
 		return errors.InternalServerError("go.micro.client", err.Error())
 	}
+	logger.Infof("lookup result:%v", routes)
 
 	// balance the list of nodes
 	next, err := callOpts.Selector.Select(routes)
