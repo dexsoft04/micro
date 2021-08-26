@@ -432,7 +432,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	if err != nil {
 		return errors.InternalServerError("go.micro.client", err.Error())
 	}
-	logger.Infof("lookup result:%v", routes)
+	logger.Infof("lookup %s, result:%v", req.Service(), routes)
 
 	// balance the list of nodes
 	next, err := callOpts.Selector.Select(routes)
