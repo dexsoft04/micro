@@ -101,7 +101,7 @@ spec:
             secretKeyRef:
               name: minio-creds
               key: region
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210826-a73d22ae08387b62d56bd4f04e4d064314019298
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210826-8036083ba5edd8bca65d8db0bb74939683635bfd
         imagePullPolicy: Always
         args:
         - service
