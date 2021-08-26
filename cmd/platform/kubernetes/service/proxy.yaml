@@ -55,7 +55,7 @@ spec:
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_SERVICE_NAME
-          value: client
+          value: "proxy"
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
@@ -70,13 +70,15 @@ spec:
           value: "client"
         - name: MICRO_LOG_LEVEL
           value: "trace"
+        - name: MICRO_PROXY_ADDRESS
+          value: ":443"
         args:
         - service
         - proxy
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210824-97de22bcaaf7e14ea32d019d197ddd94e2c59ab2
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210825-64b40b2178bac133575e62d30e5ec4202b17703f
         imagePullPolicy: Always
         ports:
-        - containerPort: 8081
+        - containerPort: 443
           name: proxy-port
         readinessProbe:
           tcpSocket:

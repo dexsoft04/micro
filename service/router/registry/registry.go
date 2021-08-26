@@ -323,6 +323,7 @@ func (r *registryRouter) Close() error {
 // lookup retrieves all the routes for a given service and creates them in the routing table
 func (r *registryRouter) Lookup(service string, opts ...router.LookupOption) ([]router.Route, error) {
 	q := router.NewLookup(opts...)
+	logger.Infof("lookup service:%s, opts:%v", service, q)
 
 	// if we find the routes filter and return them
 	routes, err := r.table.Read(router.ReadService(service))

@@ -63,19 +63,21 @@ spec:
             secretKeyRef:
               name: micro-secrets
               key: auth_private_key
+        - name: MICRO_API_ADDRESS
+          value: ":443"
         - name: MICRO_PROFILE
           value: "client"
         - name: MICRO_SERVICE_NAME
-          value: client
+          value: "api"
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
         args:
         - service
         - api
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210824-97de22bcaaf7e14ea32d019d197ddd94e2c59ab2
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210825-64b40b2178bac133575e62d30e5ec4202b17703f
         imagePullPolicy: Always
         ports:
-        - containerPort: 8080
+        - containerPort: 443
           name: api-port
         readinessProbe:
           tcpSocket:

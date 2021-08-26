@@ -68,7 +68,6 @@ kubectl create secret generic micro-secrets \
   --from-literal=cloudflare=$CF_API_KEY
 
 ###create micro_user key
-
 openssl genrsa -out rsa_private_key.pem 1024
 openssl rsa -in rsa_private_key.pem  -pubout -out rsa_public_key.pem
 
@@ -89,7 +88,8 @@ rm /tmp/jwt /tmp/jwt.pub /tmp/jwt-base64 /tmp/jwt-base64.pub
 # declare any args you want to pass to the install script here as resource_args_<dir name>
 declare resource_args_cockroachdb="$DB_SIZE"
 
-# install the resources
+#svc=("cockroachdb", "etcd", "ingress", "mongodb", "nats", "prometheus")
+## install the resources
 #for d in ./resource/*/; do
 #  pushd $d
 #  MICRO_ENV=$ENV bash install.sh $(arrayGet resource_args $(basename $d))

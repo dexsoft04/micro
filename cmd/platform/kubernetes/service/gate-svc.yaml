@@ -11,9 +11,7 @@
    ports:
    - name: gate
      port: 3250
-     targetPort: 3250
    selector:
      name: micro-gate
      micro: runtime
      version: latest
-   type: LoadBalancer

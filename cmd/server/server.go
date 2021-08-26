@@ -146,7 +146,6 @@ func Run(context *cli.Context) error {
 				// pass :8080 for the internal service address, since this is the default port used for the
 				// static (k8s) router. Because the http api will register on :443 it won't conflict
 				env = append(env, "MICRO_SERVICE_ADDRESS=:8080")
-				env = append(env, "MICRO_API_RESOLVER=subdomain")
 			case "proxy":
 				// run the proxy on :443, the standard port for HTTPs
 				port = "443"
