@@ -93,14 +93,14 @@ var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
 		if !metrics.IsSet() {
-			openTracer, _, err := jaeger.New(
-				opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-				opentelemetry.WithTraceReporterAddress(os.Getenv("MICRO_TRACING_REPORTER_ADDRESS")),
-			)
-			if err != nil {
-				logger.Fatalf("Error configuring opentracing: %v", err)
-			}
-			opentelemetry.DefaultOpenTracer = openTracer
+			//openTracer, _, err := jaeger.New(
+			//	opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+			//	opentelemetry.WithTraceReporterAddress(os.Getenv("MICRO_TRACING_REPORTER_ADDRESS")),
+			//)
+			//if err != nil {
+			//	logger.Fatalf("Error configuring opentracing: %v", err)
+			//}
+			//opentelemetry.DefaultOpenTracer = openTracer
 
 			prometheusReporter, err := prometheus.New()
 			if err != nil {
