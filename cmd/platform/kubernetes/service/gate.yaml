@@ -66,7 +66,7 @@ spec:
         - name: MICRO_PROFILE
           value: "client"
         - name: MICRO_SERVICE_NAME
-          value: client
+          value: gate
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_LOG_LEVEL

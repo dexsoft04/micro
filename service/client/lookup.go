@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"github.com/micro/micro/v3/service/logger"
 	"sort"
 
 	"github.com/micro/micro/v3/service/errors"
@@ -50,7 +49,6 @@ func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, 
 		}
 	}
 	// lookup the routes which can be used to execute the request
-	logger.Infof("router implement:%s", opts.Router.String())
 	routes, err := opts.Router.Lookup(req.Service(), query...)
 	if err == router.ErrRouteNotFound {
 		return nil, errors.InternalServerError("go.micro.client", "service %s: %s", req.Service(), err.Error())

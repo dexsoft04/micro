@@ -71,6 +71,8 @@ spec:
           value: "api"
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
+        - name: MICRO_TRACING_REPORTER_ADDRESS
+          value: "jaeger-tracing-agent.monitoring.svc.cluster.local:6831"
         args:
         - service
         - api

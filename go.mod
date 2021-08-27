@@ -7,7 +7,6 @@ require (
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/caddyserver/certmagic v0.10.6
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dustin/go-humanize v1.0.0
@@ -24,6 +23,7 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/pretty v0.2.0
+	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210825142032-d27318700a59
 	github.com/miekg/dns v1.1.27
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
@@ -39,7 +39,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/uber/jaeger-client-go v2.29.1+incompatible
-	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
+	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210803053144-09b3e552dd3e
 	github.com/xanzy/go-gitlab v0.35.1

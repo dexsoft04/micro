@@ -3,6 +3,8 @@ package api
 
 import (
 	"fmt"
+	"github.com/micro/micro/v3/util/opentelemetry"
+	"github.com/opentracing/opentracing-go"
 	"net/http"
 	"os"
 
@@ -33,11 +35,9 @@ import (
 	"github.com/micro/micro/v3/util/acme/autocert"
 	"github.com/micro/micro/v3/util/acme/certmagic"
 	"github.com/micro/micro/v3/util/helper"
-	"github.com/micro/micro/v3/util/opentelemetry"
 	"github.com/micro/micro/v3/util/opentelemetry/jaeger"
 	"github.com/micro/micro/v3/util/sync/memory"
 	"github.com/micro/micro/v3/util/wrapper"
-	"github.com/opentracing/opentracing-go"
 	"github.com/urfave/cli/v2"
 )
 
