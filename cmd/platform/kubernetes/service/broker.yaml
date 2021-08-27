@@ -91,7 +91,7 @@ spec:
         args:
         - service
         - broker
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210827-f50d5b3c9fbee4773c893c5049a34641764989ca
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210827-39be028afb26dc381060a58092088d213a885299
         imagePullPolicy: Always
         ports:
         - containerPort: 8003

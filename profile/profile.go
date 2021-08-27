@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/sync"
 	"io/ioutil"
@@ -102,11 +101,11 @@ var Client = &Profile{
 			//}
 			//opentelemetry.DefaultOpenTracer = openTracer
 
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				return err
-			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
+			//prometheusReporter, err := prometheus.New()
+			//if err != nil {
+			//	return err
+			//}
+			//metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
 		return nil
 	},
@@ -257,21 +256,21 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
-		if !metrics.IsSet() {
-			openTracer, _, err := jaeger.New(
-				opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-				opentelemetry.WithSamplingRate(1),			)
-			if err != nil {
-				logger.Fatalf("Error configuring opentracing: %v", err)
-			}
-			opentelemetry.DefaultOpenTracer = openTracer
-
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				return err
-			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
-		}
+		//if !metrics.IsSet() {
+		//	openTracer, _, err := jaeger.New(
+		//		opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+		//		opentelemetry.WithSamplingRate(1),			)
+		//	if err != nil {
+		//		logger.Fatalf("Error configuring opentracing: %v", err)
+		//	}
+		//	opentelemetry.DefaultOpenTracer = openTracer
+		//
+		//	prometheusReporter, err := prometheus.New()
+		//	if err != nil {
+		//		return err
+		//	}
+		//	metrics.SetDefaultMetricsReporter(prometheusReporter)
+		//}
 		//sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
 		//if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
 		//	logger.Fatal("Error configuring etcd sync: %v", err)
