@@ -426,7 +426,7 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
 		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
-		"MICRO_JAEGER_ADDRESS": os.Getenv("MICRO_JAEGER_ADDRESS"),
+		//"MICRO_TRACING_REPORTER_ADDRESS": os.Getenv("MICRO_TRACING_REPORTER_ADDRESS"),
 	}
 
 	// bind to port 8080, this is what the k8s tcp readiness check will use

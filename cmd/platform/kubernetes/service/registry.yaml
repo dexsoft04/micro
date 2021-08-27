@@ -91,7 +91,7 @@ spec:
         args:
         - service
         - registry
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210826-8036083ba5edd8bca65d8db0bb74939683635bfd
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210827-f50d5b3c9fbee4773c893c5049a34641764989ca
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

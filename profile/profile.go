@@ -260,8 +260,7 @@ var Service = &Profile{
 		if !metrics.IsSet() {
 			openTracer, _, err := jaeger.New(
 				opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-				opentelemetry.WithTraceReporterAddress(os.Getenv("MICRO_TRACING_REPORTER_ADDRESS")),
-			)
+				opentelemetry.WithSamplingRate(1),			)
 			if err != nil {
 				logger.Fatalf("Error configuring opentracing: %v", err)
 			}
