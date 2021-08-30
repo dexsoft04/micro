@@ -258,10 +258,16 @@ var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
 		if !metrics.IsSet() {
+			reporterAddress := ctx.String("tracing_reporter_address")
+			if len(reporterAddress) == 0 {
+				reporterAddress = jaeger.DefaultReporterAddress
+			}
 			// Configure tracing with Jaeger (forced tracing):
 			openTracer, _, err := jaeger.New(
 				opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-				opentelemetry.WithSamplingRate(1),			)
+				opentelemetry.WithSamplingRate(1),
+				opentelemetry.WithTraceReporterAddress(reporterAddress),
+			)
 			if err != nil {
 				logger.Fatalf("Error configuring opentracing: %v", err)
 			}
