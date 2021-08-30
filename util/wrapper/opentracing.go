@@ -176,12 +176,11 @@ func (o *opentraceWrapper) wrapContext(ctx context.Context, req client.Request, 
 	spanCtx, err := opentelemetry.DefaultOpenTracer.Extract(opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md})
 	var span opentracing.Span
 	var newCtx context.Context
-	if err != nil && err == opentracing.ErrSpanContextNotFound {
+	if err != nil && err != opentracing.ErrSpanContextNotFound {
 		logger.Errorf("Error reconstruction span %s", err)
-		span, newCtx = opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, ext.SpanKindRPCClient)
-	} else {
-		span, newCtx = opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCClient)
 	}
+	span, newCtx = opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCClient)
+
 	if err := opentelemetry.DefaultOpenTracer.Inject(span.Context(), opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md}); err != nil {
 		logger.Errorf("Error injecting span %s", err)
 	}
