@@ -154,11 +154,34 @@ func (o *opentraceWrapper) Stream(ctx context.Context, req client.Request, opts 
 
 }
 
+//func (o *opentraceWrapper) wrapContext(ctx context.Context, req client.Request, opts ...client.CallOption) (context.Context, opentracing.Span) {
+//	// set the open tracing headers
+//	md := mmd.Metadata{}
+//	operationName := fmt.Sprintf(req.Service() + "." + req.Endpoint())
+//	span, newCtx := opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, ext.SpanKindRPCClient)
+//	if err := opentelemetry.DefaultOpenTracer.Inject(span.Context(), opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md}); err != nil {
+//		logger.Errorf("Error injecting span %s", err)
+//	}
+//	ctx = mmd.MergeContext(newCtx, md, true)
+//
+//	return ctx, span
+//}
 func (o *opentraceWrapper) wrapContext(ctx context.Context, req client.Request, opts ...client.CallOption) (context.Context, opentracing.Span) {
 	// set the open tracing headers
-	md := mmd.Metadata{}
+	md, ok := mmd.FromContext(ctx)
+	if !ok{
+		md = mmd.Metadata{}
+	}
 	operationName := fmt.Sprintf(req.Service() + "." + req.Endpoint())
-	span, newCtx := opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, ext.SpanKindRPCClient)
+	spanCtx, err := opentelemetry.DefaultOpenTracer.Extract(opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md})
+	var span opentracing.Span
+	var newCtx context.Context
+	if err != nil && err == opentracing.ErrSpanContextNotFound {
+		logger.Errorf("Error reconstruction span %s", err)
+		span, newCtx = opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, ext.SpanKindRPCClient)
+	} else {
+		span, newCtx = opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCClient)
+	}
 	if err := opentelemetry.DefaultOpenTracer.Inject(span.Context(), opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md}); err != nil {
 		logger.Errorf("Error injecting span %s", err)
 	}
