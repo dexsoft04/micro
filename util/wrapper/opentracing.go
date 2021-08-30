@@ -115,10 +115,20 @@ type opentraceWrapper struct {
 }
 
 func (o *opentraceWrapper) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
+	logger.Infof("opentraceWrapper Call:%s.%s", req.Service(), req.Method())
 	var span opentracing.Span
 	ctx, span = o.wrapContext(ctx, req, opts...)
 	defer span.Finish()
 	err := o.Client.Call(ctx, req, rsp, opts...)
+
+	var opt client.CallOptions
+	for _, o := range(opts) {
+		o(&opt)
+	}
+	// Add trace metadata:
+	span.SetTag("network", opt.Network)
+	span.SetTag("remote", opt.Address)
+
 	if err != nil {
 		span.SetBaggageItem("error", err.Error())
 		return err
