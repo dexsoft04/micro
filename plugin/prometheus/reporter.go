@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"strings"
 
-	log "github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -58,7 +57,7 @@ func New(opts ...metrics.Option) (*Reporter, error) {
 	newReporter.metrics = newReporter.newMetricFamily()
 
 	// Handle the metrics endpoint with prometheus:
-	log.Infof("Metrics/Prometheus [http] Listening on %s%s", options.Address, options.Path)
+	//log.Infof("Metrics/Prometheus [http] Listening on %s%s", options.Address, options.Path)
 	http.Handle(options.Path, promhttp.HandlerFor(prometheusRegistry, promhttp.HandlerOpts{ErrorHandling: promhttp.ContinueOnError}))
 	go http.ListenAndServe(options.Address, nil)
 
