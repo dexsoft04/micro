@@ -39,9 +39,6 @@ func OpenTraceHandler() server.HandlerWrapper {
 			if err != nil && err != opentracing.ErrSpanContextNotFound {
 				logger.Errorf("Error reconstructing span %s", err)
 			}
-			if spanCtx != nil {
-				logger.Infof("parent span: %v", spanCtx)
-			}
 			// Start a span from context:
 			span, newCtx := opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCServer)
 			// TODO remove me
@@ -53,7 +50,6 @@ func OpenTraceHandler() server.HandlerWrapper {
 				span.SetBaggageItem("error", err.Error())
 				return err
 			}
-
 			return nil
 		}
 	}
@@ -117,7 +113,6 @@ type opentraceWrapper struct {
 }
 
 func (o *opentraceWrapper) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
-	logger.Infof("opentraceWrapper Call:%s.%s", req.Service(), req.Method())
 	var span opentracing.Span
 	ctx, span = o.wrapContext(ctx, req, opts...)
 	defer span.Finish()
@@ -181,9 +176,7 @@ func (o *opentraceWrapper) wrapContext(ctx context.Context, req client.Request, 
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
 		logger.Errorf("Error reconstruction span %s", err)
 	}
-	if spanCtx != nil {
-		logger.Infof("parent span: %v", spanCtx)
-	}
+
 	span, newCtx = opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCClient)
 
 	if err := opentelemetry.DefaultOpenTracer.Inject(span.Context(), opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md}); err != nil {
@@ -191,7 +184,6 @@ func (o *opentraceWrapper) wrapContext(ctx context.Context, req client.Request, 
 	}
 	ctx = mmd.MergeContext(newCtx, md, true)
 
-	logger.Infof("new ctx:%v", ctx)
 	return ctx, span
 }
 
