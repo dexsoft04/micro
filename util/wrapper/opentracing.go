@@ -39,7 +39,6 @@ func OpenTraceHandler() server.HandlerWrapper {
 			if err != nil && err != opentracing.ErrSpanContextNotFound {
 				logger.Errorf("Error reconstructing span %s", err)
 			}
-
 			// Start a span from context:
 			span, newCtx := opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCServer)
 			// TODO remove me
