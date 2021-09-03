@@ -145,8 +145,8 @@ spec:
           value: platform
         - name: MICRO_SERVICE_NAME
           value: runtime
-        - name: MICRO_PROXY
-          value: "micro-network.default.svc.cluster.local:8443"
+#        - name: MICRO_PROXY
+#          value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:

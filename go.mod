@@ -23,6 +23,7 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/pretty v0.2.0
+	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20210901132929-6f7737ba4064
 	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210825142032-d27318700a59
 	github.com/miekg/dns v1.1.27
 	github.com/nightlyone/lockfile v1.0.0

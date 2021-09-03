@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/micro/micro/plugin/etcd/v3"
 	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/sync"
@@ -293,6 +294,8 @@ var Service = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
+
 		return nil
 	},
 }
