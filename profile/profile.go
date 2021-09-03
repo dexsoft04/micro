@@ -62,6 +62,7 @@ var profiles = map[string]*Profile{
 	"test":       Test,
 	"local":      Local,
 	"kubernetes": Kubernetes,
+	"dev":        Dev,
 }
 
 // Profile configures an environment
@@ -112,6 +113,71 @@ var Client = &Profile{
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
+		return nil
+	},
+}
+var Dev = &Profile{
+	Name: "dev",
+	Setup: func(ctx *cli.Context) error {
+		microAuth.DefaultAuth = jwt.NewAuth()
+		microStore.DefaultStore = file.NewStore(file.WithDir(filepath.Join(user.Dir, "server", "store")))
+		SetupConfigSecretKey(ctx)
+		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
+		SetupJWT(ctx)
+
+		// the registry service uses the memory registry, the other core services will use the default
+		// rpc client and call the registry service
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd")))
+
+
+		// the broker service uses the memory broker, the other core services will use the default
+		// rpc client and call the broker service
+		if ctx.Args().Get(1) == "broker" {
+			SetupBroker(memBroker.NewBroker())
+		} else {
+			broker.DefaultBroker.Init(
+				broker.Addrs("localhost:8003"),
+			)
+			SetupBroker(broker.DefaultBroker)
+		}
+
+		// set the store in the model
+		model.DefaultModel = model.NewModel(
+			model.WithStore(microStore.DefaultStore),
+		)
+
+		// use the local runtime, note: the local runtime is designed to run source code directly so
+		// the runtime builder should NOT be set when using this implementation
+		microRuntime.DefaultRuntime = local.NewRuntime()
+
+		var err error
+		microEvents.DefaultStream, err = memStream.NewStream()
+		if err != nil {
+			logger.Fatalf("Error configuring stream: %v", err)
+		}
+		microEvents.DefaultStore = evStore.NewStore(
+			evStore.WithStore(microStore.DefaultStore),
+		)
+
+		microStore.DefaultBlobStore, err = file.NewBlobStore()
+		if err != nil {
+			logger.Fatalf("Error configuring file blob store: %v", err)
+		}
+
+		// Configure tracing with Jaeger (forced tracing):
+		tracingServiceName := ctx.Args().Get(1)
+		if len(tracingServiceName) == 0 {
+			tracingServiceName = "Micro"
+		}
+		openTracer, _, err := jaeger.New(
+			opentelemetry.WithServiceName(tracingServiceName),
+			opentelemetry.WithSamplingRate(1),
+		)
+		if err != nil {
+			logger.Fatalf("Error configuring opentracing: %v", err)
+		}
+		opentelemetry.DefaultOpenTracer = openTracer
+
 		return nil
 	},
 }
@@ -214,8 +280,6 @@ var Kubernetes = &Profile{
 		if err != nil {
 			logger.Fatalf("Error configuring file blob store: %v", err)
 		}
-
-
 
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service
