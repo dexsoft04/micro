@@ -12,13 +12,13 @@ import (
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/sync"
 	"github.com/philchia/agollo/v4"
+	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/micro/micro/v3/service/auth/jwt"
-	"github.com/micro/micro/v3/service/auth/noop"
 	"github.com/micro/micro/v3/service/broker"
 	memBroker "github.com/micro/micro/v3/service/broker/memory"
 	"github.com/micro/micro/v3/service/build/golang"
@@ -50,7 +50,6 @@ import (
 	microStore "github.com/micro/micro/v3/service/store"
 	inAuth "github.com/micro/micro/v3/util/auth"
 	"github.com/micro/micro/v3/util/user"
-	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
 )
 
@@ -62,7 +61,6 @@ var profiles = map[string]*Profile{
 	"test":       Test,
 	"local":      Local,
 	"kubernetes": Kubernetes,
-	"dev":        Dev,
 }
 
 // Profile configures an environment
@@ -98,89 +96,28 @@ var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
 		if !metrics.IsSet() {
-			//openTracer, _, err := jaeger.New(
-			//	opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-			//	opentelemetry.WithTraceReporterAddress(os.Getenv("MICRO_TRACING_REPORTER_ADDRESS")),
-			//)
-			//if err != nil {
-			//	logger.Fatalf("Error configuring opentracing: %v", err)
-			//}
-			//opentelemetry.DefaultOpenTracer = openTracer
-
 			prometheusReporter, err := prometheus.New()
 			if err != nil {
 				return err
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
-		return nil
-	},
-}
-var Dev = &Profile{
-	Name: "dev",
-	Setup: func(ctx *cli.Context) error {
-		microAuth.DefaultAuth = jwt.NewAuth()
-		microStore.DefaultStore = file.NewStore(file.WithDir(filepath.Join(user.Dir, "server", "store")))
-		SetupConfigSecretKey(ctx)
-		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
-		SetupJWT(ctx)
 
-		// the registry service uses the memory registry, the other core services will use the default
-		// rpc client and call the registry service
-		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd")))
-
-
-		// the broker service uses the memory broker, the other core services will use the default
-		// rpc client and call the broker service
-		if ctx.Args().Get(1) == "broker" {
-			SetupBroker(memBroker.NewBroker())
-		} else {
-			broker.DefaultBroker.Init(
-				broker.Addrs("localhost:8003"),
-			)
-			SetupBroker(broker.DefaultBroker)
-		}
-
-		// set the store in the model
-		model.DefaultModel = model.NewModel(
-			model.WithStore(microStore.DefaultStore),
-		)
-
-		// use the local runtime, note: the local runtime is designed to run source code directly so
-		// the runtime builder should NOT be set when using this implementation
-		microRuntime.DefaultRuntime = local.NewRuntime()
-
-		var err error
-		microEvents.DefaultStream, err = memStream.NewStream()
-		if err != nil {
-			logger.Fatalf("Error configuring stream: %v", err)
-		}
-		microEvents.DefaultStore = evStore.NewStore(
-			evStore.WithStore(microStore.DefaultStore),
-		)
-
-		microStore.DefaultBlobStore, err = file.NewBlobStore()
-		if err != nil {
-			logger.Fatalf("Error configuring file blob store: %v", err)
-		}
-
-		// Configure tracing with Jaeger (forced tracing):
-		tracingServiceName := ctx.Args().Get(1)
-		if len(tracingServiceName) == 0 {
-			tracingServiceName = "Micro"
-		}
 		openTracer, _, err := jaeger.New(
-			opentelemetry.WithServiceName(tracingServiceName),
-			opentelemetry.WithSamplingRate(1),
+			opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+			opentelemetry.WithTraceReporterAddress(os.Getenv("MICRO_TRACING_REPORTER_ADDRESS")),
 		)
 		if err != nil {
 			logger.Fatalf("Error configuring opentracing: %v", err)
 		}
 		opentelemetry.DefaultOpenTracer = openTracer
 
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
+
 		return nil
 	},
 }
+
 
 // Local profile to run locally
 var Local = &Profile{
@@ -194,16 +131,19 @@ var Local = &Profile{
 
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service
-		if ctx.Args().Get(1) == "registry" {
-			SetupRegistry(memory.NewRegistry())
-		} else {
-			// set the registry address
-			registry.DefaultRegistry.Init(
-				registry.Addrs("localhost:8000"),
-			)
-
-			SetupRegistry(registry.DefaultRegistry)
-		}
+		//if ctx.Args().Get(1) == "registry" {
+		//	SetupRegistry(memory.NewRegistry())
+		//	//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
+		//
+		//} else {
+		//	// set the registry address
+		//	registry.DefaultRegistry.Init(
+		//		registry.Addrs("localhost:8000"),
+		//	)
+		//
+		//	SetupRegistry(registry.DefaultRegistry)
+		//}
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -326,27 +266,27 @@ var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
 		if !metrics.IsSet() {
-			reporterAddress := ctx.String("tracing_reporter_address")
-			if len(reporterAddress) == 0 {
-				reporterAddress = jaeger.DefaultReporterAddress
-			}
-			// Configure tracing with Jaeger (forced tracing):
-			openTracer, _, err := jaeger.New(
-				opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-				opentelemetry.WithSamplingRate(1),
-				opentelemetry.WithTraceReporterAddress(reporterAddress),
-			)
-			if err != nil {
-				logger.Fatalf("Error configuring opentracing: %v", err)
-			}
-			opentelemetry.DefaultOpenTracer = openTracer
-
 			prometheusReporter, err := prometheus.New()
 			if err != nil {
 				return err
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
+		reporterAddress := ctx.String("tracing_reporter_address")
+		if len(reporterAddress) == 0 {
+			reporterAddress = jaeger.DefaultReporterAddress
+		}
+		// Configure tracing with Jaeger (forced tracing):
+		openTracer, _, err := jaeger.New(
+			opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+			opentelemetry.WithSamplingRate(1),
+			opentelemetry.WithTraceReporterAddress(reporterAddress),
+		)
+		if err != nil {
+			logger.Fatalf("Error configuring opentracing: %v", err)
+		}
+		opentelemetry.DefaultOpenTracer = openTracer
+
 		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
 		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
 			logger.Fatal("Error configuring etcd sync: %v", err)
@@ -359,7 +299,6 @@ var Service = &Profile{
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
 		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
-
 		return nil
 	},
 }
@@ -368,15 +307,19 @@ var Service = &Profile{
 var Test = &Profile{
 	Name: "test",
 	Setup: func(ctx *cli.Context) error {
-		microAuth.DefaultAuth = noop.NewAuth()
+		//microAuth.DefaultAuth = noop.NewAuth()
+		microAuth.DefaultAuth = jwt.NewAuth()
+
 		microStore.DefaultStore = mem.NewStore()
 		microStore.DefaultBlobStore, _ = file.NewBlobStore()
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
-		SetupRegistry(memory.NewRegistry())
+		//SetupRegistry(memory.NewRegistry())
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
 		// set the store in the model
 		model.DefaultModel = model.NewModel(
 			model.WithStore(microStore.DefaultStore),
 		)
+		microRuntime.DefaultRuntime = local.NewRuntime()
 		return nil
 	},
 }

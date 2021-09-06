@@ -55,3 +55,8 @@ require (
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.25.0
 )
+
+replace (
+	github.com/micro/micro/plugin/etcd/v3 => github.com/wolfplus2048/micro/plugin/etcd/v3 v3.0.0-20210818070601-414f9aaf9342
+	github.com/micro/micro/plugin/prometheus/v3 => github.com/wolfplus2048/micro/plugin/prometheus/v3 v3.0.0-20210818070601-414f9aaf9342
+)

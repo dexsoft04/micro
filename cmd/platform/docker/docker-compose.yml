@@ -6,7 +6,9 @@ services:
 #      - 4222:4222
   etcd:
     image: appcelerator/etcd
+    hostname: etcd
     ports:
       - 2379:2379
   redis:
+    hostname: redis
     image: redis:alpine
