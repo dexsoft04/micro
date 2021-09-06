@@ -649,7 +649,7 @@ func (g *grpcServer) Register() error {
 				registry.RegisterTTL(config.RegisterTTL),
 				registry.RegisterDomain(g.opts.Namespace),
 			}
-
+			logger.Infof("registry:%s", config.Registry.String())
 			// attempt to register
 			if err := config.Registry.Register(service, rOpts...); err != nil {
 				// set the error
