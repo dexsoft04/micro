@@ -268,7 +268,7 @@ type ResourceLimits struct {
 
 // Volume describes a volume which can be mounted to a pod
 type Volume struct {
-	Name                  string                            `json:"name"`
+	Name                  string `json:"name"`
 	PersistentVolumeClaim PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
 }
 

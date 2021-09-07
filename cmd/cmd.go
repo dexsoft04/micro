@@ -450,8 +450,6 @@ func (c *command) Before(ctx *cli.Context) error {
 	}
 	uauth.Default.Init(uauthOpts...)
 
-
-
 	// setup auth credentials, use local credentials for the CLI and injected creds
 	// for the service.
 	var err error

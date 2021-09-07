@@ -339,6 +339,9 @@ func (m *manager) createServiceInRuntime(srv *service) error {
 	srv.Service.Metadata["prometheus.io/path"] = "/metrics"
 	srv.Service.Metadata["prometheus.io/port"] = "9000"
 
+	options = append(options, runtime.WithVolume("etcd-client-certs", "etcd-client-certs"))
+	options = append(options, runtime.WithVolumeMount("etcd-client-certs", "/certs/registry"))
+
 	// create the service
 	return m.Runtime.Create(srv.Service, options...)
 }

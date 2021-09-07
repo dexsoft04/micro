@@ -359,9 +359,7 @@ func (r *registryRouter) Lookup(service string, opts ...router.LookupOption) ([]
 			r.table.Create(route)
 		}
 	}
-	logger.Infof("-----------filter:%v, cond:%v", routes, q)
 	routes = router.Filter(routes, q)
-	logger.Infof("-----------filter result:%v", routes)
 	if len(routes) == 0 {
 		return nil, router.ErrRouteNotFound
 	}
@@ -448,7 +446,7 @@ func (r *registryRouter) run() error {
 		var lastRefresh time.Time
 
 		// load a refresh
-		refreshRoutes()
+		//refreshRoutes()
 
 		for {
 			select {

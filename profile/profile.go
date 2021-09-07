@@ -11,8 +11,6 @@ import (
 	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/sync"
-	"github.com/philchia/agollo/v4"
-	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -50,7 +48,6 @@ import (
 	microStore "github.com/micro/micro/v3/service/store"
 	inAuth "github.com/micro/micro/v3/util/auth"
 	"github.com/micro/micro/v3/util/user"
-	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -118,7 +115,6 @@ var Client = &Profile{
 	},
 }
 
-
 // Local profile to run locally
 var Local = &Profile{
 	Name: "local",
@@ -143,7 +139,7 @@ var Local = &Profile{
 		//
 		//	SetupRegistry(registry.DefaultRegistry)
 		//}
-		SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -265,39 +261,41 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
-		if !metrics.IsSet() {
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				return err
-			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
-		}
-		reporterAddress := ctx.String("tracing_reporter_address")
-		if len(reporterAddress) == 0 {
-			reporterAddress = jaeger.DefaultReporterAddress
-		}
-		// Configure tracing with Jaeger (forced tracing):
-		openTracer, _, err := jaeger.New(
-			opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
-			opentelemetry.WithSamplingRate(1),
-			opentelemetry.WithTraceReporterAddress(reporterAddress),
-		)
-		if err != nil {
-			logger.Fatalf("Error configuring opentracing: %v", err)
-		}
-		opentelemetry.DefaultOpenTracer = openTracer
+		//if !metrics.IsSet() {
+		//	prometheusReporter, err := prometheus.New()
+		//	if err != nil {
+		//		return err
+		//	}
+		//	metrics.SetDefaultMetricsReporter(prometheusReporter)
+		//}
+		//reporterAddress := ctx.String("tracing_reporter_address")
+		//if len(reporterAddress) == 0 {
+		//	reporterAddress = jaeger.DefaultReporterAddress
+		//}
+		//// Configure tracing with Jaeger (forced tracing):
+		//openTracer, _, err := jaeger.New(
+		//	opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+		//	opentelemetry.WithSamplingRate(1),
+		//	opentelemetry.WithTraceReporterAddress(reporterAddress),
+		//)
+		//if err != nil {
+		//	logger.Fatalf("Error configuring opentracing: %v", err)
+		//}
+		//opentelemetry.DefaultOpenTracer = openTracer
+		//
+		//sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
+		//if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
+		//	logger.Fatal("Error configuring etcd sync: %v", err)
+		//}
+		//config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
+		//	AppID:          os.Getenv("MICRO_NAMESPACE"),
+		//	Cluster:        "default",
+		//	NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
+		//	MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
+		//	CacheDir:       filepath.Join(os.TempDir(), "apollo"),
+		//}))
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
 
-		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
-		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
-			logger.Fatal("Error configuring etcd sync: %v", err)
-		}
-		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
-			AppID:          os.Getenv("MICRO_NAMESPACE"),
-			Cluster:        "default",
-			NameSpaceNames: []string{os.Getenv("MICRO_SERVICE_NAME") + ".yaml"},
-			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
-			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
-		}))
 		return nil
 	},
 }
@@ -326,7 +324,7 @@ var Test = &Profile{
 // SetupRegistry configures the registry
 func SetupRegistry(reg registry.Registry) {
 	registry.DefaultRegistry = reg
-	router.DefaultRouter = regRouter.NewRouter(router.Registry(reg))
+	router.DefaultRouter = regRouter.NewRouter(router.Registry(reg), router.Cache())
 	client.DefaultClient.Init(client.Registry(reg), client.Router(router.DefaultRouter))
 	server.DefaultServer.Init(server.Registry(reg))
 }

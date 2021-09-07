@@ -14,10 +14,6 @@
 
 package router
 
-import (
-	"github.com/micro/micro/v3/service/logger"
-)
-
 // LookupOption sets routing table query options
 type LookupOption func(*LookupOptions)
 
@@ -157,6 +153,5 @@ func Filter(routes []Route, opts LookupOptions) []Route {
 	for _, route := range routeMap {
 		results = append(results, route...)
 	}
-	logger.Infof("-----------filter:%v, cond:%v,  result:%v", routes, opts, results)
 	return results
 }

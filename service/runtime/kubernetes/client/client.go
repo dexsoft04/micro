@@ -359,6 +359,15 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 		replicas = int(opts.Instances)
 	}
 
+	var volumeMounts []VolumeMount
+	for k, v := range opts.VolumeMounts {
+		volumeMounts = append(volumeMounts, VolumeMount{k, v})
+	}
+	var volumes []Volume
+	for k, v := range opts.Volumes {
+		volumes = append(volumes, Volume{k, PersistentVolumeClaimVolumeSource{ClaimName: v}})
+	}
+
 	return &Resource{
 		Kind: "deployment",
 		Name: metadata.Name,
@@ -391,7 +400,9 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 								InitialDelaySeconds: 10,
 							},
 							Resources: resReqs,
+							VolumeMounts: volumeMounts,
 						}},
+						Volumes: volumes,
 					},
 				},
 			},

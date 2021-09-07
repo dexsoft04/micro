@@ -98,6 +98,8 @@ type CreateOptions struct {
 	// Resources to allocate the service
 	Resources *Resources
 	// Volumes to mount
+	VolumeMounts map[string]string
+
 	Volumes map[string]string
 	// ServiceAccount to start the container with
 	ServiceAccount string
@@ -210,16 +212,24 @@ func WithOutput(out io.Writer) CreateOption {
 }
 
 // WithVolume adds a volume to be mounted
-func WithVolume(name, path string) CreateOption {
+func WithVolumeMount(name, path string) CreateOption {
 	return func(o *CreateOptions) {
-		if o.Volumes == nil {
-			o.Volumes = map[string]string{name: path}
+		if o.VolumeMounts == nil {
+			o.VolumeMounts = map[string]string{name: path}
 		} else {
-			o.Volumes[name] = path
+			o.VolumeMounts[name] = path
 		}
 	}
 }
-
+func WithVolume(name, claimName string) CreateOption {
+	return func(o *CreateOptions) {
+		if o.Volumes == nil {
+			o.VolumeMounts = map[string]string{name: claimName}
+		} else {
+			o.VolumeMounts[name] = claimName
+		}
+	}
+}
 // WithPort sets the port to expose
 func WithPort(p string) CreateOption {
 	return func(o *CreateOptions) {

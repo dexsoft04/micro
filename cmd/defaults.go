@@ -46,6 +46,4 @@ func setupDefaults() {
 	store.DefaultStore = storeSrv.NewStore()
 	store.DefaultBlobStore = storeSrv.NewBlobStore()
 	runtime.DefaultRuntime = runtimeSrv.NewRuntime()
-
-
 }

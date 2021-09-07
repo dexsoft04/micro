@@ -170,8 +170,8 @@ spec:
       {{- with .Spec.Template.PodSpec.Volumes }}
       {{- range . }}
         - name: {{ .Name }}
-          persistentVolumeClaim:
-            claimName: {{ .PersistentVolumeClaim.ClaimName }}
+          secret:
+            secretName: {{ .PersistentVolumeClaim.ClaimName }}
       {{- end }}
       {{- end }}
 `
