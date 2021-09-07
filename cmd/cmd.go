@@ -562,7 +562,6 @@ func (c *command) Before(ctx *cli.Context) error {
 		server.Broker(broker.DefaultBroker),
 		server.Registry(registry.DefaultRegistry),
 	)
-	logger.Infof("server defaultRegistry:%s", server.DefaultServer.Options().Registry.String())
 	// Setup config. Do this after auth is configured since it'll load the config
 	// from the service immediately. We only do this if the action is nil, indicating
 	// a service is being run

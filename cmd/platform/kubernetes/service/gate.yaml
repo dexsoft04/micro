@@ -67,6 +67,12 @@ spec:
           value: "client"
         - name: MICRO_SERVICE_NAME
           value: gate
+        - name: MICRO_REGISTRY_TLS_CA
+          value: "/certs/registry/ca.crt"
+        - name: MICRO_REGISTRY_TLS_CERT
+          value: "/certs/registry/cert.pem"
+        - name: MICRO_REGISTRY_TLS_KEY
+          value: "/certs/registry/key.pem"
         - name: MICRO_PROXY
           value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_LOG_LEVEL
@@ -76,7 +82,7 @@ spec:
         args:
         - service
         - gate
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210906-c758e9920d1b81515ccf43fccc51f6fd66003be9
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210906-2e1d8150fb32d4a6f44a598395aa8eeb54e6aa27
         imagePullPolicy: Always
         ports:
         - containerPort: 3250
@@ -86,3 +92,11 @@ spec:
             port: gate-port
           initialDelaySeconds: 5
           periodSeconds: 10
+        volumeMounts:
+          - name: etcd-client-certs
+            mountPath: "/certs/registry"
+            readOnly: true
+      volumes:
+        - name: etcd-client-certs
+          secret:
+            secretName: etcd-client-certs

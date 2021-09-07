@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"github.com/micro/micro/plugin/etcd/v3"
-	"github.com/micro/micro/v3/profile"
 	"github.com/micro/micro/v3/service/auth"
 	authSrv "github.com/micro/micro/v3/service/auth/client"
 	"github.com/micro/micro/v3/service/broker"
@@ -16,6 +14,7 @@ import (
 	"github.com/micro/micro/v3/service/network"
 	mucpNet "github.com/micro/micro/v3/service/network/mucp"
 	"github.com/micro/micro/v3/service/registry"
+	registrySrv "github.com/micro/micro/v3/service/registry/client"
 	"github.com/micro/micro/v3/service/router"
 	routerSrv "github.com/micro/micro/v3/service/router/client"
 	"github.com/micro/micro/v3/service/runtime"
@@ -42,13 +41,11 @@ func setupDefaults() {
 	broker.DefaultBroker = brokerSrv.NewBroker()
 	events.DefaultStream = eventsSrv.NewStream()
 	events.DefaultStore = eventsSrv.NewStore()
-	//registry.DefaultRegistry = registrySrv.NewRegistry()
+	registry.DefaultRegistry = registrySrv.NewRegistry()
 	router.DefaultRouter = routerSrv.NewRouter()
 	store.DefaultStore = storeSrv.NewStore()
 	store.DefaultBlobStore = storeSrv.NewBlobStore()
 	runtime.DefaultRuntime = runtimeSrv.NewRuntime()
-
-	profile.SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
 
 
 }
