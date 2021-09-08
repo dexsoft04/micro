@@ -363,23 +363,23 @@ func (c *command) Before(ctx *cli.Context) error {
 	}
 
 	// set the proxy address
-	//var proxy string
-	//if c.service || ctx.IsSet("proxy_address") {
-	//	// use the proxy address passed as a flag, this is normally
-	//	// the micro network
-	//	proxy = ctx.String("proxy_address")
-	//} else {
-	//	// for CLI, use the external proxy which is loaded from the
-	//	// local config
-	//	var err error
-	//	proxy, err = util.CLIProxyAddress(ctx)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
-	//if len(proxy) > 0 {
-	//	client.DefaultClient.Init(client.Proxy(proxy))
-	//}
+	var proxy string
+	if c.service || ctx.IsSet("proxy_address") {
+		// use the proxy address passed as a flag, this is normally
+		// the micro network
+		//proxy = ctx.String("proxy_address")
+	} else {
+		// for CLI, use the external proxy which is loaded from the
+		// local config
+		var err error
+		proxy, err = util.CLIProxyAddress(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	if len(proxy) > 0{
+		client.DefaultClient.Init(client.Proxy(proxy))
+	}
 
 	// use the internal network lookup
 	client.DefaultClient.Init(
