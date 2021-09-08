@@ -171,7 +171,7 @@ spec:
       {{- range . }}
         - name: {{ .Name }}
           secret:
-            secretName: {{ .PersistentVolumeClaim.ClaimName }}
+            secretName: {{ .Name }}
       {{- end }}
       {{- end }}
 `
