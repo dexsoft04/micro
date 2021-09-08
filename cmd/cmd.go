@@ -450,18 +450,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	}
 	uauth.Default.Init(uauthOpts...)
 
-	// setup auth credentials, use local credentials for the CLI and injected creds
-	// for the service.
-	var err error
-	if c.service {
-		err = setupAuthForService()
-	} else {
-		err = setupAuthForCLI(ctx)
-	}
-	if err != nil {
-		logger.Fatalf("Error setting up auth: %v", err)
-	}
-	go refreshAuthToken()
+
 
 	// initialize the server with the namespace so it knows which domain to register in
 	server.DefaultServer.Init(server.Namespace(ctx.String("namespace")))
@@ -493,9 +482,23 @@ func (c *command) Before(ctx *cli.Context) error {
 		addresses := strings.Split(ctx.String("registry_address"), ",")
 		registryOpts = append(registryOpts, registry.Addrs(addresses...))
 	}
+	logger.Infof("registry[%s] init", registry.DefaultRegistry.String())
 	if err := registry.DefaultRegistry.Init(registryOpts...); err != nil {
 		logger.Fatalf("Error configuring registry: %v", err)
 	}
+
+	// setup auth credentials, use local credentials for the CLI and injected creds
+	// for the service.
+	var err error
+	if c.service {
+		err = setupAuthForService()
+	} else {
+		err = setupAuthForCLI(ctx)
+	}
+	if err != nil {
+		logger.Fatalf("Error setting up auth: %v", err)
+	}
+	go refreshAuthToken()
 
 	// Setup broker options.
 	brokerOpts := []broker.Option{}
