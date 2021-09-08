@@ -167,7 +167,7 @@ spec:
       {{- end }}
       {{- end }} 
       volumes:
-      {{- with .Volumes }}
+      {{- with .Spec.Template.PodSpec.Volumes }}
       {{- range . }}
         - name: {{ .Name }}
           secret:

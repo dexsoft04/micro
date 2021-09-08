@@ -43,6 +43,9 @@ func TestCreate(t *testing.T) {
 					Disk: 2000,
 				},
 				ServiceAccount: "serviceAcc",
+				VolumeMounts: map[string]string{"aaa":"bbbb"},
+				Volumes: map[string]string{"1111": "22222"},
+
 			},
 			),
 
