@@ -224,9 +224,9 @@ func WithVolumeMount(name, path string) CreateOption {
 func WithVolume(name, claimName string) CreateOption {
 	return func(o *CreateOptions) {
 		if o.Volumes == nil {
-			o.VolumeMounts = map[string]string{name: claimName}
+			o.Volumes = map[string]string{name: claimName}
 		} else {
-			o.VolumeMounts[name] = claimName
+			o.Volumes[name] = claimName
 		}
 	}
 }

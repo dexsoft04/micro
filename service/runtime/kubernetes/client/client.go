@@ -83,7 +83,7 @@ func (c *client) Create(r *Resource, opts ...CreateOption) error {
 	if err := renderTemplate(r.Kind, b, r.Value); err != nil {
 		return err
 	}
-	logger.Infof("%s", b)
+
 	return api.NewRequest(c.opts).
 		Post().
 		SetHeader("Content-Type", "application/yaml").
