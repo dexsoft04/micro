@@ -102,6 +102,7 @@ var Client = &Profile{
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
 		return nil
 	},
 }
@@ -130,7 +131,7 @@ var Local = &Profile{
 		//
 		//	SetupRegistry(registry.DefaultRegistry)
 		//}
-		//SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -285,6 +286,7 @@ var Service = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster.default.svc.cluster.local")))
 
 		return nil
 	},
