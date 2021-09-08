@@ -224,6 +224,7 @@ func (k *kubernetes) create(resource runtime.Resource, opts ...runtime.CreateOpt
 
 		// create the deployment and set the runtime class name if provided
 		dep := client.NewDeployment(s, options)
+		logger.Infof("yaml: %v", dep)
 		if rcn := getRuntimeClassName(k.options.Context); len(rcn) > 0 {
 			dep.Value.(*client.Deployment).Spec.Template.PodSpec.RuntimeClassName = rcn
 			logger.Infof("Setting runtime class name to %v", rcn)
