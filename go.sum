@@ -436,8 +436,8 @@ github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3 v3.0.0-20210826053511-696687
 github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3 v3.0.0-20210826053511-6966876170a7/go.mod h1:EXU+cwlccbVoR6/qv0hSVdTbdMBxFuRuj/L8gTQwA5U=
 github.com/wolfplus2048/micro/plugin/etcd/v3 v3.0.0-20210818070601-414f9aaf9342 h1:2ta0DrsJ4/pwFCZh3GXIv12+dcZ7vf+wcs3Be68eaKY=
 github.com/wolfplus2048/micro/plugin/etcd/v3 v3.0.0-20210818070601-414f9aaf9342/go.mod h1:sUk0YCrz3qdEVx9euaPlAkdXcc+SQJHTNfSrjbh/Fmg=
-github.com/wolfplus2048/micro/plugin/prometheus/v3 v3.0.0-20210818070601-414f9aaf9342 h1:k2Hrha4M3MutI+Z77UyJF5JCnXpMD5sv7ZRq42Knlrg=
-github.com/wolfplus2048/micro/plugin/prometheus/v3 v3.0.0-20210818070601-414f9aaf9342/go.mod h1:WHp5Bi/PJKyFbo2WTO1RGGxK6UDQDoVi83/o4tGey1Q=
+github.com/wolfplus2048/micro/plugin/prometheus/v3 v3.0.0-20210908031449-d46051392697 h1:kAEFc/vjEEDVABSohIQ7xzmELVKhyM5eRerw7N1nxZY=
+github.com/wolfplus2048/micro/plugin/prometheus/v3 v3.0.0-20210908031449-d46051392697/go.mod h1:WHp5Bi/PJKyFbo2WTO1RGGxK6UDQDoVi83/o4tGey1Q=
 github.com/xanzy/go-gitlab v0.35.1 h1:jJSgT0NxjCvrSZf7Gvn2NxxV9xAYkTjYrKW8XwWhrfY=
 github.com/xanzy/go-gitlab v0.35.1/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
