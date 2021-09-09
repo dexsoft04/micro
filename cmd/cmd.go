@@ -368,7 +368,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	if c.service || ctx.IsSet("proxy_address") {
 		// use the proxy address passed as a flag, this is normally
 		// the micro network
-		//proxy = ctx.String("proxy_address")
+		proxy = ctx.String("proxy_address")
 	} else {
 		// for CLI, use the external proxy which is loaded from the
 		// local config
