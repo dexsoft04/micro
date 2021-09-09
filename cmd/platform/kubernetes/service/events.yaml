@@ -93,7 +93,7 @@ spec:
           value: "/certs/registry/key.pem"
         - name: MICRO_STORE_ADDRESS
           value: "postgresql://root@cockroachdb-cluster-public:26257?ssl=true&sslmode=require&sslrootcert=certs/store/ca.crt&sslkey=certs/store/key.pem&sslcert=certs/store/cert.pem"
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210909-6ba47d91d11bd40f98fd5adc4dda48ce73d8150f
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210909-3003c37489631a583761a7d5ffc6a3991ee1aeea
         imagePullPolicy: Always
         args:
         - service

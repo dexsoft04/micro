@@ -270,6 +270,7 @@ var Service = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
 
 		return nil
 	},
