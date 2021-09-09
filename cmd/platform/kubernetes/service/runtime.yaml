@@ -145,8 +145,8 @@ spec:
           value: platform
         - name: MICRO_SERVICE_NAME
           value: runtime
-#        - name: MICRO_PROXY
-#          value: "micro-network.default.svc.cluster.local:8443"
+        - name: MICRO_PROXY
+          value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
@@ -218,7 +218,7 @@ spec:
         args:
         - service
         - runtime
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210908-8a87da28e966a90b00ca82e3dd24c073ff5e4552
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210909-6ba47d91d11bd40f98fd5adc4dda48ce73d8150f
         imagePullPolicy: Always
         ports:
         - containerPort: 8088

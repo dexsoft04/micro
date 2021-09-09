@@ -335,7 +335,7 @@ func (r *registryRouter) Lookup(service string, opts ...router.LookupOption) ([]
 	}
 
 	// lookup the route
-	logger.Tracef("Fetching route for %s domain: %v, reg:%s", service, registry.WildcardDomain, r.options.Registry.String())
+	logger.Tracef("Fetching route for %s domain: %v", service, registry.WildcardDomain)
 
 	services, err := r.options.Registry.GetService(service, registry.GetDomain(registry.WildcardDomain))
 	if err == registry.ErrNotFound {
