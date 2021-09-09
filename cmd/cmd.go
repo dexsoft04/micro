@@ -328,7 +328,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	if cf := ctx.String("c"); len(cf) > 0 {
 		uconf.SetConfig(cf)
 	}
-
+	logger.Infof("=================1")
 	// initialize plugins
 	for _, p := range plugin.Plugins() {
 		if err := p.Init(ctx); err != nil {
@@ -361,6 +361,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		// load the profile
 		profile.Setup(ctx)
 	}
+	logger.Infof("=================2")
 
 	// set the proxy address
 	var proxy string
@@ -380,6 +381,7 @@ func (c *command) Before(ctx *cli.Context) error {
 	if len(proxy) > 0 {
 		client.DefaultClient.Init(client.Proxy(proxy))
 	}
+	logger.Infof("=================3")
 
 	// use the internal network lookup
 	client.DefaultClient.Init(
@@ -432,7 +434,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		}
 		authOpts = append(authOpts, auth.PublicKey(string(pubKey)), auth.PrivateKey(string(privKey)))
 	}
-	logger.Tracef("default auth init..")
+	logger.Infof("=================4")
 	auth.DefaultAuth.Init(authOpts...)
 
 	uauthOpts := []uauth.Option{}
@@ -479,6 +481,8 @@ func (c *command) Before(ctx *cli.Context) error {
 		addresses := strings.Split(ctx.String("registry_address"), ",")
 		registryOpts = append(registryOpts, registry.Addrs(addresses...))
 	}
+	logger.Infof("=================5")
+
 	logger.Infof("registry[%s] init", registry.DefaultRegistry.String())
 	if err := registry.DefaultRegistry.Init(registryOpts...); err != nil {
 		logger.Fatalf("Error configuring registry: %v", err)
@@ -495,6 +499,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		logger.Fatalf("Error setting up auth: %v", err)
 	}
 	go refreshAuthToken()
+	logger.Infof("=================6")
 
 	// Setup broker options.
 	brokerOpts := []broker.Option{}
