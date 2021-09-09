@@ -377,7 +377,7 @@ func (c *command) Before(ctx *cli.Context) error {
 			return err
 		}
 	}
-	if len(proxy) > 0{
+	if len(proxy) > 0 {
 		client.DefaultClient.Init(client.Proxy(proxy))
 	}
 
@@ -402,7 +402,6 @@ func (c *command) Before(ctx *cli.Context) error {
 			server.WrapHandler(wrapper.MetricsHandler()),
 			server.WrapHandler(wrapper.OpenTraceHandler()),
 			server.WrapHandler(mcwrapper.SessionHandler()),
-
 		)
 	})
 
@@ -433,7 +432,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		}
 		authOpts = append(authOpts, auth.PublicKey(string(pubKey)), auth.PrivateKey(string(privKey)))
 	}
-
+	logger.Tracef("default auth init..")
 	auth.DefaultAuth.Init(authOpts...)
 
 	uauthOpts := []uauth.Option{}
@@ -449,8 +448,6 @@ func (c *command) Before(ctx *cli.Context) error {
 		uauthOpts = append(uauthOpts, uauth.WithPublicKey(string(pubKey)), uauth.WithPrivateKey(string(privKey)))
 	}
 	uauth.Default.Init(uauthOpts...)
-
-
 
 	// initialize the server with the namespace so it knows which domain to register in
 	server.DefaultServer.Init(server.Namespace(ctx.String("namespace")))
@@ -486,7 +483,6 @@ func (c *command) Before(ctx *cli.Context) error {
 	if err := registry.DefaultRegistry.Init(registryOpts...); err != nil {
 		logger.Fatalf("Error configuring registry: %v", err)
 	}
-
 	// setup auth credentials, use local credentials for the CLI and injected creds
 	// for the service.
 	var err error

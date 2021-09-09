@@ -1,0 +1,18 @@
+apiVersion: v2
+appVersion: 3.2.1
+description: Micro is a platform for cloud native microservices development. Install Micro on Kubernetes in one command.
+home: https://micro.mu
+icon: https://avatars2.githubusercontent.com/u/5161210
+keywords:
+- platform
+- microservices
+- golang
+maintainers:
+- email: contact@micro.mu
+  name: Micro Authors
+  url: https://micro.mu/
+name: micro
+sources:
+- https://github.com/micro/micro
+type: application
+version: 1.3.0
