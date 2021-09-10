@@ -245,6 +245,7 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster.default.svc.cluster.local")))
 		reporterAddress := ctx.String("tracing_reporter_address")
 		if len(reporterAddress) == 0 {
 			reporterAddress = jaeger.DefaultReporterAddress
@@ -271,7 +272,6 @@ var Service = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
-		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster.default.svc.cluster.local")))
 
 		return nil
 	},
