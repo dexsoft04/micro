@@ -134,10 +134,7 @@ func newClient(e *etcdRegistry) (*clientv3.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = cli.Put(context.TODO(), "foo", "bar")
-	if err != nil {
-		return nil, err
-	}
+
 	return cli, nil
 }
 
