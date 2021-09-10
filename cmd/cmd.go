@@ -465,37 +465,6 @@ func (c *command) Before(ctx *cli.Context) error {
 	// initialize the server with the namespace so it knows which domain to register in
 	server.DefaultServer.Init(server.Namespace(ctx.String("namespace")))
 
-	// setup registry
-	registryOpts := []registry.Option{}
-
-	// Parse registry TLS certs
-	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
-		cert, err := tls.LoadX509KeyPair(ctx.String("registry_tls_cert"), ctx.String("registry_tls_key"))
-		if err != nil {
-			logger.Fatalf("Error loading registry tls cert: %v", err)
-		}
-
-		// load custom certificate authority
-		caCertPool := x509.NewCertPool()
-		if len(ctx.String("registry_tls_ca")) > 0 {
-			crt, err := ioutil.ReadFile(ctx.String("registry_tls_ca"))
-			if err != nil {
-				logger.Fatalf("Error loading registry tls certificate authority: %v", err)
-			}
-			caCertPool.AppendCertsFromPEM(crt)
-		}
-
-		cfg := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: caCertPool}
-		registryOpts = append(registryOpts, registry.TLSConfig(cfg))
-	}
-	if len(ctx.String("registry_address")) > 0 {
-		addresses := strings.Split(ctx.String("registry_address"), ",")
-		registryOpts = append(registryOpts, registry.Addrs(addresses...))
-	}
-	if err := registry.DefaultRegistry.Init(registryOpts...); err != nil {
-		logger.Fatalf("Error configuring registry: %v", err)
-	}
-
 	// Setup broker options.
 	brokerOpts := []broker.Option{}
 	if len(ctx.String("broker_address")) > 0 {

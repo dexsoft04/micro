@@ -123,7 +123,7 @@ var Local = &Profile{
 		//
 		//	SetupRegistry(registry.DefaultRegistry)
 		//}
-		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
+		SetupRegistry(etcd.NewRegistry(etcdOpts(ctx)...))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -245,7 +245,8 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
-		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster.default.svc.cluster.local")))
+		SetupRegistry(etcd.NewRegistry(etcdOpts(ctx)...))
+
 		reporterAddress := ctx.String("tracing_reporter_address")
 		if len(reporterAddress) == 0 {
 			reporterAddress = jaeger.DefaultReporterAddress
@@ -336,7 +337,8 @@ func SetupConfigSecretKey(ctx *cli.Context) {
 // natsStreamOpts returns a slice of options which should be used to configure nats
 func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	// setup registry
-	opts := []sync.Option{}
+	opts := []sync.Option{
+	}
 
 	// Parse registry TLS certs
 	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
@@ -364,4 +366,37 @@ func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	}
 	opts = append(opts, sync.Prefix(os.Getenv("MICRO_SERVICE_NAME")))
 	return opts
+}
+func etcdOpts(ctx *cli.Context) []registry.Option  {
+	// setup registry
+	registryOpts := []registry.Option {
+		registry.Addrs("etcd-cluster.default.svc.cluster.local"),
+	}
+
+	// Parse registry TLS certs
+	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
+		cert, err := tls.LoadX509KeyPair(ctx.String("registry_tls_cert"), ctx.String("registry_tls_key"))
+		if err != nil {
+			logger.Fatalf("Error loading registry tls cert: %v", err)
+		}
+
+		// load custom certificate authority
+		caCertPool := x509.NewCertPool()
+		if len(ctx.String("registry_tls_ca")) > 0 {
+			crt, err := ioutil.ReadFile(ctx.String("registry_tls_ca"))
+			if err != nil {
+				logger.Fatalf("Error loading registry tls certificate authority: %v", err)
+			}
+			caCertPool.AppendCertsFromPEM(crt)
+		}
+
+		cfg := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: caCertPool}
+		registryOpts = append(registryOpts, registry.TLSConfig(cfg))
+	}
+
+	if len(ctx.String("registry_address")) > 0 {
+		addresses := strings.Split(ctx.String("registry_address"), ",")
+		registryOpts = append(registryOpts, registry.Addrs(addresses...))
+	}
+	return registryOpts
 }
