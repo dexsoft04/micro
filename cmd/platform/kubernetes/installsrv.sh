@@ -6,7 +6,7 @@ if [ $MICRO_ENV == "dev" ]; then
 fi
 
 if [ $MICRO_ENV == "dev" ]; then
-  sed -i '' 's/mcbeam-dev:mcbeam-dev-20210909-6ba47d91d11bd40f98fd5adc4dda48ce73d8150f/mcbeam-dev:mcbeam-dev-20210909-3003c37489631a583761a7d5ffc6a3991ee1aeea/g' `ls ./service/*`
+  sed -i '' 's/mcbeam-dev:mcbeam-dev-20210909-3003c37489631a583761a7d5ffc6a3991ee1aeea/mcbeam-dev:mcbeam-dev-20210909-9ddc551cd622ab9daea22654293de1ca71521cc0/g' `ls ./service/*`
   sed -i '' 's/- name: qcloudregistrykey//g'  `ls ./service/*`
 kubectl apply -f service
 

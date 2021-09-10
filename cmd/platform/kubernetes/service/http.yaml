@@ -80,7 +80,7 @@ spec:
         args:
         - service
         - api
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210909-3003c37489631a583761a7d5ffc6a3991ee1aeea
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210909-9ddc551cd622ab9daea22654293de1ca71521cc0
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
