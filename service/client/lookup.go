@@ -29,8 +29,13 @@ type LookupFunc func(context.Context, Request, CallOptions) ([]string, error)
 
 // LookupRoute for a request using the router and then choose one using the selector
 func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, error) {
+	var serverID string
+	if opts.Context != nil {
+		serverID, _ = opts.Context.Value(serverUidKey{}).(string)
+	}
+
 	// check to see if an address was provided as a call option
-	if len(opts.Address) > 0 {
+	if len(opts.Address) > 0 && len(serverID) <= 0{
 		return opts.Address, nil
 	}
 
@@ -42,12 +47,11 @@ func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, 
 	if len(opts.Network) > 0 {
 		query = append(query, router.LookupNetwork(opts.Network))
 	}
-	if opts.Context != nil {
-		uid, ok := opts.Context.Value(serverUidKey{}).(string)
-		if ok && len(uid) > 0 {
-			query = append(query, router.LookupUid(uid))
-		}
+
+	if len(serverID) > 0 {
+		query = append(query, router.LookupUid(serverID))
 	}
+
 	// lookup the routes which can be used to execute the request
 	routes, err := opts.Router.Lookup(req.Service(), query...)
 	if err == router.ErrRouteNotFound {
