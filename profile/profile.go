@@ -123,7 +123,7 @@ var Local = &Profile{
 		//
 		//	SetupRegistry(registry.DefaultRegistry)
 		//}
-		SetupRegistry(etcd.NewRegistry(etcdOpts(ctx)...))
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -245,7 +245,7 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
-		SetupRegistry(etcd.NewRegistry(etcdOpts(ctx)...))
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		reporterAddress := ctx.String("tracing_reporter_address")
 		if len(reporterAddress) == 0 {
@@ -367,7 +367,7 @@ func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	opts = append(opts, sync.Prefix(os.Getenv("MICRO_SERVICE_NAME")))
 	return opts
 }
-func etcdOpts(ctx *cli.Context) []registry.Option  {
+func EtcdOpts(ctx *cli.Context) []registry.Option  {
 	// setup registry
 	registryOpts := []registry.Option {
 		registry.Addrs("etcd-cluster.default.svc.cluster.local"),
