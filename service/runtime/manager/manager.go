@@ -339,8 +339,8 @@ func (m *manager) createServiceInRuntime(srv *service) error {
 	srv.Service.Metadata["prometheus.io/path"] = "/metrics"
 	srv.Service.Metadata["prometheus.io/port"] = "9000"
 
-	options = append(options, runtime.WithVolume("etcd-client-certs", "etcd-client-certs"))
-	options = append(options, runtime.WithVolumeMount("etcd-client-certs", "/certs/registry"))
+	//options = append(options, runtime.WithVolume("etcd-client-certs", "etcd-client-certs"))
+	//options = append(options, runtime.WithVolumeMount("etcd-client-certs", "/certs/registry"))
 
 	// create the service
 	return m.Runtime.Create(srv.Service, options...)
@@ -430,9 +430,9 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
 		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
 		//"MICRO_TRACING_REPORTER_ADDRESS": os.Getenv("MICRO_TRACING_REPORTER_ADDRESS"),
-		"MICRO_REGISTRY_TLS_CA": "/certs/registry/ca.crt",
-		"MICRO_REGISTRY_TLS_CERT": "/certs/registry/cert.pem",
-		"MICRO_REGISTRY_TLS_KEY": "/certs/registry/key.pem",
+		//"MICRO_REGISTRY_TLS_CA": "/certs/registry/ca.crt",
+		//"MICRO_REGISTRY_TLS_CERT": "/certs/registry/cert.pem",
+		//"MICRO_REGISTRY_TLS_KEY": "/certs/registry/key.pem",
 
 	}
 
