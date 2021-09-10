@@ -140,9 +140,9 @@ func (t *table) Create(r router.Route) error {
 	// create the route
 	t.routes[service][sum] = &route{r, time.Now()}
 
-	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
-		logger.Debugf("Router emitting %s for route: %s", router.Create, r.Address)
-	}
+	//if logger.V(logger.DebugLevel, logger.DefaultLogger) {
+	//	logger.Debugf("Router emitting %s for route: %s", router.Create, r.Address)
+	//}
 
 	// send a route created event
 	go t.sendEvent(&router.Event{Type: router.Create, Timestamp: time.Now(), Route: r})
