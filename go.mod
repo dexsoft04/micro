@@ -57,6 +57,6 @@ require (
 )
 
 replace (
-	github.com/micro/micro/plugin/etcd/v3 => github.com/wolfplus2048/micro/plugin/etcd/v3 v3.0.0-20210908031449-d46051392697
-	github.com/micro/micro/plugin/prometheus/v3 => github.com/wolfplus2048/micro/plugin/prometheus/v3 v3.0.0-20210908031449-d46051392697
+	github.com/micro/micro/plugin/etcd/v3 => github.com/wolfplus2048/micro/plugin/etcd/v3 26d81c1a
+	github.com/micro/micro/plugin/prometheus/v3 => github.com/wolfplus2048/micro/plugin/prometheus/v3 26d81c1a
 )
