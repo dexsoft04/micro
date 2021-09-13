@@ -93,8 +93,7 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
-		SetupRegistry(etcd.NewRegistry(registry.Addrs("etcd-cluster")))
-
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 		return nil
 	},
 }
