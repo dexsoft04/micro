@@ -66,7 +66,7 @@ spec:
         - name: MICRO_API_ADDRESS
           value: ":443"
         - name: MICRO_PROFILE
-          value: "platform"
+          value: "client"
         - name: MICRO_SERVICE_NAME
           value: "api"
         - name: MICRO_REGISTRY_TLS_CA
@@ -82,7 +82,7 @@ spec:
         args:
         - service
         - api
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210915-c20fc8328a272b63d03ca186bdbc996efb868948
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210915-9a3221e406719ef22e468a65e248643ae997c6a3
         imagePullPolicy: Always
         ports:
         - containerPort: 443
