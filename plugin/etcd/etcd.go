@@ -134,6 +134,12 @@ func newClient(e *etcdRegistry) (*clientv3.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), e.options.Timeout)
+	defer cancel()
+	_, err = cli.Put(ctx, "foo", "bar")
+	if err != nil {
+		return nil, err
+	}
 	return cli, nil
 }
 
