@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"strings"
 
-	log "github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,7 +28,7 @@ import (
 var (
 	// quantileThresholds maps quantiles / percentiles to error thresholds (required by the Prometheus client).
 	// Must be from our pre-defined set [0.0, 0.5, 0.75, 0.90, 0.95, 0.98, 0.99, 1]:
-	quantileThresholds = map[float64]float64{0.0: 0, 0.5: 0.05, 0.75: 0.04, 0.90: 0.03, 0.95: 0.02, 0.98: 0.001, 1: 0}
+	quantileThresholds = map[float64]float64{0.0: 0, 0.5: 0.05, 0.75: 0.04, 0.90: 0.03, 0.95: 0.02, 0.98: 0.001, 0.99: 0.001, 1: 0}
 )
 
 // Reporter is an implementation of metrics.Reporter:
@@ -58,7 +57,7 @@ func New(opts ...metrics.Option) (*Reporter, error) {
 	newReporter.metrics = newReporter.newMetricFamily()
 
 	// Handle the metrics endpoint with prometheus:
-	log.Infof("Metrics/Prometheus [http] Listening on %s%s", options.Address, options.Path)
+	//log.Infof("Metrics/Prometheus [http] Listening on %s%s", options.Address, options.Path)
 	http.Handle(options.Path, promhttp.HandlerFor(prometheusRegistry, promhttp.HandlerOpts{ErrorHandling: promhttp.ContinueOnError}))
 	go http.ListenAndServe(options.Address, nil)
 

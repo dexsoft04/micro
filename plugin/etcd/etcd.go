@@ -29,12 +29,12 @@ import (
 	"sync"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes"
-	"go.etcd.io/etcd/mvcc/mvccpb"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
 	hash "github.com/mitchellh/hashstructure"
+	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes"
+	"go.etcd.io/etcd/mvcc/mvccpb"
 	"go.uber.org/zap"
 )
 
@@ -75,6 +75,7 @@ func newClient(e *etcdRegistry) (*clientv3.Client, error) {
 	if e.options.Timeout == 0 {
 		e.options.Timeout = 5 * time.Second
 	}
+	config.DialTimeout = e.options.Timeout
 
 	if e.options.Secure || e.options.TLSConfig != nil {
 		tlsConfig := e.options.TLSConfig
@@ -133,7 +134,6 @@ func newClient(e *etcdRegistry) (*clientv3.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return cli, nil
 }
 

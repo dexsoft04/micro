@@ -3,14 +3,13 @@ package web
 import (
 	"crypto/tls"
 	"fmt"
-	maddr "github.com/micro/micro/v3/internal/addr"
-	"github.com/micro/micro/v3/internal/backoff"
-	mnet "github.com/micro/micro/v3/internal/net"
-	signalutil "github.com/micro/micro/v3/internal/signal"
-	mls "github.com/micro/micro/v3/internal/tls"
 	micro "github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/registry"
+	maddr "github.com/micro/micro/v3/util/addr"
+	"github.com/micro/micro/v3/util/backoff"
+	mnet "github.com/micro/micro/v3/util/net"
+	mls "github.com/micro/micro/v3/util/tls"
 	"net"
 	"net/http"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -399,7 +399,7 @@ func (s *service) Run() error {
 
 	ch := make(chan os.Signal, 1)
 	if s.opts.Signal {
-		signal.Notify(ch, signalutil.Shutdown()...)
+		signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
 	}
 
 	select {

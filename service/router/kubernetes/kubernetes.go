@@ -17,6 +17,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"github.com/micro/micro/v3/service/logger"
 
 	"github.com/micro/micro/v3/service/router"
 )
@@ -56,7 +57,7 @@ func (k *kubernetes) Lookup(service string, opts ...router.LookupOption) ([]rout
 	}
 
 	address := fmt.Sprintf("%v.%v.svc.cluster.local:8080", service, options.Network)
-
+	logger.Infof("Lookup:%s", address)
 	return []router.Route{
 		router.Route{
 			Service: service,

@@ -12,16 +12,11 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/micro/micro/v3/client/cli/util"
-	uconf "github.com/micro/micro/v3/internal/config"
-	"github.com/micro/micro/v3/internal/helper"
-	"github.com/micro/micro/v3/internal/network"
-	"github.com/micro/micro/v3/internal/report"
-	_ "github.com/micro/micro/v3/internal/usage"
-	"github.com/micro/micro/v3/internal/user"
-	"github.com/micro/micro/v3/internal/wrapper"
+	"github.com/micro/micro/v3/cmd/cli/util"
+	_ "github.com/micro/micro/v3/cmd/usage"
 	"github.com/micro/micro/v3/plugin"
 	"github.com/micro/micro/v3/profile"
 	"github.com/micro/micro/v3/service/auth"
@@ -31,14 +26,19 @@ import (
 	configCli "github.com/micro/micro/v3/service/config/client"
 	storeConf "github.com/micro/micro/v3/service/config/store"
 	"github.com/micro/micro/v3/service/logger"
+	"github.com/micro/micro/v3/service/network"
 	"github.com/micro/micro/v3/service/registry"
 	"github.com/micro/micro/v3/service/server"
 	"github.com/micro/micro/v3/service/store"
+	uconf "github.com/micro/micro/v3/util/config"
+	"github.com/micro/micro/v3/util/helper"
+	"github.com/micro/micro/v3/util/report"
+	"github.com/micro/micro/v3/util/user"
+	"github.com/micro/micro/v3/util/wrapper"
 	"github.com/urfave/cli/v2"
 
 	muruntime "github.com/micro/micro/v3/service/runtime"
 	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
-	opentrace "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
 )
 
 type Cmd interface {
@@ -69,6 +69,8 @@ type command struct {
 
 var (
 	DefaultCmd Cmd = New()
+
+	onceBefore sync.Once
 
 	// name of the binary
 	name = "mcbeam"
@@ -219,17 +221,16 @@ var (
 			Usage:   "Address to run the service on",
 			EnvVars: []string{"MICRO_SERVICE_ADDRESS"},
 		},
-		&cli.BoolFlag{
-			Name:    "prompt_update",
-			Usage:   "Provide an update prompt when a new binary is available. Enabled for release binaries only.",
-			Value:   true,
-			EnvVars: []string{"MICRO_PROMPT_UPDATE"},
-		},
 		&cli.StringFlag{
 			Name:    "config_secret_key",
 			Usage:   "Key to use when encoding/decoding secret config values. Will be generated and saved to file if not provided.",
 			Value:   "",
 			EnvVars: []string{"MICRO_CONFIG_SECRET_KEY"},
+		},
+		&cli.StringFlag{
+			Name:    "tracing_reporter_address",
+			Usage:   "The host:port of the opentracing agent e.g. localhost:6831",
+			EnvVars: []string{"MICRO_TRACING_REPORTER_ADDRESS"},
 		},
 	}
 )
@@ -323,30 +324,6 @@ func (c *command) Options() Options {
 
 // Before is executed before any subcommand
 func (c *command) Before(ctx *cli.Context) error {
-	if v := ctx.Args().First(); len(v) > 0 {
-		switch v {
-		case "service", "server":
-			// do nothing
-		default:
-			// check for the latest release
-			// TODO: write a local file to detect
-			// when we last checked so we don't do it often
-			updated, err := confirmAndSelfUpdate(ctx)
-			if err != nil {
-				return err
-			}
-			// if updated we expect to re-execute the command
-			// TODO: maybe require relogin or update of the
-			// config...
-			if updated {
-				// considering nil actually continues
-				// we need to os.Exit(0)
-				os.Exit(0)
-				return nil
-			}
-		}
-	}
-
 	// set the config file if specified
 	if cf := ctx.String("c"); len(cf) > 0 {
 		uconf.SetConfig(cf)
@@ -409,23 +386,24 @@ func (c *command) Before(ctx *cli.Context) error {
 		client.Lookup(network.Lookup),
 	)
 
-	// wrap the client
-	client.DefaultClient = wrapper.AuthClient(client.DefaultClient)
-	client.DefaultClient = wrapper.CacheClient(client.DefaultClient)
-	client.DefaultClient = wrapper.TraceCall(client.DefaultClient)
-	client.DefaultClient = wrapper.LogClient(client.DefaultClient)
-	client.DefaultClient = opentrace.NewClientWrapper(nil)(client.DefaultClient)
+	onceBefore.Do(func() {
+		// wrap the client
+		client.DefaultClient = wrapper.AuthClient(client.DefaultClient)
+		client.DefaultClient = wrapper.TraceCall(client.DefaultClient)
+		client.DefaultClient = wrapper.LogClient(client.DefaultClient)
+		client.DefaultClient = wrapper.OpentraceClient(client.DefaultClient)
 
-	// wrap the server
-	server.DefaultServer.Init(
-		server.WrapHandler(wrapper.AuthHandler()),
-		server.WrapHandler(wrapper.TraceHandler()),
-		server.WrapHandler(wrapper.HandlerStats()),
-		server.WrapHandler(wrapper.LogHandler()),
-		server.WrapHandler(wrapper.MetricsHandler()),
-		server.WrapHandler(mcwrapper.SessionHandler()),
-		server.WrapHandler(opentrace.NewHandlerWrapper(nil)),
-	)
+		// wrap the server
+		server.DefaultServer.Init(
+			server.WrapHandler(wrapper.AuthHandler()),
+			server.WrapHandler(wrapper.TraceHandler()),
+			server.WrapHandler(wrapper.HandlerStats()),
+			server.WrapHandler(wrapper.LogHandler()),
+			server.WrapHandler(wrapper.MetricsHandler()),
+			server.WrapHandler(wrapper.OpenTraceHandler()),
+			server.WrapHandler(mcwrapper.SessionHandler()),
+		)
+	})
 
 	// setup auth
 	authOpts := []auth.Option{}
@@ -457,12 +435,11 @@ func (c *command) Before(ctx *cli.Context) error {
 
 	auth.DefaultAuth.Init(authOpts...)
 
-
 	uauthOpts := []uauth.Option{}
+	//logger.Infof("cmd:user pub key:%s", ctx.String("user_public_key"))
 	if len(ctx.String("user_public_key")) > 0 || len(ctx.String("user_private_key")) > 0 {
 		uauthOpts = append(uauthOpts, uauth.WithPublicKey(ctx.String("user_public_key")))
 		uauthOpts = append(uauthOpts, uauth.WithPrivateKey(ctx.String("user_private_key")))
-		logger.Info("user pubulic:%s, private:%s", ctx.String("user_public_key"), ctx.String("user_private_key"))
 	} else if ctx.Args().First() == "server" || ctx.Args().First() == "service" {
 		privKey, pubKey, err := user.GetJWTCerts()
 		if err != nil {
@@ -471,8 +448,6 @@ func (c *command) Before(ctx *cli.Context) error {
 		uauthOpts = append(uauthOpts, uauth.WithPublicKey(string(pubKey)), uauth.WithPrivateKey(string(privKey)))
 	}
 	uauth.Default.Init(uauthOpts...)
-
-
 
 	// setup auth credentials, use local credentials for the CLI and injected creds
 	// for the service.
@@ -489,37 +464,6 @@ func (c *command) Before(ctx *cli.Context) error {
 
 	// initialize the server with the namespace so it knows which domain to register in
 	server.DefaultServer.Init(server.Namespace(ctx.String("namespace")))
-
-	// setup registry
-	registryOpts := []registry.Option{}
-
-	// Parse registry TLS certs
-	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
-		cert, err := tls.LoadX509KeyPair(ctx.String("registry_tls_cert"), ctx.String("registry_tls_key"))
-		if err != nil {
-			logger.Fatalf("Error loading registry tls cert: %v", err)
-		}
-
-		// load custom certificate authority
-		caCertPool := x509.NewCertPool()
-		if len(ctx.String("registry_tls_ca")) > 0 {
-			crt, err := ioutil.ReadFile(ctx.String("registry_tls_ca"))
-			if err != nil {
-				logger.Fatalf("Error loading registry tls certificate authority: %v", err)
-			}
-			caCertPool.AppendCertsFromPEM(crt)
-		}
-
-		cfg := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: caCertPool}
-		registryOpts = append(registryOpts, registry.TLSConfig(cfg))
-	}
-	if len(ctx.String("registry_address")) > 0 {
-		addresses := strings.Split(ctx.String("registry_address"), ",")
-		registryOpts = append(registryOpts, registry.Addrs(addresses...))
-	}
-	if err := registry.DefaultRegistry.Init(registryOpts...); err != nil {
-		logger.Fatalf("Error configuring registry: %v", err)
-	}
 
 	// Setup broker options.
 	brokerOpts := []broker.Option{}

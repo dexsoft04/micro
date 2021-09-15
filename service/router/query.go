@@ -153,6 +153,5 @@ func Filter(routes []Route, opts LookupOptions) []Route {
 	for _, route := range routeMap {
 		results = append(results, route...)
 	}
-
 	return results
 }

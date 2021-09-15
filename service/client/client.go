@@ -21,7 +21,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/micro/micro/v3/internal/codec"
+	"github.com/micro/micro/v3/util/codec"
 )
 
 var (
@@ -115,7 +115,7 @@ var (
 	// DefaultBackoff is the default backoff function for retries
 	DefaultBackoff = exponentialBackoff
 	// DefaultRetry is the default check-for-retry function for retries
-	DefaultRetry = RetryNever
+	DefaultRetry = RetryOnConnectFailure
 	// DefaultRetries is the default number of times a request is tried
 	DefaultRetries = 1
 	// DefaultRequestTimeout is the default request timeout

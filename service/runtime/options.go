@@ -98,9 +98,13 @@ type CreateOptions struct {
 	// Resources to allocate the service
 	Resources *Resources
 	// Volumes to mount
+	VolumeMounts map[string]string
+
 	Volumes map[string]string
 	// ServiceAccount to start the container with
 	ServiceAccount string
+	// Number of instances to run
+	Instances int
 }
 
 // ReadOptions queries runtime services
@@ -208,20 +212,35 @@ func WithOutput(out io.Writer) CreateOption {
 }
 
 // WithVolume adds a volume to be mounted
-func WithVolume(name, path string) CreateOption {
+func WithVolumeMount(name, path string) CreateOption {
 	return func(o *CreateOptions) {
-		if o.Volumes == nil {
-			o.Volumes = map[string]string{name: path}
+		if o.VolumeMounts == nil {
+			o.VolumeMounts = map[string]string{name: path}
 		} else {
-			o.Volumes[name] = path
+			o.VolumeMounts[name] = path
 		}
 	}
 }
-
+func WithVolume(name, claimName string) CreateOption {
+	return func(o *CreateOptions) {
+		if o.Volumes == nil {
+			o.Volumes = map[string]string{name: claimName}
+		} else {
+			o.Volumes[name] = claimName
+		}
+	}
+}
 // WithPort sets the port to expose
 func WithPort(p string) CreateOption {
 	return func(o *CreateOptions) {
 		o.Port = p
+	}
+}
+
+// CreateInstances sets the number of instances
+func CreateInstances(v int) CreateOption {
+	return func(o *CreateOptions) {
+		o.Instances = v
 	}
 }
 
@@ -278,6 +297,8 @@ type UpdateOptions struct {
 	Context context.Context
 	// Secrets to use
 	Secrets map[string]string
+	// Number of instances
+	Instances int
 }
 
 // WithSecret sets a secret to provide the service with
@@ -309,6 +330,13 @@ func UpdateContext(ctx context.Context) UpdateOption {
 func UpdateEntrypoint(e string) UpdateOption {
 	return func(o *UpdateOptions) {
 		o.Entrypoint = e
+	}
+}
+
+// UpdateInstances sets the number of instances
+func UpdateInstances(v int) UpdateOption {
+	return func(o *UpdateOptions) {
+		o.Instances = v
 	}
 }
 

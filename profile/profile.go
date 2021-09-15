@@ -7,9 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/micro/micro/plugin/prometheus/v3"
-	"github.com/micro/micro/v3/service/metrics"
-	"github.com/micro/micro/v3/service/registry/mdns"
+	"github.com/micro/micro/plugin/etcd/v3"
 	"github.com/micro/micro/v3/service/sync"
 	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
@@ -19,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/micro/micro/v3/service/auth/jwt"
-	"github.com/micro/micro/v3/service/auth/noop"
 	"github.com/micro/micro/v3/service/broker"
 	memBroker "github.com/micro/micro/v3/service/broker/memory"
 	"github.com/micro/micro/v3/service/build/golang"
@@ -40,29 +37,27 @@ import (
 	"github.com/micro/micro/v3/service/server"
 	"github.com/micro/micro/v3/service/store/file"
 	mem "github.com/micro/micro/v3/service/store/memory"
+	"github.com/micro/micro/v3/util/opentelemetry"
+	"github.com/micro/micro/v3/util/opentelemetry/jaeger"
 	"github.com/urfave/cli/v2"
 
-	"github.com/micro/micro/plugin/etcd/v3"
-	inAuth "github.com/micro/micro/v3/internal/auth"
-	"github.com/micro/micro/v3/internal/user"
 	microAuth "github.com/micro/micro/v3/service/auth"
 	microBuilder "github.com/micro/micro/v3/service/build"
 	microEvents "github.com/micro/micro/v3/service/events"
 	microRuntime "github.com/micro/micro/v3/service/runtime"
 	microStore "github.com/micro/micro/v3/service/store"
-	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
-	opentracing "github.com/wolfplus2048/mcbeam-plugins/trace/opentracing/v3"
+	inAuth "github.com/micro/micro/v3/util/auth"
+	"github.com/micro/micro/v3/util/user"
 )
 
 // profiles which when called will configure micro to run in that environment
 var profiles = map[string]*Profile{
 	// built in profiles
-	"client":         Client,
-	"service":        Service,
-	"test":           Test,
-	"local":          Local,
-	"kubernetes":     Kubernetes,
-	"dev":            Dev,
+	"client":     Client,
+	"service":    Service,
+	"test":       Test,
+	"local":      Local,
+	"kubernetes": Kubernetes,
 }
 
 // Profile configures an environment
@@ -88,7 +83,7 @@ func Register(name string, p *Profile) error {
 func Load(name string) (*Profile, error) {
 	v, ok := profiles[name]
 	if !ok {
-		return nil, fmt.Errorf("profile %s does not exist, %v", name, profiles)
+		return nil, fmt.Errorf("profile %s does not exist", name)
 	}
 	return v, nil
 }
@@ -97,31 +92,7 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
-		//SetupRegistry(etcd.NewRegistry())
-		if len(os.Getenv("MICRO_SERVICE_NAME")) != 0 {
-			if !metrics.IsSet() {
-				prometheusReporter, err := prometheus.New()
-				if err != nil {
-					return err
-				}
-				metrics.SetDefaultMetricsReporter(prometheusReporter)
-				opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
-					os.Getenv("MICRO_JAEGER_ADDRESS"))
-			}
-		}
-
-		return nil
-	},
-}
-
-var Dev = &Profile{
-	Name: "dev",
-	Setup: func(ctx *cli.Context) error {
-		microAuth.DefaultAuth = jwt.NewAuth()
-		microStore.DefaultStore = mem.NewStore()
-		microStore.DefaultBlobStore, _ = file.NewBlobStore()
-		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
-		SetupRegistry(etcd.NewRegistry())
+		//SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 		return nil
 	},
 }
@@ -134,9 +105,34 @@ var Local = &Profile{
 		microStore.DefaultStore = file.NewStore(file.WithDir(filepath.Join(user.Dir, "server", "store")))
 		SetupConfigSecretKey(ctx)
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
-		SetupBroker(memBroker.NewBroker())
-		SetupRegistry(mdns.NewRegistry())
 		SetupJWT(ctx)
+
+		// the registry service uses the memory registry, the other core services will use the default
+		// rpc client and call the registry service
+		if ctx.Args().Get(1) == "registry" {
+			SetupRegistry(memory.NewRegistry())
+			//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
+
+		} else {
+			// set the registry address
+			registry.DefaultRegistry.Init(
+				registry.Addrs("localhost:8000"),
+			)
+
+			SetupRegistry(registry.DefaultRegistry)
+		}
+		//SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+
+		// the broker service uses the memory broker, the other core services will use the default
+		// rpc client and call the broker service
+		if ctx.Args().Get(1) == "broker" {
+			SetupBroker(memBroker.NewBroker())
+		} else {
+			broker.DefaultBroker.Init(
+				broker.Addrs("localhost:8003"),
+			)
+			SetupBroker(broker.DefaultBroker)
+		}
 
 		// set the store in the model
 		model.DefaultModel = model.NewModel(
@@ -160,6 +156,20 @@ var Local = &Profile{
 		if err != nil {
 			logger.Fatalf("Error configuring file blob store: %v", err)
 		}
+
+		// Configure tracing with Jaeger (forced tracing):
+		tracingServiceName := ctx.Args().Get(1)
+		if len(tracingServiceName) == 0 {
+			tracingServiceName = "Micro"
+		}
+		openTracer, _, err := jaeger.New(
+			opentelemetry.WithServiceName(tracingServiceName),
+			opentelemetry.WithSamplingRate(1),
+		)
+		if err != nil {
+			logger.Fatalf("Error configuring opentracing: %v", err)
+		}
+		opentelemetry.DefaultOpenTracer = openTracer
 
 		return nil
 	},
@@ -189,11 +199,6 @@ var Kubernetes = &Profile{
 			logger.Fatalf("Error configuring file blob store: %v", err)
 		}
 
-		// set the store in the model
-		model.DefaultModel = model.NewModel(
-			model.WithStore(microStore.DefaultStore),
-		)
-
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service
 		if ctx.Args().Get(1) == "registry" {
@@ -215,27 +220,50 @@ var Kubernetes = &Profile{
 		// Use k8s routing which is DNS based
 		router.DefaultRouter = k8sRouter.NewRouter()
 		client.DefaultClient.Init(client.Router(router.DefaultRouter))
+
+		// Configure tracing with Jaeger:
+		tracingServiceName := ctx.Args().Get(1)
+		if len(tracingServiceName) == 0 {
+			tracingServiceName = "Micro"
+		}
+		openTracer, _, err := jaeger.New(
+			opentelemetry.WithServiceName(tracingServiceName),
+			opentelemetry.WithTraceReporterAddress("localhost:6831"),
+		)
+		if err != nil {
+			logger.Fatalf("Error configuring opentracing: %v", err)
+		}
+		opentelemetry.DefaultOpenTracer = openTracer
+
 		return nil
 	},
 }
 
 // Service is the default for any services run
 var Service = &Profile{
-	Name:  "service",
+	Name: "service",
 	Setup: func(ctx *cli.Context) error {
-		if !metrics.IsSet() {
-			opentracing.New(os.Getenv("MICRO_SERVICE_NAME"),
-				os.Getenv("MICRO_JAEGER_ADDRESS"))
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				return err
-			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+
+		reporterAddress := ctx.String("tracing_reporter_address")
+		if len(reporterAddress) == 0 {
+			reporterAddress = jaeger.DefaultReporterAddress
 		}
-		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
-		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
-			logger.Fatal("Error configuring etcd sync: %v", err)
+		// Configure tracing with Jaeger (forced tracing):
+		openTracer, _, err := jaeger.New(
+			opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+			opentelemetry.WithSamplingRate(1),
+			opentelemetry.WithTraceReporterAddress(reporterAddress),
+		)
+		if err != nil {
+			logger.Fatalf("Error configuring opentracing: %v", err)
 		}
+		opentelemetry.DefaultOpenTracer = openTracer
+
+		//sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
+		//if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
+		//	logger.Fatal("Error configuring etcd sync: %v", err)
+		//}
 		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
 			AppID:          os.Getenv("MICRO_NAMESPACE"),
 			Cluster:        "default",
@@ -243,22 +271,28 @@ var Service = &Profile{
 			MetaAddr:       os.Getenv("MICRO_CONFIG_ADDRESS"),
 			CacheDir:       filepath.Join(os.TempDir(), "apollo"),
 		}))
-		return nil },
+
+		return nil
+	},
 }
 
 // Test profile is used for the go test suite
 var Test = &Profile{
 	Name: "test",
 	Setup: func(ctx *cli.Context) error {
-		microAuth.DefaultAuth = noop.NewAuth()
+		//microAuth.DefaultAuth = noop.NewAuth()
+		microAuth.DefaultAuth = jwt.NewAuth()
+
 		microStore.DefaultStore = mem.NewStore()
 		microStore.DefaultBlobStore, _ = file.NewBlobStore()
 		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
-		SetupRegistry(memory.NewRegistry())
+		//SetupRegistry(memory.NewRegistry())
+		SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
 		// set the store in the model
 		model.DefaultModel = model.NewModel(
 			model.WithStore(microStore.DefaultStore),
 		)
+		microRuntime.DefaultRuntime = local.NewRuntime()
 		return nil
 	},
 }
@@ -266,8 +300,8 @@ var Test = &Profile{
 // SetupRegistry configures the registry
 func SetupRegistry(reg registry.Registry) {
 	registry.DefaultRegistry = reg
-	router.DefaultRouter = regRouter.NewRouter(router.Registry(reg))
-	client.DefaultClient.Init(client.Registry(reg))
+	router.DefaultRouter = regRouter.NewRouter(router.Registry(reg), router.Cache())
+	client.DefaultClient.Init(client.Registry(reg), client.Router(router.DefaultRouter))
 	server.DefaultServer.Init(server.Registry(reg))
 }
 
@@ -301,7 +335,8 @@ func SetupConfigSecretKey(ctx *cli.Context) {
 // natsStreamOpts returns a slice of options which should be used to configure nats
 func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	// setup registry
-	opts := []sync.Option{}
+	opts := []sync.Option{
+	}
 
 	// Parse registry TLS certs
 	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
@@ -329,4 +364,37 @@ func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	}
 	opts = append(opts, sync.Prefix(os.Getenv("MICRO_SERVICE_NAME")))
 	return opts
+}
+func EtcdOpts(ctx *cli.Context) []registry.Option  {
+	// setup registry
+	registryOpts := []registry.Option {
+		registry.Addrs("etcd-cluster.default.svc.cluster.local"),
+	}
+
+	// Parse registry TLS certs
+	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
+		cert, err := tls.LoadX509KeyPair(ctx.String("registry_tls_cert"), ctx.String("registry_tls_key"))
+		if err != nil {
+			logger.Fatalf("Error loading registry tls cert: %v", err)
+		}
+
+		// load custom certificate authority
+		caCertPool := x509.NewCertPool()
+		if len(ctx.String("registry_tls_ca")) > 0 {
+			crt, err := ioutil.ReadFile(ctx.String("registry_tls_ca"))
+			if err != nil {
+				logger.Fatalf("Error loading registry tls certificate authority: %v", err)
+			}
+			caCertPool.AppendCertsFromPEM(crt)
+		}
+
+		cfg := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: caCertPool}
+		registryOpts = append(registryOpts, registry.TLSConfig(cfg))
+	}
+
+	if len(ctx.String("registry_address")) > 0 {
+		addresses := strings.Split(ctx.String("registry_address"), ",")
+		registryOpts = append(registryOpts, registry.Addrs(addresses...))
+	}
+	return registryOpts
 }

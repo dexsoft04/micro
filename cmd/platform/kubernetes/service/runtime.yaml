@@ -157,6 +157,17 @@ spec:
             secretKeyRef:
               name: micro-secrets
               key: auth_private_key
+        - name: MICRO_USER_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: micro-user-secrets
+              key: micro_user_public_key
+        - name: MICRO_USER_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: micro-user-secrets
+              key: micro_user_private_key
+
         - name: MICRO_BROKER_TLS_CA
           value: "/certs/broker/ca.crt"
         - name: MICRO_BROKER_TLS_CERT
@@ -197,17 +208,17 @@ spec:
         - name: MICRO_CONFIG_ADDRESS
           value: "apollo-service-apollo-configservice.default:8080/"
         - name: MICRO_MONGODB_ADDRESS
-          value: "mongodb://wolfplus:passthis@10.0.0.6:27017,10.0.0.8:27017,10.0.0.3:27017"
+          value: "mongodb://wolfplus:passthis@mongodb-cluster.default.svc.cluster.local"
         - name: MICRO_POSTGRESQL_ADDRESS
           value: "postgres://wolfplus:passthis@cockroachdb-cluster-public.default:26257"
         - name: MICRO_REDIS_ADDRESS
           value: "redis://:passthis@redis-cluster-0.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-1.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-2.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-3.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-4.redis-cluster-headless.default.svc.cluster.local:6379,redis-cluster-5.redis-cluster-headless.default.svc.cluster.local:6379"
-        - name: MICRO_JAEGER_ADDRESS
+        - name: MICRO_TRACING_REPORTER_ADDRESS
           value: "jaeger-tracing-agent.monitoring.svc.cluster.local:6831"
         args:
         - service
         - runtime
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210818-465d90b7a0e1abe19326fbcb6fb4866ebfe2ad6e
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210913-443da8da83b944ce829ea962194b6b8bfe556347
         imagePullPolicy: Always
         ports:
         - containerPort: 8088
