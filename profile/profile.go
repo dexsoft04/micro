@@ -116,19 +116,19 @@ var Local = &Profile{
 
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service
-		if ctx.Args().Get(1) == "registry" {
-			SetupRegistry(memory.NewRegistry())
-			//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
-
-		} else {
-			// set the registry address
-			registry.DefaultRegistry.Init(
-				registry.Addrs("localhost:8000"),
-			)
-
-			SetupRegistry(registry.DefaultRegistry)
-		}
-		//SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+		//if ctx.Args().Get(1) == "registry" {
+		//	SetupRegistry(memory.NewRegistry())
+		//	//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
+		//
+		//} else {
+		//	// set the registry address
+		//	registry.DefaultRegistry.Init(
+		//		registry.Addrs("localhost:8000"),
+		//	)
+		//
+		//	SetupRegistry(registry.DefaultRegistry)
+		//}
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -258,7 +258,7 @@ var Service = &Profile{
 		}
 		// Configure tracing with Jaeger (forced tracing):
 		openTracer, _, err := jaeger.New(
-			opentelemetry.WithServiceName(os.Getenv("MICRO_SERVICE_NAME")),
+			opentelemetry.WithServiceName(ctx.String("service_name")),
 			opentelemetry.WithSamplingRate(1),
 			opentelemetry.WithTraceReporterAddress(reporterAddress),
 		)

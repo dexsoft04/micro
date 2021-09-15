@@ -54,7 +54,7 @@ spec:
         - name: MICRO_API_RESOLVER
           value: subdomain
         - name: MICRO_API_HANDLER
-          value: http
+          value: api
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
@@ -83,7 +83,7 @@ spec:
         image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210915-9a3221e406719ef22e468a65e248643ae997c6a3
         imagePullPolicy: Always
         ports:
-        - containerPort: 8080
+        - containerPort: 443
           name: api-port
         readinessProbe:
           tcpSocket:
