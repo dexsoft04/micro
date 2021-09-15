@@ -48,7 +48,6 @@ import (
 	microStore "github.com/micro/micro/v3/service/store"
 	inAuth "github.com/micro/micro/v3/util/auth"
 	"github.com/micro/micro/v3/util/user"
-	syncEtcd "github.com/wolfplus2048/mcbeam-plugins/sync/etcd/v3"
 )
 
 // profiles which when called will configure micro to run in that environment
@@ -93,7 +92,7 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
-		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+		//SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 		return nil
 	},
 }
@@ -110,19 +109,19 @@ var Local = &Profile{
 
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service
-		//if ctx.Args().Get(1) == "registry" {
-		//	SetupRegistry(memory.NewRegistry())
-		//	//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
-		//
-		//} else {
-		//	// set the registry address
-		//	registry.DefaultRegistry.Init(
-		//		registry.Addrs("localhost:8000"),
-		//	)
-		//
-		//	SetupRegistry(registry.DefaultRegistry)
-		//}
-		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+		if ctx.Args().Get(1) == "registry" {
+			SetupRegistry(memory.NewRegistry())
+			//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
+
+		} else {
+			// set the registry address
+			registry.DefaultRegistry.Init(
+				registry.Addrs("localhost:8000"),
+			)
+
+			SetupRegistry(registry.DefaultRegistry)
+		}
+		//SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		// the broker service uses the memory broker, the other core services will use the default
 		// rpc client and call the broker service
@@ -261,10 +260,10 @@ var Service = &Profile{
 		}
 		opentelemetry.DefaultOpenTracer = openTracer
 
-		sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
-		if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
-			logger.Fatal("Error configuring etcd sync: %v", err)
-		}
+		//sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
+		//if err := sync.Default.Init(syncEtcdOpts(ctx)...); err != nil {
+		//	logger.Fatal("Error configuring etcd sync: %v", err)
+		//}
 		config.DefaultConfig = apollo.NewConfig(apollo.WithConfig(&agollo.Conf{
 			AppID:          os.Getenv("MICRO_NAMESPACE"),
 			Cluster:        "default",
