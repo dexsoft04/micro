@@ -350,7 +350,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		case "service", "server":
 			prof = "local"
 		default:
-			prof = "client"
+			prof = "cmd"
 		}
 	}
 

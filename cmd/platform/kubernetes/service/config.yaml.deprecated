@@ -2,13 +2,13 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: default
-  name: micro-network-latest
+  name: micro-config-latest
   labels:
     micro: runtime
-    name: network
+    name: config
     version: latest
   annotations:
-    name: "network"
+    name: "config"
     version: "latest"
     source: "github.com/micro/micro"
     owner: "micro"
@@ -17,17 +17,22 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      name: micro-network
+      name: micro-config
       micro: runtime
   template:
     metadata:
       labels:
-        name: micro-network
+        name: micro-config
         micro: runtime
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: /metrics
         prometheus.io/port: "9000"
+        name: "config"
+        version: "latest"
+        source: "github.com/micro/micro"
+        owner: "micro"
+        group: "micro"
     spec:
       affinity:
         podAntiAffinity:
@@ -39,20 +44,23 @@ spec:
                     - key: name
                       operator: In
                       values:
-                        - micro-network
+                        - micro-config
                     - key: micro
                       operator: In
                       values:
                         - runtime
                 topologyKey: "kubernetes.io/hostname"
-      volumes:
-      - name: shared-data
-        emptyDir: {}
       
       
       containers:
       - name: micro
         env:
+        - name: MICRO_PROFILE
+          value: platform
+        - name: MICRO_SERVICE_NAME
+          value: config
+        - name: MICRO_PROXY
+          value: "micro-network.default.svc.cluster.local:8443"
         - name: MICRO_AUTH_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
@@ -63,12 +71,8 @@ spec:
             secretKeyRef:
               name: micro-secrets
               key: auth_private_key
-        - name: MICRO_PROFILE
-          value: platform
-        - name: MICRO_SERVICE_NAME
-          value: network
         - name: MICRO_LOG_LEVEL
-          value: "trace"
+          value: "debug"
         - name: MICRO_BROKER_TLS_CA
           value: "/certs/broker/ca.crt"
         - name: MICRO_BROKER_TLS_CERT
@@ -89,20 +93,17 @@ spec:
           value: "/certs/registry/key.pem"
         - name: MICRO_STORE_ADDRESS
           value: "postgresql://root@cockroachdb-cluster-public:26257?ssl=true&sslmode=require&sslrootcert=certs/store/ca.crt&sslkey=certs/store/key.pem&sslcert=certs/store/cert.pem"
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210915-c20fc8328a272b63d03ca186bdbc996efb868948
+        imagePullPolicy: Always
         args:
         - service
-        - network
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210913-443da8da83b944ce829ea962194b6b8bfe556347
-        imagePullPolicy: Always
+        - config
         ports:
-        - containerPort: 8443
-          name: service-port
-        - containerPort: 8085
-          name: network-port
-          protocol: UDP
+        - containerPort: 8001
+          name: config-port
         readinessProbe:
           tcpSocket:
-            port: service-port
+            port: config-port
           initialDelaySeconds: 5
           periodSeconds: 10
         volumeMounts:

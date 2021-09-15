@@ -58,6 +58,7 @@ var profiles = map[string]*Profile{
 	"test":       Test,
 	"local":      Local,
 	"kubernetes": Kubernetes,
+	"cmd":Cmd,
 }
 
 // Profile configures an environment
@@ -92,7 +93,13 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
-		//SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+		return nil
+	},
+}
+var Cmd = &Profile{
+	Name: "cmd",
+	Setup: func(ctx *cli.Context) error {
 		return nil
 	},
 }

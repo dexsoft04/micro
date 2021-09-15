@@ -20,10 +20,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - "*.mcbeam.cc"
+        - "*.mcbeam.net"
       secretName: mcbeam-certs
   rules:
-    - host: "proxy.mcbeam.cc"
+    - host: "proxy.mcbeam.net"
       http:
         paths:
           - path: /
@@ -42,10 +42,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - "*.mcbeam.cc"
+        - "*.mcbeam.net"
       secretName: mcbeam-certs
   rules:
-    - host: "api.mcbeam.cc"
+    - host: "api.mcbeam.net"
       http:
         paths:
           - path: /
@@ -53,7 +53,7 @@ spec:
             backend:
               serviceName: micro-api
               servicePort: 443
-    - host: "*.mcbeam.cc"
+    - host: "*.mcbeam.net"
       http:
         paths:
           - path: /
@@ -72,10 +72,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - "*.mcbeam.cc"
+        - "*.mcbeam.net"
       secretName: mcbeam-certs
   rules:
-    - host: "*.mcbeam.cc"
+    - host: "*.mcbeam.net"
       http:
         paths:
           - path: /web
@@ -98,10 +98,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - "*.mcbeam.cc"
+        - "*.mcbeam.net"
       secretName: mcbeam-certs
   rules:
-    - host: "*.mcbeam.cc"
+    - host: "*.mcbeam.net"
       http:
         paths:
           - path: /websocket

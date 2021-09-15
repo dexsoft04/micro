@@ -66,7 +66,7 @@ spec:
               name: micro-secrets
               key: auth_private_key
         - name: MICRO_PROFILE
-          value: "client"
+          value: "platform"
         - name: MICRO_SERVICE_NAME
           value: client
         - name: MICRO_REGISTRY_TLS_CA
@@ -80,7 +80,7 @@ spec:
         args:
         - service
         - api
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20210913-443da8da83b944ce829ea962194b6b8bfe556347
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210915-c20fc8328a272b63d03ca186bdbc996efb868948
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
