@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/micro/micro/plugin/etcd/v3"
 	"github.com/micro/micro/v3/service/sync"
+	"github.com/opentracing/opentracing-go"
 	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
 	"io/ioutil"
@@ -259,12 +260,13 @@ var Service = &Profile{
 		// Configure tracing with Jaeger (forced tracing):
 		openTracer, _, err := jaeger.New(
 			opentelemetry.WithServiceName(ctx.String("service_name")),
-			opentelemetry.WithSamplingRate(1),
 			opentelemetry.WithTraceReporterAddress(reporterAddress),
 		)
+		logger.Infof("Setting jaeger global tracer to %s", reporterAddress)
 		if err != nil {
 			logger.Fatalf("Error configuring opentracing: %v", err)
 		}
+		opentracing.SetGlobalTracer(openTracer)
 		opentelemetry.DefaultOpenTracer = openTracer
 
 		//sync.Default = syncEtcd.NewSync(sync.Nodes("etcd-cluster"))
