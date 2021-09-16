@@ -66,7 +66,7 @@ func (b *serviceBroker) Publish(topic string, msg *broker.Message, opts ...broke
 			Header: msg.Header,
 			Body:   msg.Body,
 		},
-	}, client.WithAuthToken(), client.WithAddress(b.Addrs...))
+	}, client.WithAuthToken())
 	return err
 }
 
@@ -87,7 +87,7 @@ func (b *serviceBroker) Subscribe(topic string, handler broker.Handler, opts ...
 	stream, err := b.Client.Subscribe(ctx, &pb.SubscribeRequest{
 		Topic: topic,
 		Queue: options.Queue,
-	}, client.WithAuthToken(), client.WithAddress(b.Addrs...), client.WithRequestTimeout(time.Hour))
+	}, client.WithAuthToken(), client.WithRequestTimeout(time.Hour))
 	if err != nil {
 		return nil, err
 	}
