@@ -51,7 +51,6 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 		Header: req.Message.Header,
 		Body:   req.Message.Body,
 	})
-	logger.Debugf("Published message to %s topic in the %v namespace", req.Topic, acc.Issuer)
 	if err != nil {
 		return errors.InternalServerError("broker.Broker.Publish", err.Error())
 	}

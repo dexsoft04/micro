@@ -798,6 +798,8 @@ func (g *grpcServer) Register() error {
 		}
 		sub, err := config.Broker.Subscribe(sb.Topic(), handler, opts...)
 		if err != nil {
+			logger.Infof("Subscribing[%s] to topic err: %s", config.Broker.String(), err.Error())
+
 			return err
 		}
 		g.subscribers[sb] = []broker.Subscriber{sub}
