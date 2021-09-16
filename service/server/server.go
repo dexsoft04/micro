@@ -171,8 +171,8 @@ func NewHandler(hdlr interface{}) Handler {
 }
 
 // Create a new subscriber
-func NewSubscriber(topic string, hdlr interface{}) Subscriber {
-	return DefaultServer.NewSubscriber(topic, hdlr)
+func NewSubscriber(topic string, hdlr interface{}, opts ...SubscriberOption) Subscriber {
+	return DefaultServer.NewSubscriber(topic, hdlr, opts...)
 }
 
 // Register a subscriber
