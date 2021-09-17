@@ -12,7 +12,6 @@ import (
 	"github.com/micro/micro/v3/service/auth"
 	"github.com/micro/micro/v3/service/build"
 	"github.com/micro/micro/v3/service/build/util/tar"
-	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/runtime"
 	kclient "github.com/micro/micro/v3/service/runtime/kubernetes/client"
@@ -425,7 +424,8 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		"MICRO_SERVICE_VERSION": srv.Version,
 		// set the proxy for the service to use (e.g. micro network)
 		// using the proxy which has been configured for the runtime
-		"MICRO_PROXY": client.DefaultClient.Options().Proxy,
+		//"MICRO_PROXY": client.DefaultClient.Options().Proxy,
+		"MICRO_PROXY": os.Getenv("MICRO_PROXY"),
 		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
 		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
