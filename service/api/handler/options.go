@@ -17,6 +17,7 @@
 package handler
 
 import (
+	"context"
 	"github.com/micro/micro/v3/service/api/router"
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/client/grpc"
@@ -31,6 +32,7 @@ type Options struct {
 	Namespace   string
 	Router      router.Router
 	Client      client.Client
+	Context     context.Context
 }
 
 type Option func(o *Options)
