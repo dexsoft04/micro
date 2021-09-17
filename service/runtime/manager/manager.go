@@ -429,7 +429,7 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
 		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
 		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
-		//"MICRO_TRACING_REPORTER_ADDRESS": os.Getenv("MICRO_TRACING_REPORTER_ADDRESS"),
+		"MICRO_TRACING_REPORTER_ADDRESS": os.Getenv("MICRO_TRACING_REPORTER_ADDRESS"),
 		"MICRO_REGISTRY_TLS_CA": "/certs/registry/ca.crt",
 		"MICRO_REGISTRY_TLS_CERT": "/certs/registry/cert.pem",
 		"MICRO_REGISTRY_TLS_KEY": "/certs/registry/key.pem",
