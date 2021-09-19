@@ -1,19 +1,18 @@
 package websocket
 
 import (
-	"bytes"
 	"errors"
 	"github.com/golang/protobuf/proto"
 
 	ws "github.com/gorilla/websocket"
+	pb "github.com/micro/micro/v3/proto/transport"
 	"github.com/micro/micro/v3/service/network/transport"
 	"strings"
 	"time"
-	pb "github.com/micro/micro/v3/proto/transport"
 )
 
 type webSocket struct {
-	conn *ws.Conn
+	conn    *ws.Conn
 	timeout time.Duration
 }
 
@@ -30,7 +29,10 @@ func (w webSocket) Recv(m *transport.Message) error {
 	}
 	var msg *pb.Message
 
-	proto.Unmarshal(body, msg)
+	err = proto.Unmarshal(body, msg)
+	if err != nil {
+		return err
+	}
 	m.Header = msg.Header
 	m.Body = msg.Body
 	return nil
@@ -41,8 +43,8 @@ func (w webSocket) Send(m *transport.Message) error {
 		w.conn.SetWriteDeadline(time.Now().Add(w.timeout))
 	}
 	msg := &pb.Message{
-		Header:               m.Header,
-		Body:                 m.Body,
+		Header: m.Header,
+		Body:   m.Body,
 	}
 	body, err := proto.Marshal(msg)
 	if err != nil {
@@ -60,7 +62,8 @@ func (w webSocket) Close() error {
 
 func (w webSocket) Local() string {
 	addr := w.conn.LocalAddr().String()
-	return strings.Split(addr, ":")[0]}
+	return strings.Split(addr, ":")[0]
+}
 
 func (w webSocket) Remote() string {
 	addr := w.conn.RemoteAddr().String()
