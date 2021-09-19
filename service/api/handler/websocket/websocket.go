@@ -20,6 +20,19 @@ const (
 	Handler = "websocket"
 )
 
+var (
+	DefaultContentType = "application/protobuf"
+	// support proto codecs
+	protoCodecs = []string{
+		"application/grpc",
+		"application/grpc+proto",
+		"application/proto",
+		"application/protobuf",
+		"application/proto-rpc",
+		"application/octet-stream",
+	}
+)
+
 var upgrader = ws.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -74,7 +87,11 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 				defer cancel()
 			}
 		}
-		cf := getHeader("Content-Type", msg.Header)
+		ct := msg.Header["Content-Type"]
+		if !hasCodec(ct, protoCodecs) {
+			ct = DefaultContentType
+		}
+
 		var request *bytes.Frame
 		// if the extracted payload isn't empty lets use it
 		if msg.Body != nil {
@@ -87,10 +104,10 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 		}
 		// create the request
 		req := client.DefaultClient.NewRequest(
-			getHeader("Micro-Service", msg.Header),
-			getHeader("Micro-Endpoint", msg.Header),
+			msg.Header["Micro-Service"],
+			msg.Header["Micro-Endpoint"],
 			request,
-			client.WithContentType(cf),
+			client.WithContentType(ct),
 		)
 		var rsp []byte
 		// make the call
@@ -98,7 +115,7 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 		if err := client.DefaultClient.Call(ctx, req, response, callOpt...); err != nil {
 			sock.Send(&transport.Message{
 				Header: map[string]string{
-					"Content-Type": cf,
+					"Content-Type": ct,
 					"Micro-Error":  err.Error(),
 				},
 				Body: rsp,
@@ -109,9 +126,17 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 		// write the response
 		sock.Send(&transport.Message{
 			Header: map[string]string{
-				"Content-Type": cf,
+				"Content-Type": ct,
 			},
 			Body: rsp,
 		})
 	}
+}
+func hasCodec(ct string, codecs []string) bool {
+	for _, codec := range codecs {
+		if ct == codec {
+			return true
+		}
+	}
+	return false
 }

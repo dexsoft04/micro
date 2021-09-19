@@ -40,8 +40,15 @@ func (w webSocket) Send(m *transport.Message) error {
 	if w.timeout > time.Duration(0) {
 		w.conn.SetWriteDeadline(time.Now().Add(w.timeout))
 	}
-	buff := bytes.NewBuffer(m.Body)
-	if err := w.conn.WriteMessage(ws.BinaryMessage, buff.Bytes()); err != nil {
+	msg := &pb.Message{
+		Header:               m.Header,
+		Body:                 m.Body,
+	}
+	body, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	if err := w.conn.WriteMessage(ws.BinaryMessage, body); err != nil {
 		return err
 	}
 	return nil
