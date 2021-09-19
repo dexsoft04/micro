@@ -2,45 +2,24 @@ package websocket
 
 import (
 	"context"
-	"fmt"
 	ws "github.com/gorilla/websocket"
 	"github.com/micro/micro/v3/service/api"
 	"github.com/micro/micro/v3/service/api/handler"
+	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/context/metadata"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/network/transport"
-	"github.com/micro/micro/v3/util/codec"
-	raw "github.com/micro/micro/v3/util/codec/bytes"
-	"github.com/micro/micro/v3/util/codec/grpc"
-	"github.com/micro/micro/v3/util/codec/json"
-	"github.com/micro/micro/v3/util/codec/jsonrpc"
-	"github.com/micro/micro/v3/util/codec/proto"
-	"github.com/micro/micro/v3/util/codec/protorpc"
+	"github.com/micro/micro/v3/util/codec/bytes"
 	"net/http"
 	"runtime/debug"
 	"strconv"
-	"sync"
 	"time"
 )
 
 const (
 	Handler = "websocket"
 )
-var (
 
-	DefaultContentType = "application/protobuf"
-
-	DefaultCodecs = map[string]codec.NewCodec{
-		"application/grpc":         grpc.NewCodec,
-		"application/grpc+json":    grpc.NewCodec,
-		"application/grpc+proto":   grpc.NewCodec,
-		"application/json":         json.NewCodec,
-		"application/json-rpc":     jsonrpc.NewCodec,
-		"application/protobuf":     proto.NewCodec,
-		"application/proto-rpc":    protorpc.NewCodec,
-		"application/octet-stream": raw.NewCodec,
-	}
-)
 var upgrader = ws.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -57,23 +36,14 @@ func (ws *websocket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to upgrade websocket", 500)
 		return
 	}
-
 	socket := &webSocket{
 		conn:    cnn,
-		recv:    make(chan *transport.Message),
-		send:    make(chan *transport.Message),
-		exit:    make(chan bool),
-		local:   r.Host,
-		remote:  r.RemoteAddr,
-		timeout: 5 * time.Second,
-		ctx:     context.Background(),
-		RWMutex: sync.RWMutex{},
+		timeout: 0,
 	}
 	go ws.serveConn(socket)
 }
 
 func (ws *websocket) String() string {
-
 	return "websocket"
 }
 func (ws *websocket) serveConn(sock transport.Socket) {
@@ -96,7 +66,7 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 		}
 		ctx := metadata.NewContext(context.Background(), hdr)
 
-		timeout := hdr["Timeout"]
+		timeout := msg.Header["Timeout"]
 		if len(timeout) > 0 {
 			if n, err := strconv.ParseInt(timeout, 10, 64); err != nil {
 				var cancel context.CancelFunc
@@ -104,33 +74,44 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 				defer cancel()
 			}
 		}
-
-		ct := msg.Header["Content-Type"]
-		if len(ct) == 0 {
-			msg.Header["Content-Type"] = DefaultContentType
-			ct = DefaultContentType
+		cf := getHeader("Content-Type", msg.Header)
+		var request *bytes.Frame
+		// if the extracted payload isn't empty lets use it
+		if msg.Body != nil {
+			request = &bytes.Frame{Data: msg.Body}
 		}
 
-		var cf codec.NewCodec
-		var err error
-		// try get a new codec
-		if cf, err = ws.newCodec(ct); err != nil {
-			// no codec found so send back an error
+		var callOpt []client.CallOption
+		if len(msg.Header["Micro-ServiceID"]) > 0 {
+			callOpt = append(callOpt, client.WithServerUid(msg.Header["Micro-ServiceID"]))
+		}
+		// create the request
+		req := client.DefaultClient.NewRequest(
+			getHeader("Micro-Service", msg.Header),
+			getHeader("Micro-Endpoint", msg.Header),
+			request,
+			client.WithContentType(cf),
+		)
+		var rsp []byte
+		// make the call
+		var response *bytes.Frame
+		if err := client.DefaultClient.Call(ctx, req, response, callOpt...); err != nil {
 			sock.Send(&transport.Message{
 				Header: map[string]string{
-					"Content-Type": "text/plain",
+					"Content-Type": cf,
+					"Micro-Error":  err.Error(),
 				},
-				Body: []byte(err.Error()),
+				Body: rsp,
 			})
-			return
+			continue
 		}
-
+		rsp = response.Data
+		// write the response
+		sock.Send(&transport.Message{
+			Header: map[string]string{
+				"Content-Type": cf,
+			},
+			Body: rsp,
+		})
 	}
-}
-
-func (ws *websocket) newCodec(contentType string) (codec.NewCodec, error) {
-	if cf, ok := DefaultCodecs[contentType]; ok {
-		return cf, nil
-	}
-	return nil, fmt.Errorf("Unsupported Content-Type: %s", contentType)
 }
