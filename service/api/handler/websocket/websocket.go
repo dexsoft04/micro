@@ -124,12 +124,18 @@ func (ws *websocket) serveConn(sock transport.Socket) {
 		}
 		rsp = response.Data
 		// write the response
-		sock.Send(&transport.Message{
+		err := sock.Send(&transport.Message{
 			Header: map[string]string{
 				"Content-Type": ct,
 			},
+
+
+
 			Body: rsp,
 		})
+		if err != nil {
+			return
+		}
 	}
 }
 func hasCodec(ct string, codecs []string) bool {
