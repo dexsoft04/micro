@@ -4,7 +4,7 @@ import (
 	"context"
 	ws "github.com/gorilla/websocket"
 	"github.com/micro/micro/v3/service/api"
-	"github.com/micro/micro/v3/service/api/handler"
+	hdl "github.com/micro/micro/v3/service/api/handler"
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/context/metadata"
 	"github.com/micro/micro/v3/service/logger"
@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	Handler = "websocket"
+	Handler = "handler"
 )
 
 var (
@@ -38,28 +38,28 @@ var upgrader = ws.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type websocket struct {
-	opts *handler.Options
+type handler struct {
+	opts *hdl.Options
 	s    *api.Service
 }
 
-func (ws *websocket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cnn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, "failed to upgrade websocket", 500)
+		http.Error(w, "failed to upgrade handler", 500)
 		return
 	}
-	socket := &webSocket{
+	socket := &Session{
 		conn:    cnn,
 		timeout: 0,
 	}
-	go ws.serveConn(socket)
+	go h.serveConn(socket)
 }
 
-func (ws *websocket) String() string {
-	return "websocket"
+func (h *handler) String() string {
+	return "handler"
 }
-func (ws *websocket) serveConn(sock transport.Socket) {
+func (h *handler) serveConn(sock transport.Socket) {
 	defer func() {
 		sock.Close()
 		// recover any panics
