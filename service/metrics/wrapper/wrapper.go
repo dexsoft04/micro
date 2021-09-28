@@ -15,7 +15,6 @@
 package wrapper
 
 import (
-	"github.com/micro/micro/v3/service/logger"
 	"time"
 
 	"context"
@@ -57,10 +56,8 @@ func (w *Wrapper) HandlerFunc(handlerFunction server.HandlerFunc) server.Handler
 		} else {
 			tags["result"] = "success"
 		}
-		logger.Infof("mectrics1: %s, %v", tags["method"], w.reporter)
 		// Instrument the result (if the DefaultClient has been configured):
 		w.reporter.Timing("service.handler", time.Since(callTime), tags)
-		logger.Infof("mectrics2: %v", w.reporter)
 
 		return err
 	}

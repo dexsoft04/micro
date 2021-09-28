@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/auth"
 	authSrv "github.com/micro/micro/v3/service/auth/client"
 	"github.com/micro/micro/v3/service/broker"
@@ -10,7 +9,6 @@ import (
 	grpcCli "github.com/micro/micro/v3/service/client/grpc"
 	"github.com/micro/micro/v3/service/events"
 	eventsSrv "github.com/micro/micro/v3/service/events/client"
-	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/metrics"
 	noopMet "github.com/micro/micro/v3/service/metrics/noop"
 	"github.com/micro/micro/v3/service/network"
@@ -48,13 +46,5 @@ func setupDefaults() {
 	store.DefaultStore = storeSrv.NewStore()
 	store.DefaultBlobStore = storeSrv.NewBlobStore()
 	runtime.DefaultRuntime = runtimeSrv.NewRuntime()
-
-	if !metrics.IsSet() {
-		prometheusReporter, err := prometheus.New()
-		if err != nil {
-			logger.Fatal(err)
-		}
-		metrics.SetDefaultMetricsReporter(prometheusReporter)
-	}
 
 }

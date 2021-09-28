@@ -8,6 +8,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"github.com/micro/micro/plugin/etcd/v3"
+	"github.com/micro/micro/plugin/prometheus/v3"
+	"github.com/micro/micro/v3/service/metrics"
 	"github.com/micro/micro/v3/service/sync"
 	"github.com/opentracing/opentracing-go"
 	"github.com/philchia/agollo/v4"
@@ -94,6 +96,13 @@ func Load(name string) (*Profile, error) {
 var Client = &Profile{
 	Name: "client",
 	Setup: func(ctx *cli.Context) error {
+		if !metrics.IsSet() {
+			prometheusReporter, err := prometheus.New()
+			if err != nil {
+				logger.Fatal(err)
+			}
+			metrics.SetDefaultMetricsReporter(prometheusReporter)
+		}
 		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 		return nil
 	},
@@ -251,6 +260,14 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
+		if !metrics.IsSet() {
+			prometheusReporter, err := prometheus.New()
+			if err != nil {
+				logger.Fatal(err)
+			}
+			metrics.SetDefaultMetricsReporter(prometheusReporter)
+		}
+
 		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		reporterAddress := ctx.String("tracing_reporter_address")
