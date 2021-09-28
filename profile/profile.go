@@ -263,13 +263,13 @@ var Service = &Profile{
 
 		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
-		if !metrics.IsSet() {
-			prometheusReporter, err := prometheus.New()
-			if err != nil {
-				logger.Fatal(err)
-			}
-			metrics.SetDefaultMetricsReporter(prometheusReporter)
-		}
+		//if !metrics.IsSet() {
+		//	prometheusReporter, err := prometheus.New()
+		//	if err != nil {
+		//		logger.Fatal(err)
+		//	}
+		//	metrics.SetDefaultMetricsReporter(prometheusReporter)
+		//}
 
 		reporterAddress := ctx.String("tracing_reporter_address")
 		if len(reporterAddress) == 0 {
