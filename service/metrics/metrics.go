@@ -16,6 +16,7 @@
 package metrics
 
 import (
+	"github.com/micro/micro/v3/service/logger"
 	"sync"
 	"time"
 )
@@ -67,5 +68,6 @@ func Gauge(id string, value float64, tags Tags) error {
 
 // Timing submits a timing metric using the DefaultMetricsReporter:
 func Timing(id string, value time.Duration, tags Tags) error {
+	logger.Infof("repoter:%v", DefaultMetricsReporter)
 	return DefaultMetricsReporter.Timing(id, value, tags)
 }
