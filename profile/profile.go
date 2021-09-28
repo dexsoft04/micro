@@ -260,6 +260,9 @@ var Kubernetes = &Profile{
 var Service = &Profile{
 	Name: "service",
 	Setup: func(ctx *cli.Context) error {
+
+		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
+
 		if !metrics.IsSet() {
 			prometheusReporter, err := prometheus.New()
 			if err != nil {
@@ -267,8 +270,6 @@ var Service = &Profile{
 			}
 			metrics.SetDefaultMetricsReporter(prometheusReporter)
 		}
-
-		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		reporterAddress := ctx.String("tracing_reporter_address")
 		if len(reporterAddress) == 0 {

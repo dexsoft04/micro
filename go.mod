@@ -55,7 +55,7 @@ require (
 	google.golang.org/protobuf v1.25.0
 )
 
-//replace (
-//	github.com/micro/micro/plugin/etcd/v3 => ./plugin/etcd
-//	github.com/micro/micro/plugin/prometheus/v3 => ./plugin/prometheus
-//)
+replace (
+	github.com/micro/micro/plugin/etcd/v3 => ./plugin/etcd
+	github.com/micro/micro/plugin/prometheus/v3 => ./plugin/prometheus
+)
