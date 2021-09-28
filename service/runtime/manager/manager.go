@@ -435,7 +435,6 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		"MICRO_REGISTRY_TLS_KEY": "/certs/registry/key.pem",
 
 	}
-
 	// bind to port 8080, this is what the k8s tcp readiness check will use
 	if runtime.DefaultRuntime.String() == "kubernetes" {
 		env["MICRO_SERVICE_ADDRESS"] = ":8080"

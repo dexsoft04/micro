@@ -208,7 +208,7 @@ spec:
         - name: MICRO_CONFIG_ADDRESS
           value: "apollo-service-apollo-configservice.default:8080/"
         - name: MICRO_MONGODB_ADDRESS
-          value: "mongodb://wolfplus:passthis@mongodb-cluster.default.svc.cluster.local"
+          value: "mongodb://wolfplus:passthis@10.0.0.6:27017,10.0.0.8:27017,10.0.0.3:27017"
         - name: MICRO_POSTGRESQL_ADDRESS
           value: "postgres://wolfplus:passthis@cockroachdb-cluster-public.default:26257"
         - name: MICRO_REDIS_ADDRESS
@@ -218,7 +218,7 @@ spec:
         args:
         - service
         - runtime
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210917-4f4c29852be72b7f3fe5f50ae8e259ca06a04da1
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20210917-1eda672f8a83f2f9103e5985e51a7893c0a8f1d4
         imagePullPolicy: Always
         ports:
         - containerPort: 8088
