@@ -18,6 +18,7 @@ package prometheus
 
 import (
 	"errors"
+	"github.com/micro/micro/v3/service/logger"
 	"time"
 
 	"github.com/micro/micro/v3/service/metrics"
@@ -76,6 +77,7 @@ func (r *Reporter) Timing(name string, value time.Duration, tags metrics.Tags) (
 	timing := r.metrics.getTiming(r.stripUnsupportedCharacters(name), r.listTagKeys(tags))
 	metric, err := timing.GetMetricWith(r.convertTags(tags))
 	if err != nil {
+		logger.Infof("Timmng:%s", err.Error())
 		return err
 	}
 
