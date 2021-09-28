@@ -304,10 +304,12 @@ func MetricsHandler() server.HandlerWrapper {
 			} else {
 				tags["result"] = "success"
 			}
-			logger.Infof("metrics1:%%s", tags["method"])
+			logger.Infof("metrics1:%s", tags["method"])
 			// Instrument the result (if the DefaultClient has been configured):
-			metrics.Timing("service.handler", time.Since(callTime), tags)
-			logger.Infof("metrics2:%s", tags["method"])
+			err = metrics.Timing("service.handler", time.Since(callTime), tags)
+			if err != nil {
+				logger.Infof("metrics2:err:%s", err.Error())
+			}
 
 			return err
 		}
