@@ -10,3 +10,7 @@ services:
       - 2379:2379
   redis:
     image: redis:alpine
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017

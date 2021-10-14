@@ -39,6 +39,8 @@ import (
 
 	muruntime "github.com/micro/micro/v3/service/runtime"
 	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
+	ws "github.com/wolfplus2048/mcbeam-plugins/ws_session/v3/wrapper"
+
 )
 
 type Cmd interface {
@@ -402,6 +404,7 @@ func (c *command) Before(ctx *cli.Context) error {
 			server.WrapHandler(wrapper.MetricsHandler()),
 			server.WrapHandler(wrapper.OpenTraceHandler()),
 			server.WrapHandler(mcwrapper.SessionHandler()),
+			server.WrapHandler(ws.SessionHandler()),
 		)
 	})
 
