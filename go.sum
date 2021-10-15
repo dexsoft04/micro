@@ -441,8 +441,8 @@ github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210826053511-69
 github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210826053511-6966876170a7/go.mod h1:LnaxZNejSSVUnsIOj48uCffMXVeQswmi4C8sSCnLoHY=
 github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210803053144-09b3e552dd3e h1:FEqpUyDZV4JjPRLh1JlpgTkc5Q5Vh720b/v7LfZ00xY=
 github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210803053144-09b3e552dd3e/go.mod h1:d66J37NkNkhKSKUwb82x4RK8M2wenJpq1skdkwcInTo=
-github.com/wolfplus2048/mcbeam-plugins/ws_session/v3 v3.0.0-20211014071105-a692112a7005 h1:NknOYlg4sZJmSDofkCLAyTx/4Q5vyF+wsM43//pSL2c=
-github.com/wolfplus2048/mcbeam-plugins/ws_session/v3 v3.0.0-20211014071105-a692112a7005/go.mod h1:35+OAPNxQDw1koxJMES90bgehwCHpY4yxYaTen9dLjw=
+github.com/wolfplus2048/mcbeam-plugins/ws_session/v3 v3.0.0-20211015055059-04d181a0021c h1:gYMqPsmqKeOPn40baQ5XaAaoBygGAP+2zlUlX4GXvSI=
+github.com/wolfplus2048/mcbeam-plugins/ws_session/v3 v3.0.0-20211015055059-04d181a0021c/go.mod h1:35+OAPNxQDw1koxJMES90bgehwCHpY4yxYaTen9dLjw=
 github.com/xanzy/go-gitlab v0.35.1 h1:jJSgT0NxjCvrSZf7Gvn2NxxV9xAYkTjYrKW8XwWhrfY=
 github.com/xanzy/go-gitlab v0.35.1/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
