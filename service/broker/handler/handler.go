@@ -47,7 +47,7 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 	}
 
 	logger.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, acc.Issuer)
-	err := broker.DefaultBroker.Publish(acc.Issuer+"."+req.Topic, &broker.Message{
+	err := broker.DefaultBroker.Publish(ns+"."+req.Topic, &broker.Message{
 		Header: req.Message.Header,
 		Body:   req.Message.Body,
 	})
