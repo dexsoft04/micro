@@ -1,0 +1,18 @@
+ apiVersion: v1
+ kind: Service
+ metadata:
+   name: micro-websocket
+   namespace: default
+   labels:
+     micro: runtime
+     name: websocket
+     version: latest
+ spec:
+   ports:
+   - name: websocket
+     port: 3251
+     targetPort: 3251
+   selector:
+     name: micro-websocket
+     micro: runtime
+     version: latest
