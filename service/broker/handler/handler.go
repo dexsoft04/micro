@@ -43,7 +43,7 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 	subns, ok := metadata.Get(ctx, "Micro-Sub-Namespace")
 	if ok && len(subns) > 0{
 		ns = subns
-		logger.Infof("sub namespace:%s", ns)
+		logger.Infof("public namespace:%s", ns)
 	}
 
 	logger.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, acc.Issuer)
