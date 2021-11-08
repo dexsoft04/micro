@@ -28,6 +28,7 @@ import (
 
 var (
 	DefaultServiceResources = &runtime.Resources{
+		CPU: 400,
 		Mem:  400,
 		Disk: 2000,
 		// explicitly not doing CPU here
