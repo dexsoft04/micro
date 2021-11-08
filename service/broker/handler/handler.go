@@ -46,7 +46,7 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 		logger.Infof("public namespace:%s", ns)
 	}
 
-	logger.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, acc.Issuer)
+	logger.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, ns)
 	err := broker.DefaultBroker.Publish(ns+"."+req.Topic, &broker.Message{
 		Header: req.Message.Header,
 		Body:   req.Message.Body,

@@ -82,7 +82,7 @@ spec:
         args:
         - service
         - websocket
-        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam-dev:mcbeam-dev-20211019-f2e321a4c08f6f310db87be7c773acd4e267ecb5
+        image: mcbeam-hub.tencentcloudcr.com/wolfplus/mcbeam:mcbeam-v3-20211022-b31ecd451433214ea9cd7499a6545ef7eec4ea0e
         imagePullPolicy: Always
         ports:
         - containerPort: 3251
