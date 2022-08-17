@@ -333,7 +333,7 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 	// parse resource limits
 	var resReqs *ResourceRequirements
 	if opts.Resources != nil {
-		resReqs = &ResourceRequirements{Limits: &ResourceLimits{}}
+		resReqs = &ResourceRequirements{Limits: &ResourceLimits{}, Requests: &ResourceLimits{}}
 
 		if opts.Resources.CPU > 0 {
 			resReqs.Limits.CPU = fmt.Sprintf("%vm", opts.Resources.CPU)
@@ -344,6 +344,10 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 		if opts.Resources.Disk > 0 {
 			resReqs.Limits.EphemeralStorage = fmt.Sprintf("%vMi", opts.Resources.Disk)
 		}
+		resReqs.Requests.CPU = fmt.Sprintf("%vm", 200)
+		resReqs.Requests.Memory = fmt.Sprintf("%vMi", 200)
+		resReqs.Requests.EphemeralStorage = fmt.Sprintf("%vMi", 2000)
+
 	}
 
 	// parse the port option
@@ -398,7 +402,7 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 								PeriodSeconds:       10,
 								InitialDelaySeconds: 10,
 							},
-							Resources: resReqs,
+							Resources:    resReqs,
 							VolumeMounts: volumeMounts,
 						}},
 						Volumes: volumes,
