@@ -243,7 +243,12 @@ func (s *srv) Inspect(token string) (*auth.Account, error) {
 		Token: token, Options: &pb.Options{Namespace: s.Options().Issuer},
 	}, s.callOpts()...)
 	if err != nil {
+		logger.Errorf("inspect, token:%s", token)
 		return nil, err
+	}
+	if rsp.Account == nil {
+		logger.Errorf("inspect panic, token:%s", token)
+		return nil, auth.ErrInvalidToken
 	}
 	return serializeAccount(rsp.Account), nil
 }
