@@ -117,7 +117,9 @@ func AuthHandler() server.HandlerWrapper {
 			}
 
 			// The user is authorised, allow the call
-			return h(ctx, req, rsp)
+			err = h(ctx, req, rsp)
+			logger.Error(err)
+			return err
 		}
 	}
 }
@@ -306,9 +308,9 @@ func MetricsHandler() server.HandlerWrapper {
 			}
 			//logger.Infof("metrics1:%s", tags["method"])
 			// Instrument the result (if the DefaultClient has been configured):
-			err = metrics.Timing("service.handler", time.Since(callTime), tags)
-			if err != nil {
-				logger.Infof("metrics2:err:%s %s", err.Error(), tags["method"])
+			tErr := metrics.Timing("service.handler", time.Since(callTime), tags)
+			if tErr != nil {
+				logger.Infof("metrics2:err:%s %s", tErr.Error(), tags["method"])
 			}
 
 			return err
