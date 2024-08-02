@@ -23,7 +23,7 @@ func (c *Converter) defaultSpec() {
 			ExtensionProps: openapi3.ExtensionProps{
 				Extensions: map[string]interface{}{
 					"x-logo": map[string]string{
-						"url":             "https://micro.mu/images/brand.png",
+						"url":             "https://micro.dev/images/brand.png",
 						"backgroundColor": "#FFFFFF",
 						"altText":         "Micro logo",
 					},
@@ -34,11 +34,11 @@ func (c *Converter) defaultSpec() {
 		Paths:   make(openapi3.Paths),
 	}
 
-	// Add the LIVE platform server:
+	// Add the local platform server:
 	c.openAPISpec.AddServer(
 		&openapi3.Server{
-			URL:         "https://api.m3o.com/v1",
-			Description: "Micro M3O environment",
+			URL:         "http://localhost:8080",
+			Description: "Micro dev environment",
 		},
 	)
 

@@ -373,7 +373,7 @@ const Signup = `{
     "x-logo": {
       "altText": "Micro logo",
       "backgroundColor": "#FFFFFF",
-      "url": "https://micro.mu/images/brand.png"
+      "url": "https://micro.dev/images/brand.png"
     }
   },
   "openapi": "3.0.0",
@@ -573,8 +573,8 @@ const Signup = `{
   },
   "servers": [
     {
-      "url": "https://api.m3o.com/v1",
-      "description": "Micro M3O environment"
+      "url": "http://localhost:8080",
+      "description": "Micro dev environment"
     }
   ]
 }`

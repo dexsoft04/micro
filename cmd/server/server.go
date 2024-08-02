@@ -3,10 +3,12 @@ package server
 
 import (
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/micro/micro/v3/cmd"
-	"github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/auth"
 	log "github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/runtime"
@@ -28,6 +30,11 @@ var (
 		"api",       // :8080
 		"gate",      // :3250
 		"websocket", // :3251
+	}
+
+	// list the clients managed
+	clients = []string{
+		"web",
 	}
 )
 
@@ -118,15 +125,13 @@ func Run(context *cli.Context) error {
 		// all things run by the server are `micro service [name]`
 		cmdArgs := []string{"service"}
 
-		// override the profile for api & proxy
-		env := envvars
-		if service == "proxy" || service == "api" {
-			env = append(env, "MICRO_PROFILE=client")
-		} else {
-			env = append(env, "MICRO_PROFILE="+context.String("profile"))
-		}
+		// TODO: remove hacks
+		profile := context.String("profile")
 
-		// set the proxy addres, default to the network running locally
+		env := envvars
+		env = append(env, "MICRO_PROFILE="+profile)
+
+		// set the proxy address, default to the network running locally
 		if service != "network" {
 			proxy := context.String("proxy_address")
 			if len(proxy) == 0 {
@@ -137,31 +142,7 @@ func Run(context *cli.Context) error {
 
 		// for kubernetes we want to provide a port and instruct the service to bind to it. we don't do
 		// this locally because the services are not isolated and the ports will conflict
-		var port string
-		if runtime.DefaultRuntime.String() == "kubernetes" {
-			switch service {
-			case "api":
-				// run the api on :443, the standard port for HTTPs
-				port = "443"
-				env = append(env, "MICRO_API_ADDRESS=:443")
-				// pass :8080 for the internal service address, since this is the default port used for the
-				// static (k8s) router. Because the http api will register on :443 it won't conflict
-				env = append(env, "MICRO_SERVICE_ADDRESS=:8080")
-			case "proxy":
-				// run the proxy on :443, the standard port for HTTPs
-				port = "443"
-				env = append(env, "MICRO_PROXY_ADDRESS=:443")
-				// pass :8080 for the internal service address, since this is the default port used for the
-				// static (k8s) router. Because the grpc proxy will register on :443 it won't conflict
-				env = append(env, "MICRO_SERVICE_ADDRESS=:8080")
-			case "network":
-				port = "8443"
-				env = append(env, "MICRO_SERVICE_ADDRESS=:8443")
-			default:
-				port = "8080"
-				env = append(env, "MICRO_SERVICE_ADDRESS=:8080")
-			}
-		}
+		port := "8080"
 
 		// we want to pass through the global args so go up one level in the context lineage
 		if len(context.Lineage()) > 1 {
@@ -179,10 +160,6 @@ func Run(context *cli.Context) error {
 			runtime.WithEnv(env),
 			runtime.WithPort(port),
 			runtime.WithRetries(10),
-			runtime.WithServiceAccount("micro"),
-			runtime.WithVolume("store-pvc", "/store"),
-			runtime.CreateImage(context.String("image")),
-			runtime.CreateNamespace("micro"),
 			runtime.WithSecret("MICRO_AUTH_PUBLIC_KEY", auth.DefaultAuth.Options().PublicKey),
 			runtime.WithSecret("MICRO_AUTH_PRIVATE_KEY", auth.DefaultAuth.Options().PrivateKey),
 		}
@@ -195,9 +172,23 @@ func Run(context *cli.Context) error {
 		}
 	}
 
-	// server is deployed as a pod in k8s, meaning it should exit once the services have been created.
-	if runtimeServer.String() == "kubernetes" {
-		return nil
+	// start the clients
+	for _, client := range clients {
+		log.Infof("Registering %s", client)
+
+		// runtime based on environment we run the service in
+		args := []runtime.CreateOption{
+			runtime.WithCommand(os.Args[0]),
+			runtime.WithArgs(client),
+			runtime.WithRetries(10),
+		}
+
+		// NOTE: we use Version right now to check for the latest release
+		srv := &runtime.Service{Name: client, Version: "latest"}
+		if err := runtimeServer.Create(srv, args...); err != nil {
+			log.Errorf("Failed to create runtime environment: %v", err)
+			return err
+		}
 	}
 
 	log.Info("Starting server runtime")
@@ -208,18 +199,15 @@ func Run(context *cli.Context) error {
 		return err
 	}
 
-	// internal server
-	srv := service.New(
-		service.Name(Name),
-		service.Address(Address),
-	)
-
-	// start the server
-	if err := srv.Run(); err != nil {
-		log.Fatalf("Error running server: %v", err)
-	}
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
+	<-ch
 
 	runtimeServer.Stop()
 	log.Info("Stopped server")
+
+	// just wait 1 sec
+	<-time.After(time.Second)
+
 	return nil
 }

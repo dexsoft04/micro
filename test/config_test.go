@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package test
@@ -42,7 +43,7 @@ func testConfig(t *T) {
 	})
 
 	t.T().Run("Test no dot get set delete", func(tee *testing.T) {
-		// This needs to be retried to the the "error listing rules"
+		// This needs to be retried to the "error listing rules"
 		// error log output that happens when the auth service is not yet available.
 
 		if err := Try("Calling micro config set", t, func() ([]byte, error) {
@@ -305,7 +306,7 @@ func testConfigReadFromService(t *T) {
 
 	cmd := serv.Command()
 
-	// This needs to be retried to the the "error listing rules"
+	// This needs to be retried to the "error listing rules"
 	// error log output that happens when the auth service is not yet available.
 	if err := Try("Calling micro config set", t, func() ([]byte, error) {
 		outp, err := cmd.Exec("config", "set", "key.subkey", "val1")

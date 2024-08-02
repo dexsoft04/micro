@@ -7,6 +7,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/micro/micro/plugin/etcd/v3"
 	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/service/metrics"
@@ -14,16 +19,13 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/philchia/agollo/v4"
 	"github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/micro/micro/v3/service/auth/jwt"
 	"github.com/micro/micro/v3/service/broker"
 	memBroker "github.com/micro/micro/v3/service/broker/memory"
 	"github.com/micro/micro/v3/service/build/golang"
 	"github.com/micro/micro/v3/service/client"
+	grpcClient "github.com/micro/micro/v3/service/client/grpc"
 	"github.com/micro/micro/v3/service/config"
 	storeConfig "github.com/micro/micro/v3/service/config/store"
 	evStore "github.com/micro/micro/v3/service/events/store"
@@ -38,6 +40,7 @@ import (
 	"github.com/micro/micro/v3/service/runtime/kubernetes"
 	"github.com/micro/micro/v3/service/runtime/local"
 	"github.com/micro/micro/v3/service/server"
+	grpcServer "github.com/micro/micro/v3/service/server/grpc"
 	"github.com/micro/micro/v3/service/store/file"
 	mem "github.com/micro/micro/v3/service/store/memory"
 	"github.com/micro/micro/v3/util/opentelemetry"
@@ -56,12 +59,12 @@ import (
 // profiles which when called will configure micro to run in that environment
 var profiles = map[string]*Profile{
 	// built in profiles
-	"client":     Client,
-	"service":    Service,
-	"test":       Test,
-	"local":      Local,
-	"kubernetes": Kubernetes,
-	"cmd":Cmd,
+	"client":  Client,
+	"service": Service,
+	"server":  Server,
+	"test":    Test,
+	"local":   Local,
+	"cmd":     Cmd,
 }
 
 // Profile configures an environment
@@ -114,9 +117,50 @@ var Cmd = &Profile{
 	},
 }
 
-// Local profile to run locally
+// Local profile to run as a single process
 var Local = &Profile{
 	Name: "local",
+	Setup: func(ctx *cli.Context) error {
+		// set client/server
+		client.DefaultClient = grpcClient.NewClient()
+		server.DefaultServer = grpcServer.NewServer()
+
+		microAuth.DefaultAuth = jwt.NewAuth()
+		microStore.DefaultStore = file.NewStore(file.WithDir(filepath.Join(user.Dir, "server", "store")))
+		SetupConfigSecretKey(ctx)
+		config.DefaultConfig, _ = storeConfig.NewConfig(microStore.DefaultStore, "")
+
+		SetupJWT(ctx)
+		SetupRegistry(memory.NewRegistry())
+		SetupBroker(memBroker.NewBroker())
+
+		// set the store in the model
+		model.DefaultModel = model.NewModel(
+			model.WithStore(microStore.DefaultStore),
+		)
+
+		microRuntime.DefaultRuntime = local.NewRuntime()
+
+		var err error
+		microEvents.DefaultStream, err = memStream.NewStream()
+		if err != nil {
+			logger.Fatalf("Error configuring stream: %v", err)
+		}
+		microEvents.DefaultStore = evStore.NewStore(
+			evStore.WithStore(microStore.DefaultStore),
+		)
+
+		microStore.DefaultBlobStore, err = file.NewBlobStore()
+		if err != nil {
+			logger.Fatalf("Error configuring file blob store: %v", err)
+		}
+
+		return nil
+	},
+}
+
+var Server = &Profile{
+	Name: "server",
 	Setup: func(ctx *cli.Context) error {
 		microAuth.DefaultAuth = jwt.NewAuth()
 		microStore.DefaultStore = file.NewStore(file.WithDir(filepath.Join(user.Dir, "server", "store")))
@@ -126,18 +170,16 @@ var Local = &Profile{
 
 		// the registry service uses the memory registry, the other core services will use the default
 		// rpc client and call the registry service
-		//if ctx.Args().Get(1) == "registry" {
-		//	SetupRegistry(memory.NewRegistry())
-		//	//SetupRegistry(etcd.NewRegistry(registry.Addrs("localhost")))
-		//
-		//} else {
-		//	// set the registry address
-		//	registry.DefaultRegistry.Init(
-		//		registry.Addrs("localhost:8000"),
-		//	)
-		//
-		//	SetupRegistry(registry.DefaultRegistry)
-		//}
+		// if ctx.Args().Get(1) == "registry" {
+		// 	SetupRegistry(memory.NewRegistry())
+		// } else {
+		// 	// set the registry address
+		// 	registry.DefaultRegistry.Init(
+		// 		registry.Addrs("localhost:8000"),
+		// 	)
+
+		// 	SetupRegistry(registry.DefaultRegistry)
+		// }
 		SetupRegistry(etcd.NewRegistry(EtcdOpts(ctx)...))
 
 		// the broker service uses the memory broker, the other core services will use the default
@@ -362,8 +404,7 @@ func SetupConfigSecretKey(ctx *cli.Context) {
 // natsStreamOpts returns a slice of options which should be used to configure nats
 func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	// setup registry
-	opts := []sync.Option{
-	}
+	opts := []sync.Option{}
 
 	// Parse registry TLS certs
 	if len(ctx.String("registry_tls_cert")) > 0 || len(ctx.String("registry_tls_key")) > 0 {
@@ -392,9 +433,9 @@ func syncEtcdOpts(ctx *cli.Context) []sync.Option {
 	opts = append(opts, sync.Prefix(os.Getenv("MICRO_SERVICE_NAME")))
 	return opts
 }
-func EtcdOpts(ctx *cli.Context) []registry.Option  {
+func EtcdOpts(ctx *cli.Context) []registry.Option {
 	// setup registry
-	registryOpts := []registry.Option {
+	registryOpts := []registry.Option{
 		registry.Addrs("etcd-cluster.default.svc.cluster.local"),
 	}
 

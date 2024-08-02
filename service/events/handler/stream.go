@@ -49,6 +49,7 @@ func (s *Stream) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Pu
 		Topic:     req.Topic,
 		Timestamp: time.Unix(req.Timestamp, 0),
 	}
+
 	if err := events.DefaultStore.Write(&event, events.WithTTL(time.Hour*24)); err != nil {
 		logger.Errorf("Error writing event %v to store: %v", event.ID, err)
 	}
@@ -57,6 +58,8 @@ func (s *Stream) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Pu
 }
 
 func (s *Stream) Consume(ctx context.Context, req *pb.ConsumeRequest, rsp pb.Stream_ConsumeStream) error {
+	logger.Infof("New consumer for %s\n", req.Topic)
+
 	// authorize the request
 	if err := namespace.AuthorizeAdmin(ctx, namespace.DefaultNamespace, "events.Stream.Consume"); err != nil {
 		return err
@@ -77,6 +80,9 @@ func (s *Stream) Consume(ctx context.Context, req *pb.ConsumeRequest, rsp pb.Str
 		opts = append(opts, events.WithRetryLimit(int(req.RetryLimit)))
 	}
 
+	// append the context
+	opts = append(opts, events.WithContext(ctx))
+
 	// create the subscriber
 	evChan, err := events.Consume(req.Topic, opts...)
 	if err != nil {
@@ -91,6 +97,7 @@ func (s *Stream) Consume(ctx context.Context, req *pb.ConsumeRequest, rsp pb.Str
 	mutex := sync.RWMutex{}
 	recvErrChan := make(chan error)
 	sendErrChan := make(chan error)
+
 	go func() {
 		// process messages from the consumer (probably just ACK messages
 		defer close(recvErrChan)
@@ -124,6 +131,7 @@ func (s *Stream) Consume(ctx context.Context, req *pb.ConsumeRequest, rsp pb.Str
 			mutex.Unlock()
 		}
 	}()
+
 	go func() {
 		// process messages coming from the stream
 		defer close(sendErrChan)

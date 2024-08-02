@@ -36,12 +36,12 @@ var (
 	DefaultPoolMaxIdle = 50
 
 	// DefaultMaxRecvMsgSize maximum message that client can receive
-	// (16 MB).
-	DefaultMaxRecvMsgSize = 1024 * 1024 * 16
+	// (32 MB).
+	DefaultMaxRecvMsgSize = 1024 * 1024 * 32
 
 	// DefaultMaxSendMsgSize maximum message that client can send
-	// (16 MB).
-	DefaultMaxSendMsgSize = 1024 * 1024 * 16
+	// (32 MB).
+	DefaultMaxSendMsgSize = 1024 * 1024 * 32
 )
 
 type poolMaxStreams struct{}
@@ -98,9 +98,7 @@ func AuthTLS(t *tls.Config) client.Option {
 	}
 }
 
-//
 // MaxRecvMsgSize set the maximum size of message that client can receive.
-//
 func MaxRecvMsgSize(s int) client.Option {
 	return func(o *client.Options) {
 		if o.Context == nil {
@@ -110,9 +108,7 @@ func MaxRecvMsgSize(s int) client.Option {
 	}
 }
 
-//
 // MaxSendMsgSize set the maximum size of message that client can send.
-//
 func MaxSendMsgSize(s int) client.Option {
 	return func(o *client.Options) {
 		if o.Context == nil {
@@ -122,9 +118,7 @@ func MaxSendMsgSize(s int) client.Option {
 	}
 }
 
-//
 // DialOptions to be used to configure gRPC dial options
-//
 func DialOptions(opts ...grpc.DialOption) client.CallOption {
 	return func(o *client.CallOptions) {
 		if o.Context == nil {
@@ -134,9 +128,7 @@ func DialOptions(opts ...grpc.DialOption) client.CallOption {
 	}
 }
 
-//
 // CallOptions to be used to configure gRPC call options
-//
 func CallOptions(opts ...grpc.CallOption) client.CallOption {
 	return func(o *client.CallOptions) {
 		if o.Context == nil {

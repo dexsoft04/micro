@@ -87,7 +87,7 @@ func MissingCommand(ctx *cli.Context) error {
 	return cli.Exit(fmt.Sprintf("No command provided to mcbeam. Please refer to 'mcbeam --help'"), 1)
 }
 
-// MicroSubcommand returns the subcommand name
+// Subcommand returns the subcommand name
 func Subcommand(ctx *cli.Context) string {
 	return ctx.Args().First()
 }

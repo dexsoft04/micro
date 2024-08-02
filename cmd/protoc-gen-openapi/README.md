@@ -33,5 +33,4 @@ References aren't working (request/responses should reference a schema)
 Links
 -----
 
-- https://micro.mu/reference#api
-- https://docs.m3o.com/getting-started/public-apis
+- https://micro.dev/reference#api

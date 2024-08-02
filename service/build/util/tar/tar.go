@@ -135,7 +135,7 @@ func shouldArchive(file string) bool {
 	if strings.HasSuffix(file, "go.mod") {
 		return true
 	}
-	if strings.HasSuffix(file, "Makefile") {
+	if strings.HasSuffix(file, ".txt") {
 		return true
 	}
 	return false
