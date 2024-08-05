@@ -11,6 +11,8 @@ import (
 	_ "github.com/micro/micro/v3/cmd/server"
 	_ "github.com/micro/micro/v3/cmd/service"
 	_ "github.com/micro/micro/v3/cmd/usage"
+	_ "github.com/micro/micro/v3/profile/platform"
+
 )
 
 func main() {

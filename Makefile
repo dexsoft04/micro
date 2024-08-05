@@ -24,7 +24,8 @@ build:
 	go build -a -installsuffix cgo -ldflags "-s -w ${LDFLAGS}" -o $(NAME)
 
 docker:
-	docker buildx build --platform linux/amd64 --platform linux/arm64 --tag $(IMAGE_NAME):$(IMAGE_TAG) --tag $(IMAGE_NAME):latest --push .
+	go mod vendor
+	docker buildx build --progress plain --platform linux/amd64 --tag $(IMAGE_NAME):$(IMAGE_TAG) --tag harbor.hiigame.com/mcbeam/mcbeam:$(IMAGE_TAG)-$(BUILD_DATE) .
 
 .PHONY: proto
 proto:

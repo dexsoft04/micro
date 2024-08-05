@@ -75,7 +75,6 @@ func newClient(e *etcdRegistry) (*clientv3.Client, error) {
 	if e.options.Timeout == 0 {
 		e.options.Timeout = 5 * time.Second
 	}
-	config.DialTimeout = e.options.Timeout
 
 	if e.options.Secure || e.options.TLSConfig != nil {
 		tlsConfig := e.options.TLSConfig
@@ -130,16 +129,12 @@ func newClient(e *etcdRegistry) (*clientv3.Client, error) {
 		}
 	}
 
+	logger.Infof("etcdRegistry config: %v", config)
 	cli, err := clientv3.New(config)
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), e.options.Timeout)
-	defer cancel()
-	_, err = cli.Put(ctx, "foo", "bar")
-	if err != nil {
-		return nil, err
-	}
+
 	return cli, nil
 }
 

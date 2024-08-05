@@ -64,6 +64,7 @@ var profiles = map[string]*Profile{
 	"server":  Server,
 	"test":    Test,
 	"local":   Local,
+	"kubernetes": Kubernetes,
 	"cmd":     Cmd,
 }
 
@@ -464,5 +465,6 @@ func EtcdOpts(ctx *cli.Context) []registry.Option {
 		addresses := strings.Split(ctx.String("registry_address"), ",")
 		registryOpts = append(registryOpts, registry.Addrs(addresses...))
 	}
+	logger.Infof("registryOpts:%v", registryOpts)
 	return registryOpts
 }
