@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"github.com/micro/micro/plugin/etcd/v3"
 	"github.com/micro/micro/plugin/postgres/v3"
+	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/micro/micro/v3/profile"
 	"github.com/micro/micro/v3/service/auth"
 	"github.com/micro/micro/v3/service/auth/jwt"
@@ -25,7 +26,6 @@ import (
 	"github.com/micro/micro/v3/util/opentelemetry"
 	"github.com/micro/micro/v3/util/opentelemetry/jaeger"
 	"github.com/opentracing/opentracing-go"
-	"github.com/micro/micro/plugin/prometheus/v3"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
 	"os"
@@ -124,7 +124,7 @@ var Profile = &profile.Profile{
 		opentracing.SetGlobalTracer(openTracer)
 		opentelemetry.DefaultOpenTracer = openTracer
 
-		kubernetes.DefaultImage = "wolfplus2048/cells:v0.0.4"
+		kubernetes.DefaultImage = "mcbeam/cells:v0.0.1-beta"
 		return nil
 	},
 }

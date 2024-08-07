@@ -22,7 +22,8 @@ COPY --from=golang:1.20.14-alpine3.18 /usr/local/go/ /usr/local/go/
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 # 安装运行时所需的依赖项
-RUN apk --no-cache add ca-certificates && rm -rf /var/cache/apk/* /tmp/*
+RUN apk --no-cache add ca-certificates openssh git libtool musl-dev && rm -rf /var/cache/apk/* /tmp/*
+RUN mkdir -p /root/.ssh && ssh-keyscan gitee.com >> /root/.ssh/known_hosts
 
 # 从构建阶段复制构建好的可执行文件到运行阶段
 COPY --from=builder /micro /micro

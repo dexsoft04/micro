@@ -12,4 +12,4 @@ require (
 
 require github.com/nats-io/nats-streaming-server v0.19.0 // indirect
 
-replace github.com/micro/micro/v3 => ../../..
+//replace github.com/micro/micro/v3 => ../../..

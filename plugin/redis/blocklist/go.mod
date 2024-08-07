@@ -4,4 +4,4 @@ go 1.20
 
 require github.com/go-redis/redis/v8 v8.11.3
 
-replace github.com/micro/micro/v3 => ../../..
+//replace github.com/micro/micro/v3 => ../../..

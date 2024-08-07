@@ -44,13 +44,15 @@ func NewBlobStore(opts ...Option) (store.BlobStore, error) {
 		o(&options)
 	}
 
+	disableSSL := !options.Secure
 	sess := session.Must(session.NewSession(&aws.Config{
 		Endpoint:    &options.Endpoint,
 		Region:      &options.Region,
+		DisableSSL:  &disableSSL,
 		Credentials: credentials.NewStaticCredentials(options.AccessKeyID, options.SecretAccessKey, ""),
 	}))
 	client := sthree.New(sess)
-
+	testConn(client)
 	// return the blob store
 	return &s3{client, &options}, nil
 }
@@ -58,6 +60,19 @@ func NewBlobStore(opts ...Option) (store.BlobStore, error) {
 type s3 struct {
 	client  *sthree.S3
 	options *Options
+}
+
+func testConn(client *sthree.S3) {
+	object, err := client.PutObject(&sthree.PutObjectInput{
+		Body:   nil,
+		Bucket: aws.String("/micro/test/s3-hello"),
+		Key:    aws.String("/micro/test/s3-hello"),
+	})
+	if err != nil {
+		logger.Errorf("err:%s", err.Error())
+		return
+	}
+	logger.Debugf("testConn, object %v", object)
 }
 
 func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
@@ -105,6 +120,7 @@ func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
 }
 
 func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
+	logger.Debugf("write data, key:%s", key)
 	// validate the key
 	if len(key) == 0 {
 		return store.ErrMissingKey
@@ -126,6 +142,7 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 	buf := new(strings.Builder)
 	_, err := io.Copy(buf, blob)
 	if err != nil {
+		logger.Errorf("S3 Write err:%v key:%s", err, key)
 		return err
 	}
 	acl := "private"
@@ -143,6 +160,9 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 			ContentType: &options.ContentType,
 		}
 		_, err := s.client.PutObject(&object)
+		if nil != err {
+			logger.Errorf("S3 Write err:%v key:%s\n%v", err, key, object)
+		}
 		return err
 	}
 

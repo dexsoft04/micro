@@ -96,6 +96,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 	cmd.Dir = g.folder
 	outp, err := cmd.CombinedOutput()
 	if err != nil {
+		logger.Errorf("git clone failed:%v\n%s", err, string(outp))
 		return fmt.Errorf("Git clone failed: %v", string(outp))
 	}
 
@@ -353,6 +354,7 @@ type Source struct {
 	// blank for non local
 	LocalRepoRoot string
 }
+
 func Base(path string) string {
 	if path == "" {
 		return "."
@@ -371,6 +373,7 @@ func Base(path string) string {
 	}
 	return path
 }
+
 // Name to be passed to RPC call runtime.Create Update Delete
 // eg: `helloworld/api`, `crufter/myrepo/helloworld/api`, `localfolder`
 func (s *Source) RuntimeName() string {
@@ -488,6 +491,7 @@ func CheckoutSource(source *Source, secrets map[string]string) (string, error) {
 		repo = "https://" + repo
 	}
 	if err := gitter.Checkout(repo, source.Ref); err != nil {
+		logger.Errorf("CheckoutSource %v %v %v", err, repo, source)
 		return "", err
 	}
 	return gitter.RepoDir(), nil
