@@ -25,6 +25,6 @@ require (
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/micro/micro/v3 v3.0.0
+	github.com/micro/micro/v3 v3.3.0
 	github.com/rs/cors v1.7.0 // indirect
 )

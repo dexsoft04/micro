@@ -370,6 +370,7 @@ func (c *command) Before(ctx *cli.Context) error {
 		// use the proxy address passed as a flag, this is normally
 		// the micro network
 		//proxy = ctx.String("proxy_address")
+		proxy = ""
 	} else {
 		// for CLI, use the external proxy which is loaded from the
 		// local config
