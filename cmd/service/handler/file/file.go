@@ -13,7 +13,7 @@ import (
 	"github.com/micro/micro/v3/service/server"
 )
 
-//Proxy for a proxy instance
+// Proxy for a proxy instance
 type Proxy struct {
 	options proxy.Options
 
@@ -84,7 +84,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 		// lookup the file
 		b, err := ioutil.ReadFile(file)
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 
 		// write back the header
@@ -95,7 +95,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 			return nil
 		}
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 	}
 
@@ -105,7 +105,7 @@ func (p *Proxy) String() string {
 	return "file"
 }
 
-//NewSingleHostProxy returns a Proxy which stand for a endpoint.
+// NewSingleHostProxy returns a Proxy which stand for a endpoint.
 func NewSingleHostProxy(url string) proxy.Proxy {
 	return &Proxy{
 		Endpoint: url,

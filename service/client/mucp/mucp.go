@@ -105,7 +105,7 @@ func (r *rpcClient) call(ctx context.Context, addr string, req client.Request, r
 
 	cf, err := r.newCodec(req.ContentType())
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	dOpts := []transport.DialOption{
@@ -174,7 +174,7 @@ func (r *rpcClient) call(ctx context.Context, addr string, req client.Request, r
 	case err := <-ch:
 		return err
 	case <-ctx.Done():
-		grr = errors.Timeout("go.micro.client", fmt.Sprintf("%v", ctx.Err()))
+		grr = errors.Timeout("go.micro.client", "%v", ctx.Err())
 	}
 
 	// set the stream error
@@ -212,7 +212,7 @@ func (r *rpcClient) stream(ctx context.Context, addr string, req client.Request,
 
 	cf, err := r.newCodec(req.ContentType())
 	if err != nil {
-		return nil, errors.InternalServerError("go.micro.client", err.Error())
+		return nil, errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	dOpts := []transport.DialOption{
@@ -273,7 +273,7 @@ func (r *rpcClient) stream(ctx context.Context, addr string, req client.Request,
 	case err := <-ch:
 		grr = err
 	case <-ctx.Done():
-		grr = errors.Timeout("go.micro.client", fmt.Sprintf("%v", ctx.Err()))
+		grr = errors.Timeout("go.micro.client", "%v", ctx.Err())
 	}
 
 	if grr != nil {
@@ -341,7 +341,7 @@ func (r *rpcClient) Call(ctx context.Context, request client.Request, response i
 	// should we noop right here?
 	select {
 	case <-ctx.Done():
-		return errors.Timeout("go.micro.client", fmt.Sprintf("%v", ctx.Err()))
+		return errors.Timeout("go.micro.client", "%v", ctx.Err())
 	default:
 	}
 
@@ -372,7 +372,7 @@ func (r *rpcClient) Call(ctx context.Context, request client.Request, response i
 	// TODO apply any filtering here
 	routes, err := r.opts.Lookup(ctx, request, callOpts)
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	// balance the list of nodes
@@ -424,7 +424,7 @@ func (r *rpcClient) Call(ctx context.Context, request client.Request, response i
 
 		select {
 		case <-ctx.Done():
-			return errors.Timeout("go.micro.client", fmt.Sprintf("call timeout: %v", ctx.Err()))
+			return errors.Timeout("go.micro.client", "call timeout: %v", ctx.Err())
 		case err := <-ch:
 			// if the call succeeded lets bail early
 			if err == nil {
@@ -457,7 +457,7 @@ func (r *rpcClient) Stream(ctx context.Context, request client.Request, opts ...
 	// should we noop right here?
 	select {
 	case <-ctx.Done():
-		return nil, errors.Timeout("go.micro.client", fmt.Sprintf("%v", ctx.Err()))
+		return nil, errors.Timeout("go.micro.client", "%v", ctx.Err())
 	default:
 	}
 
@@ -480,7 +480,7 @@ func (r *rpcClient) Stream(ctx context.Context, request client.Request, opts ...
 	// TODO apply any filtering here
 	routes, err := r.opts.Lookup(ctx, request, callOpts)
 	if err != nil {
-		return nil, errors.InternalServerError("go.micro.client", err.Error())
+		return nil, errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	// balance the list of nodes
@@ -537,7 +537,7 @@ func (r *rpcClient) Stream(ctx context.Context, request client.Request, opts ...
 
 		select {
 		case <-ctx.Done():
-			return nil, errors.Timeout("go.micro.client", fmt.Sprintf("call timeout: %v", ctx.Err()))
+			return nil, errors.Timeout("go.micro.client", "call timeout: %v", ctx.Err())
 		case rsp := <-ch:
 			// if the call succeeded lets bail early
 			if rsp.err == nil {
@@ -589,7 +589,7 @@ func (r *rpcClient) Publish(ctx context.Context, msg client.Message, opts ...cli
 	// encode message body
 	cf, err := r.newCodec(msg.ContentType())
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	var body []byte
@@ -609,7 +609,7 @@ func (r *rpcClient) Publish(ctx context.Context, msg client.Message, opts ...cli
 				"Micro-Topic": msg.Topic(),
 			},
 		}, msg.Payload()); err != nil {
-			return errors.InternalServerError("go.micro.client", err.Error())
+			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 
 		// set the body
@@ -618,7 +618,7 @@ func (r *rpcClient) Publish(ctx context.Context, msg client.Message, opts ...cli
 
 	if !r.once.Load().(bool) {
 		if err = r.opts.Broker.Connect(); err != nil {
-			return errors.InternalServerError("go.micro.client", err.Error())
+			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 		r.once.Store(true)
 	}

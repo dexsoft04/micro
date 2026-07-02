@@ -95,7 +95,7 @@ func configureSampleProtos() map[string]sampleProto {
 func mustReadProtoFiles(t *testing.T, includePath string, filenames ...string) *descriptor.FileDescriptorSet {
 	protocBinary, err := exec.LookPath("protoc")
 	if err != nil {
-		t.Fatalf("Can't find 'protoc' binary in $PATH: %s", err.Error())
+		t.Skipf("Can't find 'protoc' binary in $PATH: %s", err.Error())
 	}
 
 	// Use protoc to output descriptor info for the specified .proto files.

@@ -44,11 +44,11 @@ func AuthorizeAdmin(ctx context.Context, ns, method string) error {
 // Authorize will return a service error if the context cannot access the given namespace
 func Authorize(ctx context.Context, namespace, method string, opts ...AuthorizeOption) error {
 	if err := authorize(ctx, namespace, opts...); err == ErrForbidden {
-		return merrors.Forbidden(method, err.Error())
+		return merrors.Forbidden(method, "%s", err.Error())
 	} else if err == ErrUnauthorized {
-		return merrors.Unauthorized(method, err.Error())
+		return merrors.Unauthorized(method, "%s", err.Error())
 	} else if err != nil {
-		return merrors.InternalServerError(method, err.Error())
+		return merrors.InternalServerError(method, "%s", err.Error())
 	}
 	return nil
 }

@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -113,5 +114,5 @@ func (p *Process) Wait(pid *process.PID) error {
 		return nil
 	}
 
-	return fmt.Errorf(ps.String())
+	return fmt.Errorf("%s", ps.String())
 }

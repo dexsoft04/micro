@@ -302,7 +302,7 @@ func (g *grpcServer) handler(srv interface{}, stream grpc.ServerStream) (err err
 	if g.opts.Router != nil {
 		cc, err := g.newGRPCCodec(ct)
 		if err != nil {
-			return errors.InternalServerError(g.opts.Name, err.Error())
+			return errors.InternalServerError(g.opts.Name, "%s", err.Error())
 		}
 		codec := &grpcCodec{
 			ServerStream: stream,
@@ -343,7 +343,7 @@ func (g *grpcServer) handler(srv interface{}, stream grpc.ServerStream) (err err
 			if _, ok := status.FromError(err); ok {
 				return err
 			}
-			return status.Errorf(codes.Internal, err.Error())
+			return status.Errorf(codes.Internal, "%s", err.Error())
 		}
 
 		return nil
@@ -402,7 +402,7 @@ func (g *grpcServer) processRequest(stream grpc.ServerStream, service *service, 
 
 		cc, err := g.newGRPCCodec(ct)
 		if err != nil {
-			return errors.InternalServerError(g.opts.Name, err.Error())
+			return errors.InternalServerError(g.opts.Name, "%s", err.Error())
 		}
 		b, err := cc.Marshal(argv.Interface())
 		if err != nil {

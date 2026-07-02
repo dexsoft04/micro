@@ -72,7 +72,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 		cmd := exec.Command(file)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 
 		// write back the header
@@ -83,7 +83,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 			return nil
 		}
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 	}
 
@@ -93,7 +93,7 @@ func (p *Proxy) String() string {
 	return "exec"
 }
 
-//NewSingleHostProxy returns a router which sends requests to a single file
+// NewSingleHostProxy returns a router which sends requests to a single file
 func NewSingleHostProxy(url string) proxy.Proxy {
 	return &Proxy{
 		Endpoint: url,

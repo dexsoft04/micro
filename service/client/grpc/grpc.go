@@ -108,7 +108,7 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 
 	cf, err := g.newGRPCCodec(req.ContentType())
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	maxRecvMsgSize := g.maxRecvMsgSizeValue()
@@ -131,7 +131,7 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 
 	cc, err := g.pool.getConn(addr, grpcDialOptions...)
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", fmt.Sprintf("Error sending request: %v", err))
+		return errors.InternalServerError("go.micro.client", "Error sending request: %v", err)
 	}
 	defer func() {
 		// defer execution of release
@@ -185,7 +185,7 @@ func (g *grpcClient) stream(ctx context.Context, addr string, req client.Request
 
 	cf, err := g.newGRPCCodec(req.ContentType())
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	wc := wrapCodec{cf}
@@ -208,7 +208,7 @@ func (g *grpcClient) stream(ctx context.Context, addr string, req client.Request
 
 	cc, err := g.pool.getConn(addr, grpcDialOptions...)
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", fmt.Sprintf("Error sending request: %v", err))
+		return errors.InternalServerError("go.micro.client", "Error sending request: %v", err)
 	}
 
 	desc := &grpc.StreamDesc{
@@ -236,7 +236,7 @@ func (g *grpcClient) stream(ctx context.Context, addr string, req client.Request
 		// release the connection
 		g.pool.release(addr, cc, err)
 		// now return the error
-		return errors.InternalServerError("go.micro.client", fmt.Sprintf("Error creating stream: %v", err))
+		return errors.InternalServerError("go.micro.client", "Error creating stream: %v", err)
 	}
 
 	codec := &grpcCodec{
@@ -429,7 +429,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	// TODO apply any filtering here
 	routes, err := g.opts.Lookup(ctx, req, callOpts)
 	if err != nil {
-		return errors.InternalServerError("go.micro.client", err.Error())
+		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	// balance the list of nodes
@@ -443,7 +443,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 		// call backoff first. Someone may want an initial start delay
 		t, err := callOpts.Backoff(ctx, req, i)
 		if err != nil {
-			return errors.InternalServerError("go.micro.client", err.Error())
+			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 
 		// only sleep if greater than 0
@@ -544,7 +544,7 @@ func (g *grpcClient) Stream(ctx context.Context, req client.Request, opts ...cli
 	// TODO: move to internal lookup func
 	routes, err := g.opts.Lookup(ctx, req, callOpts)
 	if err != nil {
-		return nil, errors.InternalServerError("go.micro.client", err.Error())
+		return nil, errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
 	// balance the list of nodes
@@ -557,7 +557,7 @@ func (g *grpcClient) Stream(ctx context.Context, req client.Request, opts ...cli
 		// call backoff first. Someone may want an initial start delay
 		t, err := callOpts.Backoff(ctx, req, i)
 		if err != nil {
-			return nil, errors.InternalServerError("go.micro.client", err.Error())
+			return nil, errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 
 		// only sleep if greater than 0
@@ -630,7 +630,7 @@ func (g *grpcClient) Publish(ctx context.Context, p client.Message, opts ...clie
 	// fail early on connect error
 	if !g.once.Load().(bool) {
 		if err := g.opts.Broker.Connect(); err != nil {
-			return errors.InternalServerError("go.micro.client", err.Error())
+			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 		g.once.Store(true)
 	}
@@ -653,12 +653,12 @@ func (g *grpcClient) Publish(ctx context.Context, p client.Message, opts ...clie
 		// use codec for payload
 		cf, err := g.newGRPCCodec(p.ContentType())
 		if err != nil {
-			return errors.InternalServerError("go.micro.client", err.Error())
+			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 		// set the body
 		b, err := cf.Marshal(p.Payload())
 		if err != nil {
-			return errors.InternalServerError("go.micro.client", err.Error())
+			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 		body = b
 	}

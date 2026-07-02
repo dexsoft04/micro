@@ -74,7 +74,7 @@ func ExampleToJSON() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf(string(b))
+	fmt.Print(string(b))
 	// Output: {"a":"xyz","b":{"c":456}}
 }
 

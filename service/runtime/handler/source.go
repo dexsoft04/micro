@@ -37,7 +37,7 @@ func (s *Source) Upload(ctx context.Context, stream pb.Source_UploadStream) erro
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return errors.InternalServerError("runtime.Source.Upload", err.Error())
+			return errors.InternalServerError("runtime.Source.Upload", "%s", err.Error())
 		}
 
 		// get the service from the request, this should be sent on the first message

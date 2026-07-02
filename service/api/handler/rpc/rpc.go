@@ -88,7 +88,7 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// try get service from router
 		s, err := h.opts.Router.Route(r)
 		if err != nil {
-			writeError(w, r, errors.InternalServerError("go.micro.api", err.Error()))
+			writeError(w, r, errors.InternalServerError("go.micro.api", "%s", err.Error()))
 			return
 		}
 		service = s

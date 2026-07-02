@@ -1412,7 +1412,7 @@ func (n *mucpNetwork) sendTo(method, channel string, peer *node, msg proto.Messa
 			// update node status when error happens
 			peerNode.status.err.Update(err)
 			if logger.V(logger.DebugLevel, logger.DefaultLogger) {
-				logger.Debugf("Network increment peer %v error count to: %d", peerNode, peerNode, peerNode.status.Error().Count())
+				logger.Debugf("Network increment peer %v error count to: %d", peerNode, peerNode.status.Error().Count())
 			}
 			if count := peerNode.status.Error().Count(); count == MaxPeerErrors {
 				if logger.V(logger.DebugLevel, logger.DefaultLogger) {

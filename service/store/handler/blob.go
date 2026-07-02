@@ -36,7 +36,7 @@ func (b *BlobStore) Read(ctx context.Context, req *pb.BlobReadRequest, stream pb
 	} else if err == store.ErrMissingKey {
 		return errors.BadRequest("store.Blob.Read", "Missing key")
 	} else if err != nil {
-		return errors.InternalServerError("store.Blob.Read", err.Error())
+		return errors.InternalServerError("store.Blob.Read", "%s", err.Error())
 	}
 
 	// read from the blob and stream it to the client
@@ -69,7 +69,7 @@ func (b *BlobStore) Write(ctx context.Context, stream pb.BlobStore_WriteStream) 
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return errors.InternalServerError("store.Blob.Write", err.Error())
+			return errors.InternalServerError("store.Blob.Write", "%s", err.Error())
 		}
 
 		if buf == nil {
@@ -104,7 +104,7 @@ func (b *BlobStore) Write(ctx context.Context, stream pb.BlobStore_WriteStream) 
 	if err == store.ErrMissingKey {
 		return errors.BadRequest("store.Blob.Write", "Missing key")
 	} else if err != nil {
-		return errors.InternalServerError("store.Blob.Write", err.Error())
+		return errors.InternalServerError("store.Blob.Write", "%s", err.Error())
 	}
 
 	// close the stream
@@ -131,7 +131,7 @@ func (b *BlobStore) Delete(ctx context.Context, req *pb.BlobDeleteRequest, rsp *
 	} else if err == store.ErrMissingKey {
 		return errors.BadRequest("store.Blob.Delete", "Missing key")
 	} else if err != nil {
-		return errors.InternalServerError("store.Blob.Delete", err.Error())
+		return errors.InternalServerError("store.Blob.Delete", "%s", err.Error())
 	}
 
 	return nil

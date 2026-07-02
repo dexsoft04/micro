@@ -38,14 +38,13 @@ func TestCreate(t *testing.T) {
 				Image:     "DefaultImage",
 				Namespace: DefaultNamespace,
 				Resources: &runtime.Resources{
-					CPU:  200,
-					Mem:  200,
+					CPU:  1000,
+					Mem:  1048,
 					Disk: 2000,
 				},
 				ServiceAccount: "serviceAcc",
-				VolumeMounts: map[string]string{"aaa":"bbbb"},
-				Volumes: map[string]string{"1111": "22222"},
-
+				VolumeMounts:   map[string]string{"aaa": "bbbb"},
+				Volumes:        map[string]string{"1111": "22222"},
 			},
 			),
 
@@ -56,7 +55,7 @@ metadata:
   name: "svc1-latest"
   namespace: "default"
   labels:
-    micro: "service"
+    micro: ""
     name: "svc1"
     version: "latest"
   annotations:
@@ -69,13 +68,13 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      micro: "service"
+      micro: ""
       name: "svc1"
       version: "latest"
   template:
     metadata:
       labels:
-        micro: "service"
+        micro: ""
         name: "svc1"
         version: "latest"
       annotations:
@@ -112,11 +111,21 @@ spec:
             periodSeconds: 10
           resources:
             limits:
-              memory: 200Mi
-              cpu: 200m
+              memory: 1048Mi
+              cpu: 1000m
               ephemeral-storage: 2000Mi
-          volumeMounts: 
-      volumes:`,
+            requests:
+              memory: 1048Mi
+              cpu: 1000m
+              ephemeral-storage: 2000Mi
+          volumeMounts:
+            - name: aaa
+              mountPath: bbbb` + " " + `
+      volumes:
+        - name: 1111
+          secret:
+            secretName: 1111
+`,
 			expectedURL: `example.com/apis/apps/v1/namespaces/foo-bar-baz/deployments/`,
 		},
 		{
@@ -148,12 +157,12 @@ metadata:
   name: "svc1"
   namespace: "default"
   labels:
-    micro: "service"
+    micro: ""
     name: "svc1"
     version: "latest"
 spec:
   selector:
-    micro: "service"
+    micro: ""
     name: "svc1"
     version: "latest"
   ports:
@@ -322,6 +331,48 @@ spec:
 
 }
 
+func TestServiceWorkloadUsesLegacyLabels(t *testing.T) {
+	g := NewWithT(t)
+	srv := &runtime.Service{
+		Name:    "igaoshou-match-srv",
+		Version: "latest",
+	}
+	opts := &runtime.CreateOptions{
+		Type:      "service",
+		Namespace: "igaoshou",
+	}
+	expectedLabels := map[string]string{
+		"micro":   "",
+		"name":    "igaoshou-match-srv",
+		"version": "latest",
+	}
+
+	serviceResource := NewService(srv, opts)
+	g.Expect(serviceResource.Name).To(Equal("igaoshou-match-srv"))
+	svc := serviceResource.Value.(*Service)
+	g.Expect(svc.Metadata.Name).To(Equal("igaoshou-match-srv"))
+	g.Expect(svc.Metadata.Labels).To(Equal(expectedLabels))
+	g.Expect(svc.Spec.Type).To(Equal("ClusterIP"))
+	g.Expect(svc.Spec.Selector).To(Equal(expectedLabels))
+	g.Expect(svc.Spec.Ports).To(Equal([]ServicePort{{
+		Name: "service-port",
+		Port: 8080,
+	}}))
+
+	deploymentResource := NewDeployment(srv, opts)
+	g.Expect(deploymentResource.Name).To(Equal("igaoshou-match-srv-latest"))
+	deployment := deploymentResource.Value.(*Deployment)
+	g.Expect(deployment.Metadata.Name).To(Equal("igaoshou-match-srv-latest"))
+	g.Expect(deployment.Metadata.Labels).To(Equal(expectedLabels))
+	g.Expect(deployment.Spec.Selector.MatchLabels).To(Equal(expectedLabels))
+	g.Expect(deployment.Spec.Template.Metadata.Labels).To(Equal(expectedLabels))
+	g.Expect(deployment.Spec.Template.PodSpec.Containers).To(HaveLen(1))
+	g.Expect(deployment.Spec.Template.PodSpec.Containers[0].Ports).To(Equal([]ContainerPort{{
+		Name:          "service-port",
+		ContainerPort: 8080,
+	}}))
+}
+
 func TestUpdate(t *testing.T) {
 	tcs := []struct {
 		name         string
@@ -355,7 +406,7 @@ func TestUpdate(t *testing.T) {
 			},
 			),
 
-			expectedBody: `{"metadata":{"name":"svc1-latest","namespace":"default","version":"latest","labels":{"micro":"service","name":"svc1","version":"latest"},"annotations":{"foo":"bar","hello":"world","name":"svc1","source":"source","version":"latest"}},"spec":{"replicas":1,"selector":{"matchLabels":{"micro":"service","name":"svc1","version":"latest"}},"template":{"metadata":{"name":"svc1-latest","namespace":"default","version":"latest","labels":{"micro":"service","name":"svc1","version":"latest"},"annotations":{"foo":"bar","hello":"world","name":"svc1","source":"source","version":"latest"}},"spec":{"containers":[{"name":"svc1","image":"DefaultImage","env":[{"name":"FOO","value":"BAR"},{"name":"HELLO","value":"WORLD"}],"command":["cmd","arg"],"args":["arg1","arg2"],"ports":[{"name":"service-port","containerPort":8080}],"readinessProbe":{"tcpSocket":{"port":8080},"periodSeconds":10,"initialDelaySeconds":10},"resources":{"limits":{"memory":"200Mi","cpu":"200m","ephemeral-storage":"2000Mi"}}}],"serviceAccountName":"serviceAcc"}}}}`,
+			expectedBody: `{"metadata":{"name":"svc1-latest","namespace":"default","version":"latest","labels":{"micro":"","name":"svc1","version":"latest"},"annotations":{"foo":"bar","hello":"world","name":"svc1","source":"source","version":"latest"}},"spec":{"replicas":1,"selector":{"matchLabels":{"micro":"","name":"svc1","version":"latest"}},"template":{"metadata":{"name":"svc1-latest","namespace":"default","version":"latest","labels":{"micro":"","name":"svc1","version":"latest"},"annotations":{"foo":"bar","hello":"world","name":"svc1","source":"source","version":"latest"}},"spec":{"containers":[{"name":"svc1","image":"DefaultImage","env":[{"name":"FOO","value":"BAR"},{"name":"HELLO","value":"WORLD"}],"command":["cmd","arg"],"args":["arg1","arg2"],"ports":[{"name":"service-port","containerPort":8080}],"readinessProbe":{"tcpSocket":{"port":8080},"periodSeconds":10,"initialDelaySeconds":10},"resources":{"limits":{"memory":"200Mi","cpu":"200m","ephemeral-storage":"2000Mi"},"requests":{"memory":"200Mi","cpu":"200m","ephemeral-storage":"2000Mi"}}}],"serviceAccountName":"serviceAcc"}}}}`,
 			expectedURL:  `example.com/apis/apps/v1/namespaces/foo-bar-baz/deployments/svc1-latest`,
 		},
 		{
@@ -380,7 +431,7 @@ func TestUpdate(t *testing.T) {
 				},
 				ServiceAccount: "serviceAcc",
 			}),
-			expectedBody: `{"metadata":{"name":"svc1","namespace":"default","version":"latest","labels":{"micro":"service","name":"svc1","version":"latest"}},"spec":{"clusterIP":"","type":"ClusterIP","selector":{"micro":"service","name":"svc1","version":"latest"},"ports":[{"name":"service-port","port":8080}]}}`,
+			expectedBody: `{"metadata":{"name":"svc1","namespace":"default","version":"latest","labels":{"micro":"","name":"svc1","version":"latest"}},"spec":{"clusterIP":"","type":"ClusterIP","selector":{"micro":"","name":"svc1","version":"latest"},"ports":[{"name":"service-port","port":8080}]}}`,
 			expectedURL:  "example.com/api/v1/namespaces/foo-bar-baz/services/svc1",
 		},
 		{

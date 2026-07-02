@@ -43,6 +43,14 @@ type Gitter interface {
 type binaryGitter struct {
 	folder  string
 	secrets map[string]string
+	client  *http.Client
+}
+
+func (g *binaryGitter) httpClient() *http.Client {
+	if g.client != nil {
+		return g.client
+	}
+	return &http.Client{}
 }
 
 func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
@@ -52,18 +60,29 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 	// but it comes with a bit of custom code for EACH host.
 	// @todo probably we should fall back to git in case the archives are not available.
 
-	if branchOrCommit == "latest" {
-		branchOrCommit = "master"
-	}
 	if strings.Contains(repo, "github") {
-		return g.checkoutGithub(repo, branchOrCommit)
+		var err error
+		for _, branch := range checkoutBranches(branchOrCommit) {
+			if err = g.checkoutGithub(repo, branch); err == nil {
+				return nil
+			}
+		}
+		return err
 	} else if strings.Contains(repo, "gitlab") {
-		err := g.checkoutGitLabPublic(repo, branchOrCommit)
-		if err != nil && len(g.secrets[credentialsKey]) > 0 {
-			// If the public download fails, try getting it with tokens.
-			// Private downloads needs a token for api project listing, hence
-			// the weird structure of this code.
-			return g.checkoutGitLabPrivate(repo, branchOrCommit)
+		var err error
+		for _, branch := range checkoutBranches(branchOrCommit) {
+			err = g.checkoutGitLabPublic(repo, branch)
+			if err == nil {
+				return nil
+			}
+			if len(g.secrets[credentialsKey]) > 0 {
+				// If the public download fails, try getting it with tokens.
+				// Private downloads needs a token for api project listing, hence
+				// the weird structure of this code.
+				if privateErr := g.checkoutGitLabPrivate(repo, branch); privateErr == nil {
+					return nil
+				}
+			}
 		}
 		return err
 	}
@@ -71,6 +90,13 @@ func (g *binaryGitter) Checkout(repo, branchOrCommit string) error {
 		return g.checkoutAnyRemote(repo, branchOrCommit, true)
 	}
 	return g.checkoutAnyRemote(repo, branchOrCommit, false)
+}
+
+func checkoutBranches(branchOrCommit string) []string {
+	if branchOrCommit != "latest" {
+		return []string{branchOrCommit}
+	}
+	return []string{"latest", "master", "main", "default"}
 }
 
 // This aims to be a generic checkout method. Currently only tested for bitbucket,
@@ -107,7 +133,7 @@ func (g *binaryGitter) checkoutAnyRemote(repo, branchOrCommit string, useCredent
 		return fmt.Errorf("Git fetch failed: %v", string(outp))
 	}
 
-	cmd = exec.Command("git", "checkout",  "FETCH_HEAD")
+	cmd = exec.Command("git", "checkout", "FETCH_HEAD")
 	cmd.Dir = g.folder
 	outp, err = cmd.CombinedOutput()
 	if err != nil {
@@ -126,23 +152,19 @@ func (g *binaryGitter) checkoutGithub(repo, branchOrCommit string) error {
 	if !strings.HasPrefix(url, "https://") {
 		url = "https://" + url
 	}
-	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
 	if len(g.secrets[credentialsKey]) > 0 {
 		req.Header.Set("Authorization", "token "+g.secrets[credentialsKey])
 	}
-	resp, err := client.Do(req)
+	resp, err := g.httpClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("Can't get zip: %v", err)
 	}
 
 	defer resp.Body.Close()
-	// Github returns 404 for tar.gz files...
-	// but still gives back a proper file so ignoring status code
-	// for now.
-	//if resp.StatusCode != 200 {
-	//	return errors.New("Status code was not 200")
-	//}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Status code was not 200: %v", resp.StatusCode)
+	}
 
 	src := g.folder + ".zip"
 	// Create the file
@@ -172,14 +194,16 @@ func (g *binaryGitter) checkoutGitLabPublic(repo, branchOrCommit string) error {
 	if !strings.HasPrefix(url, "https://") {
 		url = "https://" + url
 	}
-	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(req)
+	resp, err := g.httpClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("Can't get zip: %v", err)
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Status code was not 200: %v", resp.StatusCode)
+	}
 
 	src := g.folder + ".tar.gz"
 	// Create the file
@@ -237,14 +261,16 @@ func (g *binaryGitter) checkoutGitLabPrivate(repo, branchOrCommit string) error 
 	// https://gitlab.com/api/v3/projects/0000000/repository/archive?private_token=XXXXXXXXXXXXXXXXXXXX
 	url := fmt.Sprintf("https://gitlab.com/api/v4/projects/%v/repository/archive?private_token=%v", projectID, g.secrets[credentialsKey])
 
-	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(req)
+	resp, err := g.httpClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("Can't get zip: %v", err)
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Status code was not 200: %v", resp.StatusCode)
+	}
 
 	src := g.folder + ".tar.gz"
 	// Create the file
@@ -367,6 +393,7 @@ type Source struct {
 	// blank for non local
 	LocalRepoRoot string
 }
+
 func Base(path string) string {
 	if path == "" {
 		return "."
@@ -385,6 +412,7 @@ func Base(path string) string {
 	}
 	return path
 }
+
 // Name to be passed to RPC call runtime.Create Update Delete
 // eg: `helloworld/api`, `crufter/myrepo/helloworld/api`, `localfolder`
 func (s *Source) RuntimeName() string {

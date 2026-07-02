@@ -87,7 +87,7 @@ func (p *Proxy) ProcessMessage(ctx context.Context, msg server.Message) error {
 		// add endpoint to backend
 		u, err := url.Parse(p.Endpoint)
 		if err != nil {
-			return errors.InternalServerError(msg.Topic(), err.Error())
+			return errors.InternalServerError(msg.Topic(), "%s", err.Error())
 		}
 		u.Path = path.Join(u.Path, endpoint)
 		endpoint = u.String()
@@ -96,7 +96,7 @@ func (p *Proxy) ProcessMessage(ctx context.Context, msg server.Message) error {
 	// send to backend
 	hreq, err := http.NewRequest("POST", endpoint, bytes.NewReader(msg.Body()))
 	if err != nil {
-		return errors.InternalServerError(msg.Topic(), err.Error())
+		return errors.InternalServerError(msg.Topic(), "%s", err.Error())
 	}
 
 	// set the headers
@@ -107,14 +107,14 @@ func (p *Proxy) ProcessMessage(ctx context.Context, msg server.Message) error {
 	// make the call
 	hrsp, err := http.DefaultClient.Do(hreq)
 	if err != nil {
-		return errors.InternalServerError(msg.Topic(), err.Error())
+		return errors.InternalServerError(msg.Topic(), "%s", err.Error())
 	}
 
 	// read body
 	b, err := ioutil.ReadAll(hrsp.Body)
 	hrsp.Body.Close()
 	if err != nil {
-		return errors.InternalServerError(msg.Topic(), err.Error())
+		return errors.InternalServerError(msg.Topic(), "%s", err.Error())
 	}
 
 	if hrsp.StatusCode != 200 {
@@ -156,7 +156,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 			// add endpoint to backend
 			u, err := url.Parse(p.Endpoint)
 			if err != nil {
-				return errors.InternalServerError(req.Service(), err.Error())
+				return errors.InternalServerError(req.Service(), "%s", err.Error())
 			}
 			u.Path = path.Join(u.Path, endpoint)
 			endpoint = u.String()
@@ -165,7 +165,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 		// send to backend
 		hreq, err := http.NewRequest(method, endpoint, bytes.NewReader(body))
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 
 		// set the headers
@@ -176,14 +176,14 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 		// make the call
 		hrsp, err := http.DefaultClient.Do(hreq)
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 
 		// read body
 		b, err := ioutil.ReadAll(hrsp.Body)
 		hrsp.Body.Close()
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 
 		// set response headers
@@ -199,7 +199,7 @@ func (p *Proxy) ServeRequest(ctx context.Context, req server.Request, rsp server
 			return nil
 		}
 		if err != nil {
-			return errors.InternalServerError(req.Service(), err.Error())
+			return errors.InternalServerError(req.Service(), "%s", err.Error())
 		}
 	}
 }

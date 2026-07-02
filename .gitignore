@@ -38,3 +38,4 @@ dist
 test/services
 
 .idea/
+bin/

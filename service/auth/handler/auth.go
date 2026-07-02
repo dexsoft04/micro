@@ -217,7 +217,7 @@ func (a *Auth) createAccount(acc *auth.Account) error {
 func (a *Auth) Inspect(ctx context.Context, req *pb.InspectRequest, rsp *pb.InspectResponse) error {
 	acc, err := a.TokenProvider.Inspect(req.Token)
 	if err == token.ErrInvalidToken || err == token.ErrNotFound {
-		return errors.BadRequest("auth.Auth.Inspect", err.Error())
+		return errors.BadRequest("auth.Auth.Inspect", "%s", err.Error())
 	} else if err != nil {
 		return errors.InternalServerError("auth.Auth.Inspect", "Unable to inspect token: %v", err)
 	}
@@ -258,7 +258,10 @@ func (a *Auth) Token(ctx context.Context, req *pb.TokenRequest, rsp *pb.TokenRes
 
 		if acc, err := a.TokenProvider.Inspect(jwt); err == nil {
 			expiry := time.Duration(int64(time.Second) * req.TokenExpiry)
-			tok, _ := a.TokenProvider.Generate(acc, token.WithExpiry(expiry))
+			tok, err := a.TokenProvider.Generate(acc, token.WithExpiry(expiry))
+			if err != nil {
+				return errors.InternalServerError("auth.Auth.Token", "Unable to generate token: %v", err)
+			}
 			rsp.Token = serializeToken(tok, tok.Token)
 			return nil
 		}
@@ -272,7 +275,7 @@ func (a *Auth) Token(ctx context.Context, req *pb.TokenRequest, rsp *pb.TokenRes
 	if len(req.RefreshToken) > 0 {
 		accID, err := a.accountIDForRefreshToken(req.Options.Namespace, req.RefreshToken)
 		if err == store.ErrNotFound {
-			return errors.BadRequest("auth.Auth.Token", auth.ErrInvalidToken.Error())
+			return errors.BadRequest("auth.Auth.Token", "%s", auth.ErrInvalidToken.Error())
 		} else if err != nil {
 			return errors.InternalServerError("auth.Auth.Token", "Unable to lookup token: %v", err)
 		}

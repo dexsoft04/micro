@@ -23,6 +23,9 @@ require (
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/pretty v0.2.0
 	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20210901132929-6f7737ba4064
+	github.com/micro/micro/plugin/nats/broker/v3 v3.0.0-20220730101809-49f50f84ae8f
+	github.com/micro/micro/plugin/nats/stream/v3 v3.0.0-20220730101809-49f50f84ae8f
+	github.com/micro/micro/plugin/postgres/v3 v3.0.0-20220730101809-49f50f84ae8f
 	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210825142032-d27318700a59
 	github.com/miekg/dns v1.1.27
 	github.com/nightlyone/lockfile v1.0.0
@@ -43,6 +46,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/wolfplus2048/mcbeam-plugins/config/apollo/v3 v3.0.0-20210826053511-6966876170a7
 	github.com/wolfplus2048/mcbeam-plugins/session/v3 v3.0.0-20210803053144-09b3e552dd3e
+	github.com/wolfplus2048/mcbeam-plugins/store/minio/v3 v3.0.0-20211020053600-a995302ea708
 	github.com/wolfplus2048/mcbeam-plugins/ws_session/v3 v3.0.0-20211014071105-a692112a7005
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
@@ -70,12 +74,25 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-hclog v0.14.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.4 // indirect
+	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/lib/pq v1.8.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/minio/md5-simd v1.1.0 // indirect
+	github.com/minio/minio-go/v7 v7.0.12 // indirect
+	github.com/minio/sha256-simd v0.1.1 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/nats-io/jwt v1.1.0 // indirect
+	github.com/nats-io/nats.go v1.10.0 // indirect
+	github.com/nats-io/nkeys v0.1.4 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/nats-io/stan.go v0.7.0 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
@@ -84,6 +101,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/cors v1.7.0 // indirect
+	github.com/rs/xid v1.2.1 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -99,6 +117,7 @@ require (
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
+	gopkg.in/ini.v1 v1.57.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
@@ -107,5 +126,8 @@ require (
 
 replace (
 	github.com/micro/micro/plugin/etcd/v3 => ./plugin/etcd
+	github.com/micro/micro/plugin/nats/broker/v3 => ./plugin/nats/broker
+	github.com/micro/micro/plugin/nats/stream/v3 => ./plugin/nats/stream
+	github.com/micro/micro/plugin/postgres/v3 => ./plugin/postgres
 	github.com/micro/micro/plugin/prometheus/v3 => ./plugin/prometheus
 )

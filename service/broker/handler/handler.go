@@ -18,7 +18,7 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 	// authorize the request
 	acc, ok := auth.AccountFromContext(ctx)
 	if !ok {
-		return errors.Unauthorized("broker.Broker.Publish", authns.ErrForbidden.Error())
+		return errors.Unauthorized("broker.Broker.Publish", "%s", authns.ErrForbidden.Error())
 	}
 
 	// validate the request
@@ -52,7 +52,7 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 		Body:   req.Message.Body,
 	})
 	if err != nil {
-		return errors.InternalServerError("broker.Broker.Publish", err.Error())
+		return errors.InternalServerError("broker.Broker.Publish", "%s", err.Error())
 	}
 	return nil
 }
@@ -61,12 +61,12 @@ func (h *Broker) Subscribe(ctx context.Context, req *pb.SubscribeRequest, stream
 	// authorize the request
 	acc, ok := auth.AccountFromContext(ctx)
 	if !ok {
-		return errors.Unauthorized("broker.Broker.Subscribe", authns.ErrForbidden.Error())
+		return errors.Unauthorized("broker.Broker.Subscribe", "%s", authns.ErrForbidden.Error())
 	}
 	ns := acc.Issuer
 
 	subns, ok := metadata.Get(ctx, "Micro-Sub-Namespace")
-	if ok && len(subns) > 0{
+	if ok && len(subns) > 0 {
 		ns = subns
 		logger.Infof("sub namespace:%s", ns)
 	}
@@ -99,7 +99,7 @@ func (h *Broker) Subscribe(ctx context.Context, req *pb.SubscribeRequest, stream
 	}
 	sub, err := broker.DefaultBroker.Subscribe(ns+"."+req.Topic, Broker, opts...)
 	if err != nil {
-		return errors.InternalServerError("broker.Broker.Subscribe", err.Error())
+		return errors.InternalServerError("broker.Broker.Subscribe", "%s", err.Error())
 	}
 	defer func() {
 		logger.Debugf("Unsubscribing from topic %s in namespace %v", req.Topic, ns)

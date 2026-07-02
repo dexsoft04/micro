@@ -57,7 +57,7 @@ func (r *Runtime) Read(ctx context.Context, req *pb.ReadRequest, rsp *pb.ReadRes
 	options := toReadOptions(ctx, req.Options)
 	services, err := r.Runtime.Read(options...)
 	if err != nil {
-		return errors.InternalServerError("runtime.Runtime.Read", err.Error())
+		return errors.InternalServerError("runtime.Runtime.Read", "%s", err.Error())
 	}
 
 	// serialize the response
@@ -242,7 +242,7 @@ func (r *Runtime) Create(ctx context.Context, req *pb.CreateRequest, rsp *pb.Cre
 
 		log.Infof("Creating service %s version %s source %s", service.Name, service.Version, service.Source)
 		if err := r.Runtime.Create(service, options...); err != nil {
-			return errors.InternalServerError("runtime.Runtime.Create", err.Error())
+			return errors.InternalServerError("runtime.Runtime.Create", "%s", err.Error())
 		}
 
 		// publish the create event
@@ -361,7 +361,7 @@ func (r *Runtime) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.Del
 
 		log.Infof("Deleting service %s version %s source %s", service.Name, service.Version, service.Source)
 		if err := r.Runtime.Delete(service, options...); err != nil {
-			return errors.InternalServerError("runtime.Runtime.Delete", err.Error())
+			return errors.InternalServerError("runtime.Runtime.Delete", "%s", err.Error())
 		}
 
 		// publish the delete event
@@ -474,7 +474,7 @@ func (r *Runtime) Update(ctx context.Context, req *pb.UpdateRequest, rsp *pb.Upd
 		log.Infof("Updating service %s version %s source %s", service.Name, service.Version, service.Source)
 
 		if err := r.Runtime.Update(service, options...); err != nil {
-			return errors.InternalServerError("runtime.Runtime.Update", err.Error())
+			return errors.InternalServerError("runtime.Runtime.Update", "%s", err.Error())
 		}
 
 		// publish the update event

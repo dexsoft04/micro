@@ -40,7 +40,6 @@ import (
 	muruntime "github.com/micro/micro/v3/service/runtime"
 	mcwrapper "github.com/wolfplus2048/mcbeam-plugins/session/v3/wrapper"
 	ws "github.com/wolfplus2048/mcbeam-plugins/ws_session/v3/wrapper"
-
 )
 
 type Cmd interface {
@@ -572,7 +571,7 @@ func (c *command) Init(opts ...Option) error {
 func (c *command) Run() error {
 	defer func() {
 		if r := recover(); r != nil {
-			report.Errorf(nil, fmt.Sprintf("panic: %v", string(debug.Stack())))
+			report.Errorf(nil, "panic: %v", string(debug.Stack()))
 			panic(r)
 		}
 	}()

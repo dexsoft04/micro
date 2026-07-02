@@ -298,6 +298,9 @@ func (s *srv) Token(opts ...auth.TokenOption) (*auth.AccountToken, error) {
 	} else if err != nil {
 		return nil, err
 	}
+	if rsp == nil || rsp.Token == nil {
+		return nil, errors.InternalServerError("auth.Auth.Token", "Empty token response")
+	}
 
 	return serializeToken(rsp.Token), nil
 }

@@ -27,7 +27,7 @@ func TestTemplates(t *testing.T) {
 	opts := &runtime.CreateOptions{Type: "service", Namespace: "default"}
 	options = append(options, runtime.WithVolume("etcd-client-certs", "etcd-client-certs"))
 	options = append(options, runtime.WithVolumeMount("etcd-client-certs", "/certs/registry"))
-	for _, o := range(options) {
+	for _, o := range options {
 		o(opts)
 	}
 	// Render default service

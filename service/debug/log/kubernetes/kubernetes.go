@@ -45,7 +45,7 @@ func (k *klog) podLogStream(podName string, stream *kubeStream) {
 	}, client.LogParams(p))
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprint(os.Stderr, err.Error())
 		return
 	}
 
