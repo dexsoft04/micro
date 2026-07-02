@@ -54,6 +54,10 @@ func unique(stringSlice []string) []string {
 	return list
 }
 
+func runtimeServiceKey(name, version string) string {
+	return kclient.Format(name) + ":" + kclient.Format(version)
+}
+
 func (m *manager) checkServices() {
 	nss, err := m.listNamespaces()
 	if err != nil {
@@ -71,12 +75,12 @@ func (m *manager) checkServices() {
 		running := map[string]*runtime.Service{}
 		curr, _ := runtime.Read(runtime.ReadNamespace(ns))
 		for _, v := range curr {
-			running[v.Name+":"+v.Version] = v
+			running[runtimeServiceKey(v.Name, v.Version)] = v
 		}
 
 		for _, srv := range srvs {
 			// already running, don't need to start again
-			if _, ok := running[srv.Service.Name+":"+srv.Service.Version]; ok {
+			if _, ok := running[runtimeServiceKey(srv.Service.Name, srv.Service.Version)]; ok {
 				continue
 			}
 
@@ -179,6 +183,13 @@ func (m *manager) buildAndRun(srv *service) {
 	m.writeService(srv)
 
 	if err := m.createServiceInRuntime(srv); err != nil {
+		if err == runtime.ErrAlreadyExists {
+			if updateErr := m.updateServiceInRuntime(srv); updateErr == nil {
+				return
+			} else {
+				err = updateErr
+			}
+		}
 		srv.Status = runtime.Error
 		srv.Error = fmt.Sprintf("Error creating service: %v", err)
 		m.writeService(srv)
@@ -281,6 +292,10 @@ func (m *manager) updateServiceInRuntime(srv *service) error {
 	// construct the options
 	options := []runtime.UpdateOption{
 		runtime.UpdateEntrypoint(srv.Options.Entrypoint),
+		runtime.UpdateImage(srv.Options.Image),
+		runtime.UpdateArgs(srv.Options.Args...),
+		runtime.UpdateCommand(srv.Options.Command...),
+		runtime.UpdateEnv(m.runtimeEnv(srv.Service, srv.Options)),
 		runtime.UpdateNamespace(srv.Options.Namespace),
 	}
 
@@ -417,7 +432,7 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 	env := map[string]string{
 		// ensure a profile for the services isn't set, they
 		// should use the default RPC clients
-		"TZ": "Asia/Shanghai",
+		"TZ":            "Asia/Shanghai",
 		"MICRO_PROFILE": "service",
 		// pass the service's name and version
 		"MICRO_SERVICE_NAME":    srv.Name,
@@ -425,15 +440,14 @@ func (m *manager) runtimeEnv(srv *runtime.Service, options *runtime.CreateOption
 		// set the proxy for the service to use (e.g. micro network)
 		// using the proxy which has been configured for the runtime
 		//"MICRO_PROXY": client.DefaultClient.Options().Proxy,
-		"MICRO_PROXY": os.Getenv("MICRO_PROXY"),
-		"MICRO_CONFIG_ADDRESS": os.Getenv("MICRO_CONFIG_ADDRESS"),
-		"MICRO_POSTGRESQL_ADDRESS": os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
-		"MICRO_MONGODB_ADDRESS": os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
+		"MICRO_PROXY":                    os.Getenv("MICRO_PROXY"),
+		"MICRO_CONFIG_ADDRESS":           os.Getenv("MICRO_CONFIG_ADDRESS"),
+		"MICRO_POSTGRESQL_ADDRESS":       os.Getenv("MICRO_POSTGRESQL_ADDRESS") + "/" + options.Namespace,
+		"MICRO_MONGODB_ADDRESS":          os.Getenv("MICRO_MONGODB_ADDRESS") + "/" + options.Namespace + "?authSource=admin&readPreference=secondaryPreferred",
 		"MICRO_TRACING_REPORTER_ADDRESS": os.Getenv("MICRO_TRACING_REPORTER_ADDRESS"),
-		"MICRO_REGISTRY_TLS_CA": "/certs/registry/ca.crt",
-		"MICRO_REGISTRY_TLS_CERT": "/certs/registry/cert.pem",
-		"MICRO_REGISTRY_TLS_KEY": "/certs/registry/key.pem",
-
+		"MICRO_REGISTRY_TLS_CA":          "/certs/registry/ca.crt",
+		"MICRO_REGISTRY_TLS_CERT":        "/certs/registry/cert.pem",
+		"MICRO_REGISTRY_TLS_KEY":         "/certs/registry/key.pem",
 	}
 	// bind to port 8080, this is what the k8s tcp readiness check will use
 	if runtime.DefaultRuntime.String() == "kubernetes" {
@@ -654,7 +668,7 @@ func (m *manager) Read(opts ...runtime.ReadOption) ([]*runtime.Service, error) {
 	}
 	rSrvMap := make(map[string]*runtime.Service, len(rSrvs))
 	for _, s := range rSrvs {
-		rSrvMap[s.Name+":"+s.Version] = s
+		rSrvMap[runtimeServiceKey(s.Name, s.Version)] = s
 	}
 
 	// loop through the services returned from the store and append any info returned by the runtime
@@ -678,7 +692,7 @@ func (m *manager) Read(opts ...runtime.ReadOption) ([]*runtime.Service, error) {
 		}
 
 		// the service might still be building and not have been created in the underlying runtime yet
-		rs, ok := rSrvMap[kclient.Format(s.Service.Name)+":"+kclient.Format(s.Service.Version)]
+		rs, ok := rSrvMap[runtimeServiceKey(s.Service.Name, s.Service.Version)]
 		if !ok {
 			continue
 		}

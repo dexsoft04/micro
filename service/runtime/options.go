@@ -230,6 +230,7 @@ func WithVolume(name, claimName string) CreateOption {
 		}
 	}
 }
+
 // WithPort sets the port to expose
 func WithPort(p string) CreateOption {
 	return func(o *CreateOptions) {
@@ -291,6 +292,14 @@ type UpdateOption func(o *UpdateOptions)
 type UpdateOptions struct {
 	// Entrypoint within the folder (e.g. in the case of a mono-repo)
 	Entrypoint string
+	// Command to pass into the service container
+	Command []string
+	// Args to pass into the service container
+	Args []string
+	// Environment to pass into the service container
+	Env []string
+	// Image to use for the service container
+	Image string
 	// Namespace the service is running in
 	Namespace string
 	// Specify the context to use
@@ -330,6 +339,34 @@ func UpdateContext(ctx context.Context) UpdateOption {
 func UpdateEntrypoint(e string) UpdateOption {
 	return func(o *UpdateOptions) {
 		o.Entrypoint = e
+	}
+}
+
+// UpdateImage sets the image to use.
+func UpdateImage(img string) UpdateOption {
+	return func(o *UpdateOptions) {
+		o.Image = img
+	}
+}
+
+// UpdateCommand sets the command to execute.
+func UpdateCommand(cmd ...string) UpdateOption {
+	return func(o *UpdateOptions) {
+		o.Command = cmd
+	}
+}
+
+// UpdateArgs sets the args to execute.
+func UpdateArgs(args ...string) UpdateOption {
+	return func(o *UpdateOptions) {
+		o.Args = args
+	}
+}
+
+// UpdateEnv sets the service environment.
+func UpdateEnv(env []string) UpdateOption {
+	return func(o *UpdateOptions) {
+		o.Env = env
 	}
 }
 

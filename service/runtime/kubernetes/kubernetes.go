@@ -17,6 +17,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,9 +29,9 @@ import (
 
 var (
 	DefaultServiceResources = &runtime.Resources{
-		Mem:  200,
+		CPU:  1000,
+		Mem:  1048,
 		Disk: 2000,
-		// explicitly not doing CPU here
 	}
 
 	DefaultImage = "micro/cells:v3"
@@ -359,29 +360,94 @@ func (k *kubernetes) Update(resource runtime.Resource, opts ...runtime.UpdateOpt
 				continue
 			}
 
-			// update metadata
+			annotations := make(map[string]string, len(dep.Metadata.Annotations)+len(s.Metadata)+1)
+			for k, v := range dep.Metadata.Annotations {
+				annotations[k] = v
+			}
 			for k, v := range s.Metadata {
-				dep.Metadata.Annotations[k] = v
+				annotations[k] = v
+			}
+			annotations["source"] = s.Source
+
+			templateAnnotations := map[string]string{}
+			if dep.Spec != nil && dep.Spec.Template != nil && dep.Spec.Template.Metadata != nil {
+				for k, v := range dep.Spec.Template.Metadata.Annotations {
+					templateAnnotations[k] = v
+				}
+			}
+			templateAnnotations["updated"] = fmt.Sprintf("%d", time.Now().Unix())
+			templateAnnotations["source"] = s.Source
+
+			patch := &client.Deployment{
+				Metadata: &client.Metadata{
+					Name:        dep.Metadata.Name,
+					Annotations: annotations,
+				},
+				Spec: &client.DeploymentSpec{
+					Template: &client.Template{
+						Metadata: &client.Metadata{Annotations: templateAnnotations},
+						PodSpec:  &client.PodSpec{},
+					},
+				},
+			}
+
+			// set num instances (there is currently no way to set to 0)
+			if options.Instances > 0 {
+				patch.Spec.Replicas = int(options.Instances)
 			}
 
 			if rcn := getRuntimeClassName(k.options.Context); len(rcn) > 0 {
-				dep.Spec.Template.PodSpec.RuntimeClassName = rcn
+				patch.Spec.Template.PodSpec.RuntimeClassName = rcn
 				logger.Infof("Setting runtime class name to %v", rcn)
 			}
 
-			// update build time annotation
-			dep.Spec.Template.Metadata.Annotations["updated"] = fmt.Sprintf("%d", time.Now().Unix())
-
-			// set num instances (there is currently no way to set to 0
-			if options.Instances > 0 {
-				dep.Spec.Replicas = int(options.Instances)
+			if dep.Spec != nil && dep.Spec.Template != nil && dep.Spec.Template.PodSpec != nil && len(dep.Spec.Template.PodSpec.Containers) > 0 {
+				existing := dep.Spec.Template.PodSpec.Containers[0]
+				container := client.Container{
+					Name:  existing.Name,
+					Image: existing.Image,
+				}
+				if len(container.Name) == 0 {
+					container.Name = client.Format(s.Name)
+				}
+				if len(options.Image) > 0 {
+					container.Image = options.Image
+				}
+				container.Env = existing.Env
+				if options.Command != nil {
+					container.Command = options.Command
+				}
+				if options.Args != nil {
+					container.Args = options.Args
+				}
+				if options.Env != nil {
+					for _, evar := range options.Env {
+						if comps := strings.Split(evar, "="); len(comps) >= 2 {
+							name := comps[0]
+							value := strings.Join(comps[1:], "=")
+							var found bool
+							for i := range container.Env {
+								if container.Env[i].Name == name {
+									container.Env[i].Value = value
+									container.Env[i].ValueFrom = nil
+									found = true
+									break
+								}
+							}
+							if !found {
+								container.Env = append(container.Env, client.EnvVar{Name: name, Value: value})
+							}
+						}
+					}
+				}
+				patch.Spec.Template.PodSpec.Containers = []client.Container{container}
 			}
 
 			// update the deployment
 			res := &client.Resource{
 				Kind:  "deployment",
 				Name:  resourceName(s),
-				Value: &dep,
+				Value: patch,
 			}
 			if err := k.client.Update(res, client.UpdateNamespace(options.Namespace)); err != nil {
 				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {

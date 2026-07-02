@@ -8,12 +8,11 @@ import (
 	"github.com/micro/micro/v3/cmd"
 
 	// load packages so they can register commands
-	_ "github.com/micro/micro/v3/client/cli"
-	_ "github.com/micro/micro/v3/server"
-	_ "github.com/micro/micro/v3/service/cli"
-
-	// include the platform profile
-	_ "github.com/micro/micro/profile/platform/v3"
+	_ "github.com/micro/micro/v3/cmd/cli"
+	_ "github.com/micro/micro/v3/cmd/server"
+	_ "github.com/micro/micro/v3/cmd/service"
+	_ "github.com/micro/micro/v3/cmd/usage"
+	_ "github.com/micro/micro/v3/profile/platform"
 )
 
 var (

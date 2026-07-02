@@ -63,7 +63,7 @@ type Container struct {
 // DeploymentSpec defines micro deployment spec
 type DeploymentSpec struct {
 	Replicas int            `json:"replicas,omitempty"`
-	Selector *LabelSelector `json:"selector"`
+	Selector *LabelSelector `json:"selector,omitempty"`
 	Template *Template      `json:"template,omitempty"`
 }
 
@@ -268,7 +268,7 @@ type ResourceLimits struct {
 
 // Volume describes a volume which can be mounted to a pod
 type Volume struct {
-	Name                  string `json:"name"`
+	Name                  string                            `json:"name"`
 	PersistentVolumeClaim PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
 }
 
