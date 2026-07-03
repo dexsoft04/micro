@@ -19,6 +19,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/micro/micro/v3/util/codec"
@@ -26,8 +27,10 @@ import (
 
 var (
 	// DefaultClient implementation
-	DefaultClient Client
+	DefaultClient Client = defaultClientProxy{}
 )
+
+var errDefaultClientNotConfigured = errors.New("default client is not configured")
 
 // Client is the interface used to make requests to services.
 // It supports Request/Response via Transport and Publishing via the Broker.
