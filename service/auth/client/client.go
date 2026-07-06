@@ -243,11 +243,11 @@ func (s *srv) Inspect(token string) (*auth.Account, error) {
 		Token: token, Options: &pb.Options{Namespace: s.Options().Issuer},
 	}, s.callOpts()...)
 	if err != nil {
-		logger.Errorf("inspect, token:%s", token)
+		logger.Errorf("inspect failed: %v", err)
 		return nil, err
 	}
-	if rsp.Account == nil {
-		logger.Errorf("inspect panic, token:%s", token)
+	if rsp == nil || rsp.Account == nil {
+		logger.Errorf("inspect returned empty account")
 		return nil, auth.ErrInvalidToken
 	}
 	return serializeAccount(rsp.Account), nil
