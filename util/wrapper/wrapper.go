@@ -59,7 +59,7 @@ func (a *authWrapper) wrapContext(ctx context.Context, opts ...client.CallOption
 	}
 
 	// call without an auth token
-	return ctx
+	return metadata.Delete(ctx, "Authorization")
 }
 
 // AuthClient wraps requests with the auth header
