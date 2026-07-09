@@ -118,9 +118,15 @@ func AuthHandler() server.HandlerWrapper {
 
 			// The user is authorised, allow the call
 			err = h(ctx, req, rsp)
-			logger.Error(err)
+			logHandlerError(err)
 			return err
 		}
+	}
+}
+
+func logHandlerError(err error) {
+	if err != nil {
+		logger.Error(err)
 	}
 }
 
