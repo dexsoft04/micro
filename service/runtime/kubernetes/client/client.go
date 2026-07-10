@@ -330,30 +330,18 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 		})
 	}
 
-	// parse resource limits
+	// parse resource requests and limits
 	var resReqs *ResourceRequirements
-	if opts.Resources != nil {
-		resReqs = &ResourceRequirements{Limits: &ResourceLimits{}, Requests: &ResourceLimits{}}
-
-		if opts.Resources.CPU > 0 {
-			cpu := fmt.Sprintf("%vm", opts.Resources.CPU)
-			resReqs.Limits.CPU = cpu
-			resReqs.Requests.CPU = cpu
+	if opts.Resources != nil || opts.ResourceRequests != nil {
+		resReqs = &ResourceRequirements{}
+		if opts.Resources != nil {
+			resReqs.Limits = newResourceLimits(opts.Resources)
 		}
-		if opts.Resources.Mem > 0 {
-			mem := fmt.Sprintf("%vMi", opts.Resources.Mem)
-			resReqs.Limits.Memory = mem
-			resReqs.Requests.Memory = mem
+		if opts.ResourceRequests != nil {
+			resReqs.Requests = newResourceLimits(opts.ResourceRequests)
+		} else if opts.Resources != nil {
+			resReqs.Requests = newResourceLimits(opts.Resources)
 		}
-		if opts.Resources.Disk > 0 {
-			disk := fmt.Sprintf("%vMi", opts.Resources.Disk)
-			resReqs.Limits.EphemeralStorage = disk
-			resReqs.Requests.EphemeralStorage = disk
-		}
-		resReqs.Requests.CPU = fmt.Sprintf("%vm", 200)
-		resReqs.Requests.Memory = fmt.Sprintf("%vMi", 200)
-		resReqs.Requests.EphemeralStorage = fmt.Sprintf("%vMi", 2000)
-
 	}
 
 	// parse the port option
@@ -417,6 +405,20 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 			},
 		},
 	}
+}
+
+func newResourceLimits(resources *runtime.Resources) *ResourceLimits {
+	limits := &ResourceLimits{}
+	if resources.CPU > 0 {
+		limits.CPU = fmt.Sprintf("%vm", resources.CPU)
+	}
+	if resources.Mem > 0 {
+		limits.Memory = fmt.Sprintf("%vMi", resources.Mem)
+	}
+	if resources.Disk > 0 {
+		limits.EphemeralStorage = fmt.Sprintf("%vMi", resources.Disk)
+	}
+	return limits
 }
 
 // NewLocalClient returns a client that can be used with `kubectl proxy`

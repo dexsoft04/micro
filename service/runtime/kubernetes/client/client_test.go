@@ -42,6 +42,11 @@ func TestCreate(t *testing.T) {
 					Mem:  1048,
 					Disk: 2000,
 				},
+				ResourceRequests: &runtime.Resources{
+					CPU:  100,
+					Mem:  200,
+					Disk: 2000,
+				},
 				ServiceAccount: "serviceAcc",
 				VolumeMounts:   map[string]string{"aaa": "bbbb"},
 				Volumes:        map[string]string{"1111": "22222"},
@@ -115,8 +120,8 @@ spec:
               cpu: 1000m
               ephemeral-storage: 2000Mi
             requests:
-              memory: 1048Mi
-              cpu: 1000m
+              memory: 200Mi
+              cpu: 100m
               ephemeral-storage: 2000Mi
           volumeMounts:
             - name: aaa

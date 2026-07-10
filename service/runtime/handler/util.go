@@ -101,6 +101,20 @@ func toCreateOptions(ctx context.Context, opts *pb.CreateOptions) []runtime.Crea
 	if opts.Instances > 0 {
 		options = append(options, runtime.CreateInstances(int(opts.Instances)))
 	}
+	if opts.Resources != nil {
+		options = append(options, runtime.ResourceLimits(&runtime.Resources{
+			CPU:  int(opts.Resources.CPU),
+			Disk: int(opts.Resources.EphemeralStorage),
+			Mem:  int(opts.Resources.Memory),
+		}))
+	}
+	if opts.ResourceRequests != nil {
+		options = append(options, runtime.ResourceRequests(&runtime.Resources{
+			CPU:  int(opts.ResourceRequests.CPU),
+			Disk: int(opts.ResourceRequests.EphemeralStorage),
+			Mem:  int(opts.ResourceRequests.Memory),
+		}))
+	}
 
 	// TODO: output options
 

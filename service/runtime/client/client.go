@@ -166,6 +166,20 @@ func (s *svc) Create(resource runtime.Resource, opts ...runtime.CreateOption) er
 				Force:      options.Force,
 			},
 		}
+		if options.Resources != nil {
+			req.Options.Resources = &pb.Resources{
+				CPU:              int32(options.Resources.CPU),
+				EphemeralStorage: int32(options.Resources.Disk),
+				Memory:           int32(options.Resources.Mem),
+			}
+		}
+		if options.ResourceRequests != nil {
+			req.Options.ResourceRequests = &pb.Resources{
+				CPU:              int32(options.ResourceRequests.CPU),
+				EphemeralStorage: int32(options.ResourceRequests.Disk),
+				Memory:           int32(options.ResourceRequests.Mem),
+			}
+		}
 
 		if _, err := s.runtime.Create(context.DefaultContext, req, client.WithAuthToken()); err != nil {
 			return err

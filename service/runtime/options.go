@@ -95,8 +95,10 @@ type CreateOptions struct {
 	Context context.Context
 	// Secrets to use
 	Secrets map[string]string
-	// Resources to allocate the service
+	// Resources to limit the service
 	Resources *Resources
+	// ResourceRequests to reserve for the service
+	ResourceRequests *Resources
 	// Volumes to mount
 	VolumeMounts map[string]string
 
@@ -258,6 +260,13 @@ func ResourceLimits(r *Resources) CreateOption {
 func WithForce(f bool) CreateOption {
 	return func(o *CreateOptions) {
 		o.Force = f
+	}
+}
+
+// ResourceRequests sets the resources to reserve for the service.
+func ResourceRequests(r *Resources) CreateOption {
+	return func(o *CreateOptions) {
+		o.ResourceRequests = r
 	}
 }
 

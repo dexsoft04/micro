@@ -28,6 +28,12 @@ import (
 )
 
 var (
+	DefaultServiceRequests = &runtime.Resources{
+		CPU:  100,
+		Mem:  200,
+		Disk: 2000,
+	}
+
 	DefaultServiceResources = &runtime.Resources{
 		CPU:  1000,
 		Mem:  1048,
@@ -214,9 +220,10 @@ func (k *kubernetes) create(resource runtime.Resource, opts ...runtime.CreateOpt
 			return err
 		}
 
-		// create some default resource requests
-		if options.Resources == nil && options.Namespace != "micro" {
+		// create default resource requests and limits
+		if options.Resources == nil && options.ResourceRequests == nil && options.Namespace != "micro" {
 			options.Resources = DefaultServiceResources
+			options.ResourceRequests = DefaultServiceRequests
 		}
 
 		if len(options.Image) == 0 {

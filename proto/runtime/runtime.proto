@@ -102,6 +102,10 @@ message CreateOptions {
 	int64 instances = 11;
 	// force rebuild and restart the service
 	bool force = 12;
+	// resource limits
+	Resources resources = 13;
+	// resource requests
+	Resources resource_requests = 14;
 }
 
 message CreateRequest {
