@@ -12,7 +12,6 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 COPY go.mod .
 COPY go.sum .
-
 COPY . /
 RUN go env -w GOPROXY="goproxy.cn,direct" \
     && go mod download
