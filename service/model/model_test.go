@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
+	"github.com/micro/micro/v3/service/store"
 	fs "github.com/micro/micro/v3/service/store/file"
 )
 
@@ -20,9 +21,15 @@ type User struct {
 	Updated int64  `json:"updated"`
 }
 
+func newTestFileStore(t *testing.T) store.Store {
+	t.Helper()
+
+	return fs.NewStore(fs.WithDir(t.TempDir()))
+}
+
 func TestQueryEqualsByID(t *testing.T) {
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
 
@@ -63,7 +70,7 @@ type User1 struct {
 
 func TestQueryEqualsLowerCaseID(t *testing.T) {
 	table := New(&User1{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
 
@@ -96,7 +103,7 @@ func TestQueryEqualsLowerCaseID(t *testing.T) {
 
 func TestQueryEqualsMismatchIDCapitalization(t *testing.T) {
 	table := New(&User1{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
 
@@ -137,7 +144,7 @@ func TestQueryEqualsByIDMap(t *testing.T) {
 		"updated": 1,
 	}
 	table := New(m, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
 
@@ -170,7 +177,7 @@ func TestQueryEqualsByIDMap(t *testing.T) {
 func TestQueryEqualsByIDMapNoSchemaWithIndexes(t *testing.T) {
 	m := map[string]interface{}{}
 	table := New(m, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Indexes:   []Index{ByEquality("Age")},
 	})
@@ -211,7 +218,7 @@ func TestListAllMap(t *testing.T) {
 		"updated": 1,
 	}
 	table := New(m, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
 
@@ -250,7 +257,7 @@ func TestListAllMapCutomID(t *testing.T) {
 		"updated": 1,
 	}
 	table := New(m, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Key:       "name",
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -296,7 +303,7 @@ func TestListLimitMap(t *testing.T) {
 		"updated": 1,
 	}
 	table := New(m, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{ageAsc, ageDesc},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -364,7 +371,7 @@ func TestListLimitMap(t *testing.T) {
 func TestNewModel(t *testing.T) {
 	// create a new model
 	table := NewModel(
-		WithStore(fs.NewStore()),
+		WithStore(newTestFileStore(t)),
 		WithNamespace(uuid.Must(uuid.NewV4()).String()),
 	)
 
@@ -399,7 +406,7 @@ func TestNewModel(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{ByEquality("age")},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -443,7 +450,7 @@ func TestRead(t *testing.T) {
 
 func TestQueryEquals(t *testing.T) {
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{ByEquality("age")},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -525,7 +532,7 @@ func TestOrderingStrings(t *testing.T) {
 		}
 		tagIndex.StringOrderPadLength = 12
 		table := New(User{}, &Options{
-			Store:     fs.NewStore(),
+			Store:     newTestFileStore(t),
 			Indexes:   []Index{tagIndex},
 			Namespace: uuid.Must(uuid.NewV4()).String(),
 		})
@@ -597,7 +604,7 @@ func TestOrderingNumbers(t *testing.T) {
 			createdIndex.Order.Type = OrderTypeDesc
 		}
 		table := New(User{}, &Options{
-			Store:     fs.NewStore(),
+			Store:     newTestFileStore(t),
 			Indexes:   []Index{createdIndex},
 			Namespace: uuid.Must(uuid.NewV4()).String(),
 		})
@@ -644,7 +651,7 @@ func TestOrderingNumbers(t *testing.T) {
 func TestStaleIndexRemoval(t *testing.T) {
 	tagIndex := ByEquality("tag")
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{tagIndex},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -676,7 +683,7 @@ func TestUniqueIndex(t *testing.T) {
 	tagIndex := ByEquality("tag")
 	tagIndex.Unique = true
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{tagIndex},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -711,7 +718,7 @@ type Tag struct {
 
 func TestNonIDKeys(t *testing.T) {
 	table := New(Tag{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Key:       "slug",
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 	})
@@ -749,7 +756,7 @@ func TestReadByString(t *testing.T) {
 
 	table := New(Tag{}, &Options{
 		Key:       "slug",
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{typeIndex},
 		Debug:     false,
 		Namespace: uuid.Must(uuid.NewV4()).String(),
@@ -789,7 +796,7 @@ func TestOderByDifferentFieldThanFilterField(t *testing.T) {
 
 	table := New(Tag{}, &Options{
 		Key:       "slug",
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{typeIndex},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Debug:     false,
@@ -851,7 +858,7 @@ func TestDeleteIndexCleanup(t *testing.T) {
 
 	table := New(Tag{}, &Options{
 		Key:       "slug",
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{typeIndex},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Debug:     false,
@@ -898,7 +905,7 @@ func TestDeleteIndexCleanup(t *testing.T) {
 
 func TestDeleteByUnmatchingIndex(t *testing.T) {
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Debug:     false,
 	})
@@ -943,7 +950,7 @@ func TestDeleteByUnmatchingIndex(t *testing.T) {
 
 func TestDeleteByUnmatchingIndexMap(t *testing.T) {
 	table := New(map[string]interface{}{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Debug:     false,
 	})
@@ -991,7 +998,7 @@ func TestUpdateDeleteIndexMaintenance(t *testing.T) {
 	updIndex.Order.Type = OrderTypeDesc
 
 	table := New(User{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{updIndex},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Debug:     false,
@@ -1053,7 +1060,7 @@ func TestUpdateDeleteIndexMaintenanceMap(t *testing.T) {
 	updIndex.Order.Type = OrderTypeDesc
 
 	table := New(map[string]interface{}{}, &Options{
-		Store:     fs.NewStore(),
+		Store:     newTestFileStore(t),
 		Indexes:   []Index{updIndex},
 		Namespace: uuid.Must(uuid.NewV4()).String(),
 		Debug:     false,
@@ -1147,7 +1154,7 @@ func TestAllCombos(t *testing.T) {
 				index.Order.FieldName = orderFieldName
 
 				table := New(TypeTest{}, &Options{
-					Store:     fs.NewStore(),
+					Store:     newTestFileStore(t),
 					Indexes:   []Index{index},
 					Namespace: uuid.Must(uuid.NewV4()).String(),
 					Debug:     false,
@@ -1191,7 +1198,7 @@ func TestAllCombos(t *testing.T) {
 				index.Order.FieldName = orderFieldName
 
 				table := New(TypeTest{}, &Options{
-					Store:     fs.NewStore(),
+					Store:     newTestFileStore(t),
 					Indexes:   []Index{index},
 					Namespace: uuid.Must(uuid.NewV4()).String(),
 					Debug:     false,

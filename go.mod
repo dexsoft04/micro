@@ -22,7 +22,6 @@ require (
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hpcloud/tail v1.0.0
 	github.com/kr/pretty v0.3.1
-	github.com/micro/micro/plugin/s3/v3 v3.0.0-00010101000000-000000000000
 	github.com/miekg/dns v1.1.27
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
@@ -55,9 +54,8 @@ require (
 	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
 )
 
-replace github.com/micro/micro/plugin/s3/v3 => ./plugin/s3
-
 require (
+	github.com/aws/aws-sdk-go v1.23.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/hashstructure v1.0.0
@@ -72,7 +70,6 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.3.0 // indirect
-	github.com/aws/aws-sdk-go v1.23.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

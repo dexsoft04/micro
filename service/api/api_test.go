@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -25,6 +26,22 @@ import (
 	go_api "github.com/micro/micro/v3/proto/api"
 	"github.com/micro/micro/v3/service/api"
 )
+
+func assertJSONEqual(t *testing.T, got, want []byte) {
+	t.Helper()
+
+	var gotJSON interface{}
+	if err := json.Unmarshal(got, &gotJSON); err != nil {
+		t.Fatalf("Failed to unmarshal got JSON: %v", err)
+	}
+	var wantJSON interface{}
+	if err := json.Unmarshal(want, &wantJSON); err != nil {
+		t.Fatalf("Failed to unmarshal expected JSON: %v", err)
+	}
+	if !reflect.DeepEqual(gotJSON, wantJSON) {
+		t.Fatalf("Expected %s and %s to match", got, want)
+	}
+}
 
 func TestEncoding(t *testing.T) {
 	testData := []*api.Endpoint{
@@ -201,9 +218,7 @@ func TestRequestPayloadFromRequest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to extract payload from request: %v", err)
 		}
-		if string(extByte) != string(jsonUrlBytes) {
-			t.Fatalf("Expected %v and %v to match", string(extByte), jsonUrlBytes)
-		}
+		assertJSONEqual(t, extByte, jsonUrlBytes)
 	})
 
 	t.Run("extracting a proto from a POST request", func(t *testing.T) {

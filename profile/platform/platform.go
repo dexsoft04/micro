@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 
-	s3 "github.com/micro/micro/plugin/s3/v3"
 	"github.com/micro/micro/v3/plugin/etcd"
 	natsBroker "github.com/micro/micro/v3/plugin/nats/broker"
 	natsStream "github.com/micro/micro/v3/plugin/nats/stream"
 	"github.com/micro/micro/v3/plugin/postgres"
 	"github.com/micro/micro/v3/plugin/prometheus"
+	s3 "github.com/micro/micro/v3/plugin/s3"
 	"github.com/micro/micro/v3/profile"
 	"github.com/micro/micro/v3/service/auth"
 	"github.com/micro/micro/v3/service/auth/jwt"

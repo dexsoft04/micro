@@ -1,7 +1,9 @@
 package postgres
 
 import (
+	"database/sql"
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/micro/micro/v3/service/store"
@@ -13,9 +15,36 @@ type testObj struct {
 	Two int64
 }
 
+const defaultPostgresTestDSN = "postgresql://postgres@localhost:5432/?sslmode=disable"
+
+func postgresTestDSN(t *testing.T) string {
+	t.Helper()
+
+	dsn, explicit := os.LookupEnv("MICRO_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		dsn = defaultPostgresTestDSN
+	}
+
+	db, err := sql.Open("postgres", dsn)
+	if err == nil {
+		err = db.Ping()
+		db.Close()
+	}
+	if err != nil {
+		if explicit {
+			t.Fatalf("PostgreSQL test DSN is not available: %v", err)
+		}
+		t.Skipf("PostgreSQL is not available at %s: %v", dsn, err)
+	}
+
+	return dsn
+}
+
 func TestPostgres(t *testing.T) {
+	dsn := postgresTestDSN(t)
+
 	t.Run("ReadWrite", func(t *testing.T) {
-		s := NewStore(store.Nodes("postgresql://postgres@localhost:5432/?sslmode=disable"))
+		s := NewStore(store.Nodes(dsn))
 		base := s.(*sqlStore)
 		base.dbConn.Exec("DROP SCHENA IF EXISTS micro")
 		b, _ := json.Marshal(testObj{
@@ -43,7 +72,7 @@ func TestPostgres(t *testing.T) {
 		assert.Equal(t, int64(2), tobj.Two)
 	})
 	t.Run("Prefix", func(t *testing.T) {
-		s := NewStore(store.Nodes("postgresql://postgres@localhost:5432/?sslmode=disable"))
+		s := NewStore(store.Nodes(dsn))
 		base := s.(*sqlStore)
 		base.dbConn.Exec("DROP SCHENA IF EXISTS micro")
 		b, _ := json.Marshal(testObj{
@@ -74,8 +103,8 @@ func TestPostgres(t *testing.T) {
 	})
 
 	t.Run("MultipleTables", func(t *testing.T) {
-		s1 := NewStore(store.Nodes("postgresql://postgres@localhost:5432/?sslmode=disable"), store.Table("t1"))
-		s2 := NewStore(store.Nodes("postgresql://postgres@localhost:5432/?sslmode=disable"), store.Table("t2"))
+		s1 := NewStore(store.Nodes(dsn), store.Table("t1"))
+		s2 := NewStore(store.Nodes(dsn), store.Table("t2"))
 		base := s1.(*sqlStore)
 		base.dbConn.Exec("DROP SCHENA IF EXISTS t1")
 		base.dbConn.Exec("DROP SCHENA IF EXISTS t2")
@@ -109,8 +138,8 @@ func TestPostgres(t *testing.T) {
 	})
 
 	t.Run("MultipleDBs", func(t *testing.T) {
-		s1 := NewStore(store.Nodes("postgresql://postgres@localhost:5432/?sslmode=disable"), store.Database("d1"))
-		s2 := NewStore(store.Nodes("postgresql://postgres@localhost:5432/?sslmode=disable"), store.Database("d2"))
+		s1 := NewStore(store.Nodes(dsn), store.Database("d1"))
+		s2 := NewStore(store.Nodes(dsn), store.Database("d2"))
 		base := s1.(*sqlStore)
 		base.dbConn.Exec("DROP DATABASE EXISTS d1")
 		base.dbConn.Exec("DROP DATABASE EXISTS d2")

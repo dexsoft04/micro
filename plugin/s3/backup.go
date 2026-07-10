@@ -120,7 +120,7 @@ dateLoop:
 		for num := 1; num <= rollBackNum; num++ {
 			if _, err := i.client.DeleteObject(&sthree.DeleteObjectInput{
 				Bucket: aws.String(i.opts.Bucket),
-				Key:    aws.String(fmt.Sprintf("micro/eventsBackup/%s-%s", d, num)),
+				Key:    aws.String(fmt.Sprintf("micro/eventsBackup/%s-%d", d, num)),
 			}); err != nil {
 				logger.Errorf("Error during rollback %s", err)
 			}
