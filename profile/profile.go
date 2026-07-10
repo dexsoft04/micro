@@ -343,7 +343,7 @@ func SetupBroker(b broker.Broker) {
 func SetupJWT(ctx *cli.Context) {
 	for _, rule := range inAuth.SystemRules {
 		if err := microAuth.DefaultAuth.Grant(rule); err != nil {
-			logger.Fatal("Error creating default rule: %v", err)
+			logger.Fatalf("Error creating default rule: %v", err)
 		}
 	}
 }
@@ -353,7 +353,7 @@ func SetupConfigSecretKey(ctx *cli.Context) {
 	if len(key) == 0 {
 		k, err := user.GetConfigSecretKey()
 		if err != nil {
-			logger.Fatal("Error getting config secret: %v", err)
+			logger.Fatalf("Error getting config secret: %v", err)
 		}
 		os.Setenv("MICRO_CONFIG_SECRET_KEY", k)
 	}
