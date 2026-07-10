@@ -65,6 +65,9 @@ func NewRuntime(opts ...runtime.Option) runtime.Runtime {
 
 	// make the logs directory
 	os.MkdirAll(LogDir, 0755)
+	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
+		logger.Debugf("Micro log directory: %v", LogDir)
+	}
 
 	return &localRuntime{
 		options:    options,
@@ -149,7 +152,7 @@ func (r *localRuntime) Create(resource runtime.Resource, opts ...runtime.CreateO
 		if _, ok := r.namespaces[options.Namespace]; !ok {
 			r.namespaces[options.Namespace] = make(map[string]*service)
 		}
-		if _, ok := r.namespaces[options.Namespace][serviceKey(s)]; ok {
+		if _, ok := r.namespaces[options.Namespace][serviceKey(s)]; ok && !options.Force {
 			return runtime.ErrAlreadyExists
 		}
 
@@ -520,7 +523,10 @@ func (r *localRuntime) Stop() error {
 			if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 				logger.Debugf("Runtime stopping %s", service.Name)
 			}
+			// stop the service
 			service.Stop()
+			// wait for exit
+			service.Wait()
 		}
 	}
 

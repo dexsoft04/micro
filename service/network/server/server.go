@@ -10,11 +10,8 @@ import (
 	"github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/client"
 	log "github.com/micro/micro/v3/service/logger"
-	net "github.com/micro/micro/v3/service/network"
+	"github.com/micro/micro/v3/service/network"
 	"github.com/micro/micro/v3/service/network/handler"
-	"github.com/micro/micro/v3/service/network/mucp"
-	"github.com/micro/micro/v3/service/network/transport"
-	"github.com/micro/micro/v3/service/network/transport/grpc"
 	"github.com/micro/micro/v3/service/network/tunnel"
 	tmucp "github.com/micro/micro/v3/service/network/tunnel/mucp"
 	"github.com/micro/micro/v3/service/proxy"
@@ -122,10 +119,6 @@ func Run(ctx *cli.Context) error {
 			return err
 		}
 		config.InsecureSkipVerify = true
-
-		tunOpts = append(tunOpts, tunnel.Transport(
-			grpc.NewTransport(transport.TLSConfig(config)),
-		))
 	}
 
 	gateway := ctx.String("gateway")
@@ -147,16 +140,18 @@ func Run(ctx *cli.Context) error {
 		router.Cache(),
 	)
 
-	// create new network
-	netService := mucp.NewNetwork(
-		net.Id(id),
-		net.Name(networkName),
-		net.Address(peerAddress),
-		net.Advertise(advertise),
-		net.Nodes(nodes...),
-		net.Tunnel(tun),
-		net.Router(rtr),
+	// initialise network vals
+	network.DefaultNetwork.Init(
+		network.Id(id),
+		network.Name(networkName),
+		network.Address(peerAddress),
+		network.Advertise(advertise),
+		network.Nodes(nodes...),
+		network.Tunnel(tun),
+		network.Router(rtr),
 	)
+
+	netService := network.DefaultNetwork
 
 	// local proxy using grpc
 	// TODO: reenable after PR
@@ -205,7 +200,7 @@ func Run(ctx *cli.Context) error {
 	}
 
 	// netClose hard exits if we have problems
-	netClose := func(net net.Network) error {
+	netClose := func(net network.Network) error {
 		errChan := make(chan error, 1)
 
 		go func() {

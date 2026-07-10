@@ -37,9 +37,10 @@ build_cell() {
     return
   fi
 
-  docker build ${DOCKER_BUILD_FLAGS:-} -t $TAG .
-  if [ "$PUSH" != "false" ]; then
-    docker push $TAG
+  if [ "$PUSH" = "false" ]; then
+    docker build ${DOCKER_BUILD_FLAGS:-} -t $TAG .
+  else
+    docker buildx build --platform linux/amd64 --platform linux/arm64 --tag $TAG --push .
   fi
 
   popd &>/dev/null

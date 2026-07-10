@@ -40,7 +40,7 @@ var (
 	// ErrReadNamespace is returned when the names could not be read from service account
 	ErrReadNamespace = errors.New("Could not read namespace from service account secret")
 	// DefaultImage is default micro image
-	DefaultImage = "micro/cells:v3"
+	DefaultImage = "ghcr.io/micro/cells:v3"
 	// DefaultNamespace is the default k8s namespace
 	DefaultNamespace = "default"
 	// DefaultPort to expose on a service
@@ -350,6 +350,10 @@ func NewDeployment(s *runtime.Service, opts *runtime.CreateOptions) *Resource {
 			resReqs.Limits.EphemeralStorage = disk
 			resReqs.Requests.EphemeralStorage = disk
 		}
+		resReqs.Requests.CPU = fmt.Sprintf("%vm", 200)
+		resReqs.Requests.Memory = fmt.Sprintf("%vMi", 200)
+		resReqs.Requests.EphemeralStorage = fmt.Sprintf("%vMi", 2000)
+
 	}
 
 	// parse the port option

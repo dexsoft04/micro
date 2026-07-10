@@ -264,13 +264,13 @@ func TestLoopbackTunnel(t *testing.T) {
 func TestTunnelRTTRate(t *testing.T) {
 	// create a new tunnel client
 	tunA := NewTunnel(
-		tunnel.Address("127.0.0.1:9096"),
-		tunnel.Nodes("127.0.0.1:9097"),
+		tunnel.Address("127.0.0.1:9100"),
+		tunnel.Nodes("127.0.0.1:9101"),
 	)
 
 	// create a new tunnel server
 	tunB := NewTunnel(
-		tunnel.Address("127.0.0.1:9097"),
+		tunnel.Address("127.0.0.1:9101"),
 	)
 
 	// start tunB

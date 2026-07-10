@@ -20,10 +20,11 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"reflect"
 	"runtime/debug"
 	"sort"
@@ -33,7 +34,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	pberr "github.com/micro/micro/v3/proto/errors"
 	"github.com/micro/micro/v3/service/broker"
 	meta "github.com/micro/micro/v3/service/context/metadata"
@@ -58,12 +58,12 @@ import (
 
 var (
 	// DefaultMaxRecvMsgSize maximum message that client can receive
-	// (16 MB).
-	DefaultMaxRecvMsgSize = 1024 * 1024 * 16
+	// (32 MB).
+	DefaultMaxRecvMsgSize = 1024 * 1024 * 32
 
 	// DefaultMaxSendMsgSize maximum message that client can send
-	// (16 MB).
-	DefaultMaxSendMsgSize = 1024 * 1024 * 16
+	// (32 MB).
+	DefaultMaxSendMsgSize = 1024 * 1024 * 32
 )
 
 const (
@@ -385,9 +385,67 @@ func (g *grpcServer) processRequest(stream grpc.ServerStream, service *service, 
 			argIsValue = true
 		}
 
-		// Unmarshal request
-		if err := stream.RecvMsg(argv.Interface()); err != nil {
-			return err
+		if cd := defaultGRPCCodecs[ct]; cd.Name() != "json" {
+			if err := stream.RecvMsg(argv.Interface()); err != nil {
+				return err
+			}
+		} else {
+			var raw json.RawMessage
+
+			// Unmarshal request in to a generic map[string]interface{}
+			if err := stream.RecvMsg(&raw); err != nil {
+				return err
+			}
+
+			// first try parsing it as normal
+			if err := cd.Unmarshal(raw, argv.Interface()); err != nil {
+				// let's try parsing it manually
+				var gen map[string]interface{}
+				if err := json.Unmarshal(raw, &gen); err != nil {
+					return err
+				}
+				for i := 0; i < argv.Elem().NumField(); i++ {
+					field := argv.Elem().Field(i)
+					if !field.CanSet() {
+						continue
+					}
+					fieldName := strings.Split(argv.Elem().Type().Field(i).Tag.Get("json"), ",")[0]
+					kindVal := argv.Elem().Field(i).Kind()
+					if len(fieldName) == 0 {
+						continue
+					}
+					if _, ok := gen[fieldName]; !ok {
+						continue
+					}
+					if s, ok := gen[fieldName].(string); ok {
+						// be more permissive by trying to convert string in to the correct type
+						switch kindVal {
+						case reflect.Bool:
+							b, err := strconv.ParseBool(s)
+							if err != nil {
+								return err
+							}
+							field.SetBool(b)
+						case reflect.Int64, reflect.Int32, reflect.Int:
+							in, err := strconv.ParseInt(s, 10, 64)
+							if err != nil {
+								return err
+							}
+							field.SetInt(in)
+						case reflect.Slice: // byte slice
+							b, err := base64.StdEncoding.DecodeString(s)
+							if err != nil {
+								return err
+							}
+							field.SetBytes(b)
+						default:
+							field.Set(reflect.ValueOf(gen[fieldName]))
+						}
+					} else {
+						field.Set(reflect.ValueOf(gen[fieldName]))
+					}
+				}
+			}
 		}
 
 		if argIsValue {
@@ -962,28 +1020,6 @@ func (g *grpcServer) Start() error {
 	if err := g.Register(); err != nil {
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Errorf("Server register error: %v", err)
-		}
-	}
-
-	if g.opts.Context != nil {
-		gRPCWebAddr := ":8082"
-		if g.opts.Context.Value(grpcWebPort{}) != nil {
-			if p, ok := g.opts.Context.Value(grpcWebPort{}).(string); ok && p != "" {
-				gRPCWebAddr = p
-			}
-		}
-
-		if c, ok := g.opts.Context.Value(grpcWebOptions{}).([]grpcweb.Option); ok && len(c) > 0 {
-			wrappedGrpc := grpcweb.WrapServer(g.srv, c...)
-			webGRPCServer := &http.Server{
-				Addr:      gRPCWebAddr,
-				TLSConfig: config.TLSConfig,
-				Handler:   http.Handler(wrappedGrpc),
-			}
-
-			go webGRPCServer.ListenAndServe()
-
-			logger.Infof("Server [gRPC-Web] Listening on %s", gRPCWebAddr)
 		}
 	}
 

@@ -108,8 +108,9 @@ func (b *blob) Write(key string, blob io.Reader, opts ...store.BlobOption) error
 		req := &pb.BlobWriteRequest{
 			Key: key,
 			Options: &pb.BlobOptions{
-				Namespace: options.Namespace,
-				Public:    options.Public,
+				Namespace:   options.Namespace,
+				Public:      options.Public,
+				ContentType: options.ContentType,
 			},
 			Blob: buffer[:num],
 		}
@@ -159,4 +160,32 @@ func (b *blob) cli() pb.BlobStoreService {
 		b.client = pb.NewBlobStoreService("store", client.DefaultClient)
 	}
 	return b.client
+}
+
+func (b *blob) List(opts ...store.BlobListOption) ([]string, error) {
+
+	// parse the options
+	var options store.BlobListOptions
+	for _, o := range opts {
+		o(&options)
+	}
+
+	// execute the rpc
+	rsp, err := b.cli().List(context.TODO(), &pb.BlobListRequest{
+		Options: &pb.BlobListOptions{
+			Namespace: options.Namespace,
+			Prefix:    options.Prefix,
+		},
+	}, client.WithAuthToken())
+
+	// handle the error
+	if verr := errors.FromError(err); verr != nil && verr.Code == http.StatusNotFound {
+		return nil, store.ErrNotFound
+	} else if verr != nil {
+		return nil, verr
+	} else if err != nil {
+		return nil, err
+	}
+
+	return rsp.Keys, nil
 }

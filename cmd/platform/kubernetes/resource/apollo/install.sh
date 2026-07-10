@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-kubectl exec -i mysql-cluster-master-0 -- mysql -hmysql-cluster -uroot -p < apolloconfigdb.sql
-kubectl exec -i mysql-cluster-master-0 -- mysql -hmysql-cluster -uroot -p < apolloportaldb.sql
+kubectl exec -i mysql-cluster-0 -- mysql -hmysql-cluster -uroot -p < apolloconfigdb.sql
+kubectl exec -i mysql-cluster-0 -- mysql -hmysql-cluster -uroot -p < apolloportaldb.sql
 
 if [[ $MICRO_ENV == "dev" ]]; then
   srv_overrides="--set configService.replicaCount=1,adminService.replicaCount=1"

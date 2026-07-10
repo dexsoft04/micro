@@ -12,8 +12,8 @@ var (
 	GitTag    string
 	BuildDate string
 
-	version    = "v3.3.2"
-	prerelease = "mcbeam4-go126" // blank if full release
+	version    = "v3.12.3"
+	prerelease = "mcbeam-v3.12.3" // blank if full release
 )
 
 func buildVersion() string {

@@ -82,7 +82,7 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	cmd.Stderr = outp
 
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("%v: %v", err, outp.String())
+		return nil, fmt.Errorf("golang build, %v: %v", err, outp.String())
 	}
 
 	// read the bytes from the file

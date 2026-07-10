@@ -110,7 +110,7 @@ func (l *defaultLogger) Log(level Level, v ...interface{}) {
 
 	rec := dlog.Record{
 		Timestamp: time.Now(),
-		Message:   fmt.Sprint(v...),
+		Message:   strings.ReplaceAll(fmt.Sprint(v...), "\n", ""),
 		Metadata:  make(map[string]string, len(fields)),
 	}
 	keys := make([]string, 0, len(fields))
@@ -148,7 +148,7 @@ func (l *defaultLogger) Logf(level Level, format string, v ...interface{}) {
 
 	rec := dlog.Record{
 		Timestamp: time.Now(),
-		Message:   fmt.Sprintf(format, v...),
+		Message:   strings.ReplaceAll(fmt.Sprintf(format, v...), "\n", ""),
 		Metadata:  make(map[string]string, len(fields)),
 	}
 

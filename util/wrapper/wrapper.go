@@ -2,10 +2,12 @@ package wrapper
 
 import (
 	"context"
-	"github.com/micro/micro/v3/service/uauth"
+	"encoding/base64"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/micro/micro/v3/service/uauth"
 
 	"github.com/micro/micro/v3/service/auth"
 	"github.com/micro/micro/v3/service/client"
@@ -76,12 +78,24 @@ func AuthHandler() server.HandlerWrapper {
 			var token string
 			if header, ok := metadata.Get(ctx, "Authorization"); ok {
 				// Ensure the correct scheme is being used
-				if !strings.HasPrefix(header, inauth.BearerScheme) {
-					return errors.Unauthorized(req.Service(), "invalid authorization header. expected Bearer schema")
-				}
+				switch {
+				case strings.HasPrefix(header, inauth.BearerScheme):
+					// Strip the bearer scheme prefix
+					token = strings.TrimPrefix(header, inauth.BearerScheme)
+				case strings.HasPrefix(header, "Basic "):
+					b, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(header, "Basic "))
+					if err != nil {
+						return errors.Unauthorized(req.Service(), "invalid authorization header. Incorrect format")
+					}
+					parts := strings.SplitN(string(b), ":", 2)
+					if len(parts) != 2 {
+						return errors.Unauthorized(req.Service(), "invalid authorization header. Incorrect format")
+					}
 
-				// Strip the bearer scheme prefix
-				token = strings.TrimPrefix(header, inauth.BearerScheme)
+					token = parts[1]
+				default:
+					return errors.Unauthorized(req.Service(), "invalid authorization header. Expected Bearer or Basic schema")
+				}
 			}
 
 			// Determine the namespace

@@ -44,13 +44,15 @@ func NewBlobStore(opts ...Option) (store.BlobStore, error) {
 		o(&options)
 	}
 
+	disableSSL := !options.Secure
 	sess := session.Must(session.NewSession(&aws.Config{
 		Endpoint:    &options.Endpoint,
 		Region:      &options.Region,
+		DisableSSL:  &disableSSL,
 		Credentials: credentials.NewStaticCredentials(options.AccessKeyID, options.SecretAccessKey, ""),
 	}))
 	client := sthree.New(sess)
-
+	testConn(client)
 	// return the blob store
 	return &s3{client, &options}, nil
 }
@@ -58,6 +60,19 @@ func NewBlobStore(opts ...Option) (store.BlobStore, error) {
 type s3 struct {
 	client  *sthree.S3
 	options *Options
+}
+
+func testConn(client *sthree.S3) {
+	object, err := client.PutObject(&sthree.PutObjectInput{
+		Body:   nil,
+		Bucket: aws.String("/micro/test/s3-hello"),
+		Key:    aws.String("/micro/test/s3-hello"),
+	})
+	if err != nil {
+		logger.Errorf("err:%s", err.Error())
+		return
+	}
+	logger.Debugf("testConn, object %v", object)
 }
 
 func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
@@ -105,6 +120,7 @@ func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
 }
 
 func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
+	logger.Debugf("write data, key:%s", key)
 	// validate the key
 	if len(key) == 0 {
 		return store.ErrMissingKey
@@ -126,6 +142,7 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 	buf := new(strings.Builder)
 	_, err := io.Copy(buf, blob)
 	if err != nil {
+		logger.Errorf("S3 Write err:%v key:%s", err, key)
 		return err
 	}
 	acl := "private"
@@ -136,12 +153,16 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 	if len(s.options.Bucket) > 0 {
 		k := filepath.Join(options.Namespace, key)
 		object := sthree.PutObjectInput{
-			Bucket: &s.options.Bucket,
-			Key:    &k,
-			Body:   strings.NewReader(buf.String()),
-			ACL:    aws.String(acl),
+			Bucket:      &s.options.Bucket,
+			Key:         &k,
+			Body:        strings.NewReader(buf.String()),
+			ACL:         aws.String(acl),
+			ContentType: &options.ContentType,
 		}
 		_, err := s.client.PutObject(&object)
+		if nil != err {
+			logger.Errorf("S3 Write err:%v key:%s\n%v", err, key, object)
+		}
 		return err
 	}
 
@@ -151,10 +172,11 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 
 	k := filepath.Join(options.Namespace, key)
 	object := sthree.PutObjectInput{
-		Bucket: &s.options.Bucket,
-		Key:    &k,
-		Body:   strings.NewReader(buf.String()),
-		ACL:    aws.String(acl),
+		Bucket:      &s.options.Bucket,
+		Key:         &k,
+		Body:        strings.NewReader(buf.String()),
+		ACL:         aws.String(acl),
+		ContentType: &options.ContentType,
 	}
 	_, err = s.client.PutObject(&object)
 	return err
@@ -193,4 +215,55 @@ func (s *s3) Delete(key string, opts ...store.BlobOption) error {
 		Key:    &k,
 	})
 	return err
+}
+
+func (s *s3) List(opts ...store.BlobListOption) ([]string, error) {
+	// parse the options
+	var options store.BlobListOptions
+	for _, o := range opts {
+		o(&options)
+	}
+	if len(options.Namespace) == 0 {
+		options.Namespace = "micro"
+	}
+
+	keys := []string{}
+	continuation := ""
+	keyPrefix := ""
+	for {
+		var err error
+		var inp *sthree.ListObjectsV2Input
+		if len(s.options.Bucket) > 0 {
+			k := filepath.Join(options.Namespace, options.Prefix)
+			keyPrefix = options.Namespace
+			inp = &sthree.ListObjectsV2Input{
+				Bucket: &s.options.Bucket, // bucket name
+				Prefix: &k,                // prefix
+			}
+		} else {
+			inp = &sthree.ListObjectsV2Input{
+				Bucket: &options.Namespace, // bucket name
+				Prefix: &options.Prefix,    // object name
+			}
+		}
+		inp.SetContinuationToken(continuation)
+		res, err := s.client.ListObjectsV2(inp)
+		if err != nil {
+			return nil, err
+		}
+		for _, obj := range res.Contents {
+			// return the key without the prefix
+			key := *obj.Key
+			if len(keyPrefix) > 0 {
+				key = key[len(keyPrefix)+1:]
+			}
+			keys = append(keys, key)
+		}
+		if !*res.IsTruncated {
+			break
+		}
+		continuation = *res.ContinuationToken
+	}
+	// return the result
+	return keys, nil
 }

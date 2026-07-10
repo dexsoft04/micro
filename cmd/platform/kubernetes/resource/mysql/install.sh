@@ -13,6 +13,6 @@ fi
 
 # install the cluster using helm
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install mysql-cluster bitnami/mysql --version 6.14.12 $overrides \
+helm install mysql-cluster bitnami/mysql --version 9.1.4 $overrides \
   --set master.persistence.size=$SIZE,slave.persistence.size=$SIZE \
   -f values.yaml

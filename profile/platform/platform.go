@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	s3 "github.com/micro/micro/plugin/s3/v3"
 	"github.com/micro/micro/v3/plugin/etcd"
 	natsBroker "github.com/micro/micro/v3/plugin/nats/broker"
 	natsStream "github.com/micro/micro/v3/plugin/nats/stream"
@@ -32,7 +33,6 @@ import (
 	"github.com/micro/micro/v3/util/opentelemetry/jaeger"
 	"github.com/opentracing/opentracing-go"
 	"github.com/urfave/cli/v2"
-	"github.com/wolfplus2048/mcbeam-plugins/store/minio/v3"
 )
 
 func init() {
@@ -82,14 +82,14 @@ var Profile = &profile.Profile{
 
 		// only configure the blob store for the store and runtime services
 		if ctx.Args().Get(1) == "runtime" || ctx.Args().Get(1) == "store" {
-			store.DefaultBlobStore, err = minio.NewBlobStore(
-				minio.Credentials(
+			store.DefaultBlobStore, err = s3.NewBlobStore(
+				s3.Credentials(
 					os.Getenv("MICRO_BLOB_STORE_ACCESS_KEY"),
 					os.Getenv("MICRO_BLOB_STORE_SECRET_KEY"),
 				),
-				minio.Endpoint("minio-cluster:9000"),
-				minio.Region(os.Getenv("MICRO_BLOB_STORE_REGION")),
-				minio.Insecure(),
+				s3.Endpoint("minio-cluster:9000"),
+				s3.Region(os.Getenv("MICRO_BLOB_STORE_REGION")),
+				s3.Insecure(),
 			)
 			if err != nil {
 				logger.Fatalf("Error configuring s3 blob store: %v", err)

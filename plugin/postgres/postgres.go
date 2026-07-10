@@ -608,7 +608,6 @@ func NewStore(opts ...store.Option) store.Store {
 			logger.Error("Error configuring store ", err)
 		}
 	}
-
 	// return store
 	return s
 }

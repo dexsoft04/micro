@@ -3,7 +3,6 @@ package wrapper
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -25,7 +24,7 @@ func OpenTraceHandler() server.HandlerWrapper {
 		// return a function that returns a function
 		return func(ctx context.Context, req server.Request, rsp interface{}) error {
 			// Concatenate the operation name:
-			operationName := fmt.Sprintf(req.Service() + "." + req.Endpoint())
+			operationName := req.Service() + "." + req.Endpoint()
 
 			// Don't trace calls to debug:
 			if strings.HasPrefix(req.Endpoint(), "Debug.") {
@@ -119,7 +118,7 @@ func (o *opentraceWrapper) Call(ctx context.Context, req client.Request, rsp int
 	err := o.Client.Call(ctx, req, rsp, opts...)
 
 	var opt client.CallOptions
-	for _, o := range(opts) {
+	for _, o := range opts {
 		o(&opt)
 	}
 	// Add trace metadata:
@@ -154,7 +153,7 @@ func (o *opentraceWrapper) Stream(ctx context.Context, req client.Request, opts 
 func (o *opentraceWrapper) wrapContext(ctx context.Context, req client.Request, opts ...client.CallOption) (context.Context, opentracing.Span) {
 	// set the open tracing headers
 	md := mmd.Metadata{}
-	operationName := fmt.Sprintf(req.Service() + "." + req.Endpoint())
+	operationName := req.Service() + "." + req.Endpoint()
 	span, newCtx := opentracing.StartSpanFromContextWithTracer(ctx, opentelemetry.DefaultOpenTracer, operationName, ext.SpanKindRPCClient)
 	if err := opentelemetry.DefaultOpenTracer.Inject(span.Context(), opentracing.TextMap, opentelemetry.MicroMetadataReaderWriter{md}); err != nil {
 		logger.Errorf("Error injecting span %s", err)

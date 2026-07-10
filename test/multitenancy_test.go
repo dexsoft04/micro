@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package test
@@ -56,7 +57,7 @@ func testNamespaceConfigIsolationSuite(serv Server, t *T) {
 		return
 	}
 
-	outp, err := cmd.Exec("auth", "create", "account", "--secret", "micro", "--namespace", "random", "admin")
+	outp, err := cmd.Exec("auth", "create", "account", "--secret", "micro", "--scopes", "admin", "--namespace", "random", "admin")
 	if err != nil {
 		t.Fatal(string(outp), err)
 		return
