@@ -2,12 +2,14 @@ package wrapper
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/micro/micro/v3/service/auth"
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/context/metadata"
+	"github.com/micro/micro/v3/service/logger"
 	inauth "github.com/micro/micro/v3/util/auth"
 )
 
@@ -135,10 +137,78 @@ func TestWrapContextWithoutAuthTokenPreservesAuthorization(t *testing.T) {
 	}
 }
 
+func TestLogHandlerErrorSkipsNil(t *testing.T) {
+	recorder := &recordingLogger{options: logger.Options{Level: logger.TraceLevel}}
+	restoreLogger := setDefaultLogger(recorder)
+	defer restoreLogger()
+
+	logHandlerError(nil)
+
+	if recorder.errorCount != 0 {
+		t.Fatalf("error logs = %d, want 0", recorder.errorCount)
+	}
+}
+
+func TestLogHandlerErrorLogsNonNil(t *testing.T) {
+	recorder := &recordingLogger{options: logger.Options{Level: logger.TraceLevel}}
+	restoreLogger := setDefaultLogger(recorder)
+	defer restoreLogger()
+
+	logHandlerError(errors.New("handler failed"))
+
+	if recorder.errorCount != 1 {
+		t.Fatalf("error logs = %d, want 1", recorder.errorCount)
+	}
+}
+
 func setDefaultAuth(a auth.Auth) func() {
 	previous := auth.DefaultAuth
 	auth.DefaultAuth = a
 	return func() {
 		auth.DefaultAuth = previous
+	}
+}
+
+type recordingLogger struct {
+	options    logger.Options
+	errorCount int
+}
+
+func (l *recordingLogger) Init(opts ...logger.Option) error {
+	for _, o := range opts {
+		o(&l.options)
+	}
+	return nil
+}
+
+func (l *recordingLogger) Options() logger.Options {
+	return l.options
+}
+
+func (l *recordingLogger) Fields(map[string]interface{}) logger.Logger {
+	return l
+}
+
+func (l *recordingLogger) Log(level logger.Level, v ...interface{}) {
+	if level == logger.ErrorLevel {
+		l.errorCount++
+	}
+}
+
+func (l *recordingLogger) Logf(level logger.Level, format string, v ...interface{}) {
+	if level == logger.ErrorLevel {
+		l.errorCount++
+	}
+}
+
+func (l *recordingLogger) String() string {
+	return "recording"
+}
+
+func setDefaultLogger(l logger.Logger) func() {
+	previous := logger.DefaultLogger
+	logger.DefaultLogger = l
+	return func() {
+		logger.DefaultLogger = previous
 	}
 }
