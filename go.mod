@@ -22,12 +22,11 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/pretty v0.2.0
-	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20210901132929-6f7737ba4064
-	github.com/micro/micro/plugin/nats/broker/v3 v3.0.0-20220730101809-49f50f84ae8f
-	github.com/micro/micro/plugin/nats/stream/v3 v3.0.0-20220730101809-49f50f84ae8f
-	github.com/micro/micro/plugin/postgres/v3 v3.0.0-20220730101809-49f50f84ae8f
-	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210825142032-d27318700a59
+	github.com/lib/pq v1.8.0
 	github.com/miekg/dns v1.1.27
+	github.com/mitchellh/hashstructure v1.0.0
+	github.com/nats-io/nats.go v1.10.0
+	github.com/nats-io/stan.go v0.7.0
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/gomega v1.10.5
@@ -36,6 +35,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/philchia/agollo/v4 v4.1.3
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.11.0
 	github.com/schollz/progressbar/v3 v3.8.2
 	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516
 	github.com/stoewer/go-strcase v1.2.0
@@ -51,6 +51,8 @@ require (
 	github.com/xanzy/go-gitlab v0.35.1
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
 	go.etcd.io/bbolt v1.3.6
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20200425165423-262c93980547
+	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.1.0
 	golang.org/x/net v0.1.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
@@ -77,7 +79,6 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/lib/pq v1.8.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/minio/md5-simd v1.1.0 // indirect
@@ -85,17 +86,15 @@ require (
 	github.com/minio/sha256-simd v0.1.1 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nats-io/jwt v1.1.0 // indirect
-	github.com/nats-io/nats.go v1.10.0 // indirect
+	github.com/nats-io/nats-server/v2 v2.1.9 // indirect
+	github.com/nats-io/nats-streaming-server v0.19.0 // indirect
 	github.com/nats-io/nkeys v0.1.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/nats-io/stan.go v0.7.0 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -106,10 +105,8 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.etcd.io/etcd v0.5.0-alpha.5.0.20200425165423-262c93980547 // indirect
 	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
-	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.1.0 // indirect
@@ -122,12 +119,4 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
-)
-
-replace (
-	github.com/micro/micro/plugin/etcd/v3 => ./plugin/etcd
-	github.com/micro/micro/plugin/nats/broker/v3 => ./plugin/nats/broker
-	github.com/micro/micro/plugin/nats/stream/v3 => ./plugin/nats/stream
-	github.com/micro/micro/plugin/postgres/v3 => ./plugin/postgres
-	github.com/micro/micro/plugin/prometheus/v3 => ./plugin/prometheus
 )

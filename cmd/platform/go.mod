@@ -8,15 +8,7 @@ replace github.com/micro/micro/v3 => ../..
 
 //replace github.com/micro/micro/profile/platform/v3 => ../../profile/platform
 
-replace github.com/micro/micro/plugin/etcd/v3 => ../../plugin/etcd
-
 //replace github.com/micro/micro/plugin/cockroach/v3 => ../../plugin/cockroach
-
-replace github.com/micro/micro/plugin/prometheus/v3 => ../../plugin/prometheus
-
-//replace github.com/micro/micro/plugin/nats/broker/v3 => ../../plugin/nats/broker
-
-//replace github.com/micro/micro/plugin/nats/stream/v3 => ../../plugin/nats/stream
 
 replace github.com/coreos/go-systemd => github.com/coreos/go-systemd/v22 v22.0.0
 
@@ -59,11 +51,6 @@ require (
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20210901132929-6f7737ba4064 // indirect
-	github.com/micro/micro/plugin/nats/broker/v3 v3.0.0-20220730101809-49f50f84ae8f // indirect
-	github.com/micro/micro/plugin/nats/stream/v3 v3.0.0-20220730101809-49f50f84ae8f // indirect
-	github.com/micro/micro/plugin/postgres/v3 v3.0.0-20220730101809-49f50f84ae8f // indirect
-	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210825142032-d27318700a59 // indirect
 	github.com/miekg/dns v1.1.27 // indirect
 	github.com/minio/md5-simd v1.1.0 // indirect
 	github.com/minio/minio-go/v7 v7.0.12 // indirect
