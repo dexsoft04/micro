@@ -126,6 +126,10 @@ func setupAuthForService() error {
 	return nil
 }
 
+func shouldRefreshTokenWithCredentials(err error) bool {
+	return err != nil
+}
+
 // refreshAuthToken if it is close to expiring
 func refreshAuthToken() {
 	// can't refresh a token we don't have
@@ -150,16 +154,25 @@ func refreshAuthToken() {
 				auth.WithToken(tok.RefreshToken),
 				auth.WithExpiry(time.Minute*10),
 			)
-			if err == auth.ErrInvalidToken {
-				logger.Warnf("[Auth] Refresh token expired, regenerating using account credentials")
+			if shouldRefreshTokenWithCredentials(err) {
+				logger.Warnf("[Auth] Refresh token failed, regenerating using account credentials: %v", err)
 
+				opts := auth.DefaultAuth.Options()
+				if len(opts.ID) == 0 || len(opts.Secret) == 0 {
+					logger.Warnf("[Auth] Error refreshing token: account credentials unavailable")
+					continue
+				}
 				tok, err = auth.Token(
 					auth.WithCredentials(
-						auth.DefaultAuth.Options().ID,
-						auth.DefaultAuth.Options().Secret,
+						opts.ID,
+						opts.Secret,
 					),
 					auth.WithExpiry(time.Minute*10),
 				)
+				if err != nil {
+					logger.Warnf("[Auth] Error refreshing token with account credentials: %v", err)
+					continue
+				}
 			} else if err != nil {
 				logger.Warnf("[Auth] Error refreshing token: %v", err)
 				continue
