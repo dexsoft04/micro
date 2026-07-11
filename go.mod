@@ -22,11 +22,6 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/pretty v0.2.0
-	github.com/micro/micro/plugin/etcd/v3 v3.0.0-20210901132929-6f7737ba4064
-	github.com/micro/micro/plugin/nats/broker/v3 v3.0.0-20220730101809-49f50f84ae8f
-	github.com/micro/micro/plugin/nats/stream/v3 v3.0.0-20220730101809-49f50f84ae8f
-	github.com/micro/micro/plugin/postgres/v3 v3.0.0-20220730101809-49f50f84ae8f
-	github.com/micro/micro/plugin/prometheus/v3 v3.0.0-20210825142032-d27318700a59
 	github.com/miekg/dns v1.1.27
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
@@ -122,12 +117,4 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
-)
-
-replace (
-	github.com/micro/micro/plugin/etcd/v3 => ./plugin/etcd
-	github.com/micro/micro/plugin/nats/broker/v3 => ./plugin/nats/broker
-	github.com/micro/micro/plugin/nats/stream/v3 => ./plugin/nats/stream
-	github.com/micro/micro/plugin/postgres/v3 => ./plugin/postgres
-	github.com/micro/micro/plugin/prometheus/v3 => ./plugin/prometheus
 )
