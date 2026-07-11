@@ -399,18 +399,8 @@ func setupAuthForService() error {
 	return nil
 }
 
-const emptyAuthTokenResponse = "Empty token response"
-
 func shouldRefreshTokenWithCredentials(err error) bool {
-	if err == nil {
-		return false
-	}
-	if err == auth.ErrInvalidToken {
-		return true
-	}
-
-	merr := errors.FromError(err)
-	return merr.Id == "auth.Auth.Token" && merr.Detail == emptyAuthTokenResponse
+	return err != nil
 }
 
 // refreshAuthToken if it is close to expiring

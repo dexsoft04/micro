@@ -26,7 +26,7 @@ func TestShouldRefreshTokenWithCredentials(t *testing.T) {
 		},
 		{
 			name: "empty token response",
-			err:  merrors.InternalServerError("auth.Auth.Token", emptyAuthTokenResponse),
+			err:  merrors.InternalServerError("auth.Auth.Token", "Empty token response"),
 			want: true,
 		},
 		{
@@ -37,7 +37,12 @@ func TestShouldRefreshTokenWithCredentials(t *testing.T) {
 		{
 			name: "other auth token error",
 			err:  merrors.InternalServerError("auth.Auth.Token", "Unable to generate token"),
-			want: false,
+			want: true,
+		},
+		{
+			name: "transport error",
+			err:  stderrors.New("connection refused"),
+			want: true,
 		},
 	}
 
