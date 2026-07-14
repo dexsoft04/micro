@@ -26,10 +26,17 @@ type rulesCache struct {
 	ttl       time.Duration
 }
 
+func (r *rulesCache) reset(ttl time.Duration) {
+	r.Lock()
+	defer r.Unlock()
+	r.ruleCache = map[string]*cacheEntry{}
+	r.ttl = ttl
+}
+
 func (r *rulesCache) get(key string) []*auth.Rule {
 	r.RLock()
+	defer r.RUnlock()
 	entry := r.ruleCache[key]
-	r.RUnlock()
 	if entry != nil && time.Since(entry.t) < r.ttl {
 		return entry.v
 	}
@@ -38,8 +45,11 @@ func (r *rulesCache) get(key string) []*auth.Rule {
 
 func (r *rulesCache) put(key string, v []*auth.Rule) {
 	r.Lock()
+	defer r.Unlock()
+	if r.ruleCache == nil {
+		r.ruleCache = map[string]*cacheEntry{}
+	}
 	r.ruleCache[key] = &cacheEntry{t: time.Now(), v: v}
-	r.Unlock()
 }
 
 type cacheEntry struct {
@@ -67,10 +77,7 @@ func (s *srv) Init(opts ...auth.Option) {
 	s.auth = pb.NewAuthService("auth", client.DefaultClient)
 	s.rules = pb.NewRulesService("auth", client.DefaultClient)
 	s.setupJWT()
-	s.ruleCache = rulesCache{
-		ruleCache: map[string]*cacheEntry{},
-		ttl:       ruleCacheTTL,
-	}
+	s.ruleCache.reset(ruleCacheTTL)
 }
 
 func (s *srv) Options() auth.Options {
@@ -164,13 +171,13 @@ func (s *srv) Revoke(rule *auth.Rule) error {
 	return err
 }
 
-func (s *srv) refreshRulesCache(ns string) error {
+func (s *srv) refreshRulesCache(ns string) ([]*auth.Rule, error) {
 	rsp, err := s.rules.List(context.DefaultContext, &pb.ListRequest{
 		Options: &pb.Options{Namespace: ns},
 	}, s.callOpts()...)
 	if err != nil {
 		logger.Errorf("Error refreshing rules cache %s", err)
-		return err
+		return nil, err
 	}
 
 	rules := make([]*auth.Rule, len(rsp.Rules))
@@ -178,7 +185,7 @@ func (s *srv) refreshRulesCache(ns string) error {
 		rules[i] = serializeRule(r)
 	}
 	s.ruleCache.put(ns, rules)
-	return nil
+	return rules, nil
 }
 
 func (s *srv) Rules(opts ...auth.RulesOption) ([]*auth.Rule, error) {
@@ -196,11 +203,7 @@ func (s *srv) Rules(opts ...auth.RulesOption) ([]*auth.Rule, error) {
 	if ret := s.ruleCache.get(options.Namespace); ret != nil {
 		return ret, nil
 	}
-	if err := s.refreshRulesCache(options.Namespace); err != nil {
-		return nil, err
-	}
-
-	return s.ruleCache.get(options.Namespace), nil
+	return s.refreshRulesCache(options.Namespace)
 }
 
 // Verify an account has access to a resource
@@ -363,6 +366,7 @@ func NewAuth(opts ...auth.Option) auth.Auth {
 	}
 
 	service.setupJWT()
+	service.ruleCache.reset(ruleCacheTTL)
 
 	return service
 }
