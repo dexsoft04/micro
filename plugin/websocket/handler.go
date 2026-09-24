@@ -103,11 +103,7 @@ func (h *wsHandler) serveConn(sock *Session, domain string) {
 			ct = DefaultContentType
 		}
 
-		var request *bytes.Frame
-		// if the extracted payload isn't empty lets use it
-		if msg.Body != nil {
-			request = &bytes.Frame{Data: msg.Body}
-		}
+		request := &bytes.Frame{Data: msg.Body}
 
 		var callOpt []client.CallOption
 		if len(domain) > 0 {
