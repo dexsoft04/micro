@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/micro/micro/v3/service/build"
 	"github.com/micro/micro/v3/service/build/util/tar"
@@ -73,7 +75,10 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 
 	// build the binary
 	cmd := exec.Command(g.cmdPath, append(args, ".")...)
-	cmd.Env = append(os.Environ(), "GO111MODULE=auto")
+	// Keep the platform's public micro modules on HTTPS when a global Git config
+	// rewrites all GitHub URLs to SSH.
+	cmd.Env = appendGitConfig(os.Environ(), "url.https://github.com/dexsoft04/micro.insteadOf", "https://github.com/dexsoft04/micro")
+	cmd.Env = append(cmd.Env, "GO111MODULE=auto")
 	cmd.Env = append(cmd.Env, "GOPROXY=https://goproxy.cn,direct")
 	cmd.Env = append(cmd.Env, "GOPRIVATE=gitee.com")
 
@@ -92,6 +97,31 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 	}
 
 	return bytes.NewBuffer(dst), nil
+}
+
+func appendGitConfig(env []string, key, value string) []string {
+	count := 0
+	if raw, ok := envValue(env, "GIT_CONFIG_COUNT"); ok {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed >= 0 {
+			count = parsed
+		}
+	}
+
+	return append(env,
+		fmt.Sprintf("GIT_CONFIG_COUNT=%d", count+1),
+		fmt.Sprintf("GIT_CONFIG_KEY_%d=%s", count, key),
+		fmt.Sprintf("GIT_CONFIG_VALUE_%d=%s", count, value),
+	)
+}
+
+func envValue(env []string, key string) (string, bool) {
+	prefix := key + "="
+	for i := len(env) - 1; i >= 0; i-- {
+		if strings.HasPrefix(env[i], prefix) {
+			return strings.TrimPrefix(env[i], prefix), true
+		}
+	}
+	return "", false
 }
 
 // writeFile takes a single file to a directory
