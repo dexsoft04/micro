@@ -15,7 +15,11 @@ COPY go.sum .
 COPY . /
 RUN go env -w GOPROXY="goproxy.cn,direct" \
     && go mod download
-RUN make ; rm -rf $GOPATH/pkg/mod
+RUN make \
+    && /micro service --help | grep -Eq '^[[:space:]]*websocket[[:space:]]' \
+    && /micro service websocket --help >/dev/null \
+    && rm -rf /root/.micro \
+    && rm -rf $GOPATH/pkg/mod
 
 FROM alpine:3.12.1
 COPY --from=go /usr/local/go/ /usr/local/go/

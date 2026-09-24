@@ -83,6 +83,7 @@ func (b *serviceBroker) Subscribe(topic string, handler broker.Handler, opts ...
 		md, _ := metadata.FromContext(options.Context)
 		ctx = metadata.MergeContext(ctx, md, true)
 	}
+	resubscribeAddrs := append([]string(nil), b.options.Addrs...)
 
 	stream, err := b.Client.Subscribe(ctx, &pb.SubscribeRequest{
 		Topic: topic,
@@ -118,10 +119,17 @@ func (b *serviceBroker) Subscribe(topic string, handler broker.Handler, opts ...
 					if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 						logger.Debugf("Resubscribing to topic %s broker %v", topic, b.Addrs)
 					}
+					callOptions := []client.CallOption{
+						client.WithAuthToken(),
+						client.WithRequestTimeout(time.Hour),
+					}
+					if len(resubscribeAddrs) > 0 {
+						callOptions = append(callOptions, client.WithAddress(resubscribeAddrs...))
+					}
 					stream, err := b.Client.Subscribe(ctx, &pb.SubscribeRequest{
 						Topic: topic,
 						Queue: options.Queue,
-					}, client.WithAuthToken(), client.WithAddress(b.Addrs...), client.WithRequestTimeout(time.Hour))
+					}, callOptions...)
 					if err != nil {
 						if logger.V(logger.DebugLevel, logger.DefaultLogger) {
 							logger.Debugf("Failed to resubscribe to topic %s: %v", topic, err)

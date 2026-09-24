@@ -47,6 +47,7 @@ func (s *serviceSub) isClosed() bool {
 }
 
 func (s *serviceSub) run() error {
+	stream := s.stream
 	exit := make(chan bool)
 	go func() {
 		select {
@@ -55,12 +56,12 @@ func (s *serviceSub) run() error {
 		}
 
 		// close the stream
-		s.stream.Close()
+		stream.Close()
 	}()
 
 	for {
 		// TODO: do not fail silently
-		msg, err := s.stream.Recv()
+		msg, err := stream.Recv()
 		if err != nil {
 			if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 				logger.Errorf("Streaming error for subscription to topic %s: %v", s.Topic(), err)
