@@ -215,7 +215,7 @@ func (s *sqlStore) configure() error {
 		s.options.Nodes = []string{"postgresql://root@localhost:26257?sslmode=disable"}
 	}
 
-	source := s.options.Nodes[0]
+	source := preserveCAOnlyTLSMode(s.options.Nodes[0])
 	// check if it is a standard connection string eg: host=%s port=%d user=%s password=%s dbname=%s sslmode=disable
 	// if err is nil which means it would be a URL like postgre://xxxx?yy=zz
 	_, err := url.Parse(source)
@@ -247,6 +247,31 @@ func (s *sqlStore) configure() error {
 
 	// initialise the database
 	return s.initDB(database, table)
+}
+
+func preserveCAOnlyTLSMode(source string) string {
+	u, err := url.Parse(source)
+	if err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") {
+		return source
+	}
+
+	query := u.Query()
+	if query.Has("sslsni") {
+		return source
+	}
+
+	mode := query.Get("sslmode")
+	caOnly := mode == "verify-ca" ||
+		((mode == "" || mode == "require") && query.Get("sslrootcert") != "")
+	if !caOnly {
+		return source
+	}
+
+	// lib/pq v1.10 enables SNI for CA-only modes and then uses that name
+	// during certificate verification, effectively turning them into verify-full.
+	query.Set("sslsni", "0")
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 func (s *sqlStore) prepare(database, table, query string, order store.Order) (*sql.Stmt, error) {
