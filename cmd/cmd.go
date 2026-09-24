@@ -94,7 +94,8 @@ type command struct {
 var (
 	DefaultCmd Cmd = New()
 
-	onceBefore sync.Once
+	onceBefore                          sync.Once
+	serviceAuthCredentialsSelfGenerated bool
 
 	// name of the binary
 	name = "mcbeam"
@@ -364,22 +365,13 @@ func setupAuthForService() error {
 	accSecret := opts.Secret
 
 	// if no credentials were provided, self generate an account
-	if len(accID) == 0 || len(accSecret) == 0 {
-		opts := []auth.GenerateOption{
-			auth.WithType("service"),
-			auth.WithScopes("service"),
-		}
-
-		acc, err := auth.Generate(uuid.New().String(), opts...)
+	selfGenerated := len(accID) == 0 || len(accSecret) == 0
+	if selfGenerated {
+		var err error
+		accID, accSecret, err = generateServiceAuthCredentials()
 		if err != nil {
 			return err
 		}
-		if logger.V(logger.DebugLevel, logger.DefaultLogger) {
-			logger.Debugf("Auth [%v] Generated an auth account", auth.DefaultAuth.String())
-		}
-
-		accID = acc.ID
-		accSecret = acc.Secret
 	}
 
 	// generate the first token
@@ -396,11 +388,90 @@ func setupAuthForService() error {
 		auth.ClientToken(token),
 		auth.Credentials(accID, accSecret),
 	)
+	serviceAuthCredentialsSelfGenerated = selfGenerated
 	return nil
 }
 
-func shouldRefreshTokenWithCredentials(err error) bool {
-	return err != nil
+func generateServiceAuthCredentials() (string, string, error) {
+	acc, err := auth.Generate(
+		uuid.New().String(),
+		auth.WithType("service"),
+		auth.WithScopes("service"),
+	)
+	if err != nil {
+		return "", "", err
+	}
+	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
+		logger.Debugf("Auth [%v] Generated an auth account", auth.DefaultAuth.String())
+	}
+	return acc.ID, acc.Secret, nil
+}
+
+func renewServiceAuthToken() error {
+	opts := auth.DefaultAuth.Options()
+	if opts.Token == nil {
+		logger.Warnf("[Auth] Service token renewal cannot start reason=current_token_unavailable")
+		return fmt.Errorf("refresh token failed: current token unavailable")
+	}
+	token, refreshErr := auth.Token(
+		auth.WithToken(opts.Token.RefreshToken),
+		auth.WithExpiry(time.Minute*10),
+	)
+	if refreshErr == nil && token != nil {
+		auth.DefaultAuth.Init(auth.ClientToken(token))
+		logger.Infof("[Auth] Service token renewal succeeded method=refresh_token expiry=%s", token.Expiry.Format(time.RFC3339))
+		return nil
+	}
+	if refreshErr == nil {
+		refreshErr = fmt.Errorf("empty token response")
+	}
+
+	if len(opts.ID) > 0 && len(opts.Secret) > 0 {
+		logger.Warnf("[Auth] Service token renewal failed method=refresh_token error=%v next_method=account_credentials", refreshErr)
+		token, credentialErr := auth.Token(
+			auth.WithCredentials(opts.ID, opts.Secret),
+			auth.WithExpiry(time.Minute*10),
+		)
+		if credentialErr == nil && token != nil {
+			auth.DefaultAuth.Init(auth.ClientToken(token))
+			logger.Infof("[Auth] Service token renewal succeeded method=account_credentials expiry=%s", token.Expiry.Format(time.RFC3339))
+			return nil
+		}
+		if credentialErr == nil {
+			credentialErr = fmt.Errorf("empty token response")
+		}
+		logger.Warnf("[Auth] Service token renewal failed method=account_credentials self_generated=%t error=%v", serviceAuthCredentialsSelfGenerated, credentialErr)
+		if !serviceAuthCredentialsSelfGenerated {
+			return fmt.Errorf("refresh token failed: %v; account credential renewal failed: %w", refreshErr, credentialErr)
+		}
+	} else if !serviceAuthCredentialsSelfGenerated {
+		logger.Warnf("[Auth] Service token renewal cannot continue method=account_credentials reason=credentials_unavailable self_generated=false")
+		return fmt.Errorf("refresh token failed: %v; account credentials unavailable", refreshErr)
+	} else {
+		logger.Warnf("[Auth] Service token renewal skipped method=account_credentials reason=credentials_unavailable self_generated=true")
+	}
+
+	logger.Warnf("[Auth] Regenerating self-generated service credentials after token renewal failure")
+	accID, accSecret, err := generateServiceAuthCredentials()
+	if err != nil {
+		return fmt.Errorf("refresh token failed: %v; generate service credentials: %w", refreshErr, err)
+	}
+	token, err = auth.Token(
+		auth.WithCredentials(accID, accSecret),
+		auth.WithExpiry(time.Minute*10),
+	)
+	if err != nil {
+		return fmt.Errorf("generate token with renewed service credentials: %w", err)
+	}
+	if token == nil {
+		return fmt.Errorf("generate token with renewed service credentials: empty token response")
+	}
+	auth.DefaultAuth.Init(
+		auth.ClientToken(token),
+		auth.Credentials(accID, accSecret),
+	)
+	logger.Warnf("[Auth] Service token renewal succeeded method=self_generated_credentials expiry=%s", token.Expiry.Format(time.RFC3339))
+	return nil
 }
 
 // refreshAuthToken if it is close to expiring
@@ -422,38 +493,12 @@ func refreshAuthToken() {
 				continue
 			}
 
-			// generate the first token
-			tok, err := auth.Token(
-				auth.WithToken(tok.RefreshToken),
-				auth.WithExpiry(time.Minute*10),
-			)
-			if shouldRefreshTokenWithCredentials(err) {
-				logger.Warnf("[Auth] Refresh token failed, regenerating using account credentials: %v", err)
-
-				opts := auth.DefaultAuth.Options()
-				if len(opts.ID) == 0 || len(opts.Secret) == 0 {
-					logger.Warnf("[Auth] Error refreshing token: account credentials unavailable")
-					continue
-				}
-				tok, err = auth.Token(
-					auth.WithCredentials(
-						opts.ID,
-						opts.Secret,
-					),
-					auth.WithExpiry(time.Minute*10),
-				)
-				if err != nil {
-					logger.Warnf("[Auth] Error refreshing token with account credentials: %v", err)
-					continue
-				}
-			} else if err != nil {
+			if err := renewServiceAuthToken(); err != nil {
 				logger.Warnf("[Auth] Error refreshing token: %v", err)
 				continue
 			}
 
-			// set the token
-			logger.Debugf("Auth token refreshed, expires at %v", tok.Expiry.Format(time.UnixDate))
-			auth.DefaultAuth.Init(auth.ClientToken(tok))
+			logger.Debugf("Auth token refreshed, expires at %v", auth.DefaultAuth.Options().Token.Expiry.Format(time.UnixDate))
 		}
 	}
 }
