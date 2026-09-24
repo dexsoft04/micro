@@ -44,17 +44,22 @@ func NewBlobStore(opts ...Option) (store.BlobStore, error) {
 		o(&options)
 	}
 
-	disableSSL := !options.Secure
-	sess := session.Must(session.NewSession(&aws.Config{
-		Endpoint:    &options.Endpoint,
-		Region:      &options.Region,
-		DisableSSL:  &disableSSL,
-		Credentials: credentials.NewStaticCredentials(options.AccessKeyID, options.SecretAccessKey, ""),
-	}))
+	sess := session.Must(session.NewSession(awsConfig(&options)))
 	client := sthree.New(sess)
 	testConn(client)
 	// return the blob store
 	return &s3{client, &options}, nil
+}
+
+func awsConfig(options *Options) *aws.Config {
+	disableSSL := !options.Secure
+	return &aws.Config{
+		Endpoint:         &options.Endpoint,
+		Region:           &options.Region,
+		DisableSSL:       &disableSSL,
+		S3ForcePathStyle: aws.Bool(true),
+		Credentials:      credentials.NewStaticCredentials(options.AccessKeyID, options.SecretAccessKey, ""),
+	}
 }
 
 type s3 struct {

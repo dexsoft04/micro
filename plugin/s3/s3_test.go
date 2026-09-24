@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	sthree "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/micro/micro/v3/service/store"
@@ -57,14 +56,15 @@ func TestBlobStoreUsesNamespaceAsBucket(t *testing.T) {
 		}, nil
 	})}
 
-	sess := session.Must(session.NewSession(&aws.Config{
-		Endpoint:         aws.String("http://s3.test"),
-		Region:           aws.String("us-east-1"),
-		Credentials:      credentials.NewStaticCredentials("access", "secret", ""),
-		DisableSSL:       aws.Bool(true),
-		S3ForcePathStyle: aws.Bool(true),
-		HTTPClient:       httpClient,
-	}))
+	config := awsConfig(&Options{
+		Endpoint:        "http://s3.test",
+		Region:          "us-east-1",
+		AccessKeyID:     "access",
+		SecretAccessKey: "secret",
+	})
+	config.HTTPClient = httpClient
+	assert.True(t, aws.BoolValue(config.S3ForcePathStyle))
+	sess := session.Must(session.NewSession(config))
 	blob := &s3{client: sthree.New(sess), options: &Options{}}
 
 	err := blob.Write("build://igaoshou-match-srv:v7.0.13-beta", bytes.NewBufferString("binary"), store.BlobNamespace("igaoshou"))
