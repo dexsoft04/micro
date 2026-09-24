@@ -170,10 +170,9 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 		Bucket: &options.Namespace,
 	})
 
-	k := filepath.Join(options.Namespace, key)
 	object := sthree.PutObjectInput{
-		Bucket:      &s.options.Bucket,
-		Key:         &k,
+		Bucket:      &options.Namespace,
+		Key:         &key,
 		Body:        strings.NewReader(buf.String()),
 		ACL:         aws.String(acl),
 		ContentType: &options.ContentType,
@@ -209,10 +208,9 @@ func (s *s3) Delete(key string, opts ...store.BlobOption) error {
 		return err
 	}
 
-	k := filepath.Join(options.Namespace, key) // object name
 	_, err := s.client.DeleteObject(&sthree.DeleteObjectInput{
 		Bucket: &options.Namespace, // bucket name
-		Key:    &k,
+		Key:    &key,
 	})
 	return err
 }

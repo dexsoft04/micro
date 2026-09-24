@@ -17,12 +17,24 @@ package s3
 import (
 	"bytes"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	sthree "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/micro/micro/v3/service/store"
 	"github.com/stretchr/testify/assert"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
 
 func TestRegexp(t *testing.T) {
 	if cleanKey("build://name/version") != "build/name/version" {
@@ -31,6 +43,39 @@ func TestRegexp(t *testing.T) {
 	if cleanKey("build://name:version") != "build/name/version" {
 		t.Fatal(cleanKey("build://name:version"))
 	}
+}
+
+func TestBlobStoreUsesNamespaceAsBucket(t *testing.T) {
+	var requests []string
+	httpClient := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests = append(requests, req.Method+" "+req.URL.Path)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       ioutil.NopCloser(strings.NewReader("")),
+			Request:    req,
+		}, nil
+	})}
+
+	sess := session.Must(session.NewSession(&aws.Config{
+		Endpoint:         aws.String("http://s3.test"),
+		Region:           aws.String("us-east-1"),
+		Credentials:      credentials.NewStaticCredentials("access", "secret", ""),
+		DisableSSL:       aws.Bool(true),
+		S3ForcePathStyle: aws.Bool(true),
+		HTTPClient:       httpClient,
+	}))
+	blob := &s3{client: sthree.New(sess), options: &Options{}}
+
+	err := blob.Write("build://igaoshou-match-srv:v7.0.13-beta", bytes.NewBufferString("binary"), store.BlobNamespace("igaoshou"))
+	assert.NoError(t, err)
+	err = blob.Delete("build://igaoshou-match-srv:v7.0.13-beta", store.BlobNamespace("igaoshou"))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{
+		"PUT /igaoshou",
+		"PUT /igaoshou/build/igaoshou-match-srv/v7.0.13-beta",
+		"DELETE /igaoshou/build/igaoshou-match-srv/v7.0.13-beta",
+	}, requests)
 }
 
 func TestBlobStore(t *testing.T) {
