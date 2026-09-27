@@ -35,16 +35,13 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-func TestRegexp(t *testing.T) {
-	if cleanKey("build://name/version") != "build/name/version" {
-		t.Fatal(cleanKey("build://name/version"))
-	}
-	if cleanKey("build://name:version") != "build/name/version" {
-		t.Fatal(cleanKey("build://name:version"))
-	}
+func TestKeyFormats(t *testing.T) {
+	const key = "build://igaoshou-task-srv:v0.2.1-release"
+	assert.Equal(t, "build/igaoshou-task-srv/v0.2.1-release", cleanKey(key))
+	assert.Equal(t, "build-igaoshou-task-srv-v0-2-1-release", legacyCleanKey(key))
 }
 
-func TestBlobStoreUsesNamespaceAsBucket(t *testing.T) {
+func TestBlobStoreUsesCurrentKeyForWritesAndDeletes(t *testing.T) {
 	var requests []string
 	httpClient := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		requests = append(requests, req.Method+" "+req.URL.Path)
@@ -67,15 +64,88 @@ func TestBlobStoreUsesNamespaceAsBucket(t *testing.T) {
 	sess := session.Must(session.NewSession(config))
 	blob := &s3{client: sthree.New(sess), options: &Options{}}
 
-	err := blob.Write("build://igaoshou-match-srv:v7.0.13-beta", bytes.NewBufferString("binary"), store.BlobNamespace("igaoshou"))
+	const logicalKey = "build://igaoshou-match-srv:v7.0.13-beta"
+	err := blob.Write(logicalKey, bytes.NewBufferString("binary"), store.BlobNamespace("igaoshou"))
 	assert.NoError(t, err)
-	err = blob.Delete("build://igaoshou-match-srv:v7.0.13-beta", store.BlobNamespace("igaoshou"))
+	err = blob.Delete(logicalKey, store.BlobNamespace("igaoshou"))
 	assert.NoError(t, err)
 	assert.Equal(t, []string{
 		"PUT /igaoshou",
 		"PUT /igaoshou/build/igaoshou-match-srv/v7.0.13-beta",
 		"DELETE /igaoshou/build/igaoshou-match-srv/v7.0.13-beta",
 	}, requests)
+}
+
+func TestBlobStoreReadsCurrentKeyWithoutFallback(t *testing.T) {
+	var requests []string
+	blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+		requests = append(requests, req.Method+" "+req.URL.Path)
+		return s3Response(req, http.StatusOK, "current"), nil
+	})
+
+	reader, err := blob.Read("build://service:v1.0.0", store.BlobNamespace("igaoshou"))
+	assert.NoError(t, err)
+	data, err := ioutil.ReadAll(reader)
+	assert.NoError(t, err)
+	assert.Equal(t, "current", string(data))
+	assert.Equal(t, []string{"GET /igaoshou/build/service/v1.0.0"}, requests)
+}
+
+func TestBlobStoreFallsBackToLegacyKeyOnNotFound(t *testing.T) {
+	var requests []string
+	blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+		requests = append(requests, req.Method+" "+req.URL.Path)
+		if len(requests) == 1 {
+			return s3Response(req, http.StatusNotFound, "<Error><Code>NoSuchKey</Code><Message>missing</Message></Error>"), nil
+		}
+		return s3Response(req, http.StatusOK, "legacy"), nil
+	})
+
+	reader, err := blob.Read("build://service:v1.0.0", store.BlobNamespace("igaoshou"))
+	assert.NoError(t, err)
+	data, err := ioutil.ReadAll(reader)
+	assert.NoError(t, err)
+	assert.Equal(t, "legacy", string(data))
+	assert.Equal(t, []string{
+		"GET /igaoshou/build/service/v1.0.0",
+		"GET /igaoshou/build-service-v1-0-0",
+	}, requests)
+}
+
+func TestBlobStoreDoesNotFallbackOnOtherErrors(t *testing.T) {
+	var requests []string
+	blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+		requests = append(requests, req.Method+" "+req.URL.Path)
+		return s3Response(req, http.StatusForbidden, "<Error><Code>AccessDenied</Code><Message>denied</Message></Error>"), nil
+	})
+
+	reader, err := blob.Read("build://service:v1.0.0", store.BlobNamespace("igaoshou"))
+	assert.Error(t, err)
+	assert.Nil(t, reader)
+	assert.Equal(t, []string{"GET /igaoshou/build/service/v1.0.0"}, requests)
+}
+
+func newTestBlobStore(t *testing.T, transport roundTripFunc) *s3 {
+	t.Helper()
+	config := awsConfig(&Options{
+		Endpoint:        "http://s3.test",
+		Region:          "us-east-1",
+		AccessKeyID:     "access",
+		SecretAccessKey: "secret",
+	})
+	config.HTTPClient = &http.Client{Transport: transport}
+	config.MaxRetries = aws.Int(0)
+	sess := session.Must(session.NewSession(config))
+	return &s3{client: sthree.New(sess), options: &Options{}}
+}
+
+func s3Response(req *http.Request, status int, body string) *http.Response {
+	return &http.Response{
+		StatusCode: status,
+		Header:     http.Header{"Content-Type": []string{"application/xml"}},
+		Body:       ioutil.NopCloser(strings.NewReader(body)),
+		Request:    req,
+	}
 }
 
 func TestBlobStore(t *testing.T) {

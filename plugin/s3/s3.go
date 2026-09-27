@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	sthree "github.com/aws/aws-sdk-go/service/s3"
@@ -31,9 +32,27 @@ import (
 
 var doubleSlash = regexp.MustCompile("/+")
 var removeCol = regexp.MustCompile(":")
+var legacyUnsafeKeyCharacters = regexp.MustCompile("[^a-zA-Z0-9]+")
 
 func cleanKey(s string) string {
 	return doubleSlash.ReplaceAllLiteralString(removeCol.ReplaceAllLiteralString(s, "/"), "/")
+}
+
+func legacyCleanKey(s string) string {
+	return legacyUnsafeKeyCharacters.ReplaceAllString(s, "-")
+}
+
+func isObjectNotFound(err error) bool {
+	if err == store.ErrNotFound {
+		return true
+	}
+
+	awsErr, ok := err.(awserr.Error)
+	if !ok {
+		return false
+	}
+
+	return awsErr.Code() == sthree.ErrCodeNoSuchKey || awsErr.Code() == "NotFound"
 }
 
 // NewBlobStore returns an initialized s3 blob store
@@ -67,6 +86,21 @@ type s3 struct {
 	options *Options
 }
 
+func (s *s3) getObject(key, namespace string) (*sthree.GetObjectOutput, error) {
+	if len(s.options.Bucket) > 0 {
+		key = filepath.Join(namespace, key)
+		return s.client.GetObject(&sthree.GetObjectInput{
+			Bucket: &s.options.Bucket,
+			Key:    &key,
+		})
+	}
+
+	return s.client.GetObject(&sthree.GetObjectInput{
+		Bucket: &namespace,
+		Key:    &key,
+	})
+}
+
 func testConn(client *sthree.S3) {
 	object, err := client.PutObject(&sthree.PutObjectInput{
 		Body:   nil,
@@ -86,9 +120,6 @@ func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
 		return nil, store.ErrMissingKey
 	}
 
-	// make the key safe for use with s3
-	key = cleanKey(key)
-
 	// parse the options
 	var options store.BlobOptions
 	for _, o := range opts {
@@ -98,19 +129,15 @@ func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
 		options.Namespace = "micro"
 	}
 
-	var err error
-	var res *sthree.GetObjectOutput
-	if len(s.options.Bucket) > 0 {
-		k := filepath.Join(options.Namespace, key)
-		res, err = s.client.GetObject(&sthree.GetObjectInput{
-			Bucket: &s.options.Bucket, // bucket name
-			Key:    &k,                // object name
-		})
-	} else {
-		res, err = s.client.GetObject(&sthree.GetObjectInput{
-			Bucket: &options.Namespace, // bucket name
-			Key:    &key,               // object name
-		})
+	currentKey := cleanKey(key)
+	res, err := s.getObject(currentKey, options.Namespace)
+	legacyKey := legacyCleanKey(key)
+	if err != nil && legacyKey != currentKey && isObjectNotFound(err) {
+		logger.Infof("S3 object not found at current key; trying legacy key, key: %s, namespace: %s", key, options.Namespace)
+		res, err = s.getObject(legacyKey, options.Namespace)
+		if err == nil {
+			logger.Infof("Loaded S3 object using legacy key fallback, key: %s, namespace: %s", key, options.Namespace)
+		}
 	}
 
 	if err != nil {
