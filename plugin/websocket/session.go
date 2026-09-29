@@ -53,7 +53,6 @@ type Session struct {
 	send      chan *transport.Message
 	closed    chan bool
 	closeOnce sync.Once
-	isClosed  atomic.Bool
 	timeout   time.Duration
 	domain    string
 	status    map[string]string
@@ -125,8 +124,10 @@ func (s *Session) Recv(m *transport.Message) error {
 	return nil
 }
 func (s *Session) Send(m *transport.Message) error {
-	if s.isClosed.Load() {
+	select {
+	case <-s.closed:
 		return io.EOF
+	default:
 	}
 	select {
 	case <-s.closed:
@@ -163,7 +164,6 @@ func (s *Session) process() {
 		case m := <-s.send:
 			if err := s.sendMsg(m); err != nil {
 				logger.Errorf("sendMsg, err:%s sid:%s header:%+v", err.Error(), s.sid, m.Header)
-				s.Close()
 				return
 			}
 		}
@@ -171,7 +171,6 @@ func (s *Session) process() {
 }
 func (s *Session) Close() error {
 	s.closeOnce.Do(func() {
-		s.isClosed.Store(true)
 		atomic.AddInt64(&SessionCount, -1)
 		sessionsBySID.Delete(s.sid)
 		close(s.closed)

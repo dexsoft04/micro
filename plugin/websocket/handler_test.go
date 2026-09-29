@@ -65,6 +65,9 @@ func TestIsSessionControlRequest(t *testing.T) {
 	}{
 		{service: "websocket", endpoint: "Session.Bind", want: true},
 		{service: "WebSocket", endpoint: "Session.Kick", want: true},
+		{service: "websocket", endpoint: "/websocket.Session/Bind", want: true},
+		{service: "websocket", endpoint: "/Session/Kick", want: true},
+		{service: "websocket", endpoint: "/a.b.Session/Send", want: true},
 		{service: "websocket", endpoint: "Debug.Health", want: false},
 		{service: "game", endpoint: "Session.Bind", want: false},
 	}

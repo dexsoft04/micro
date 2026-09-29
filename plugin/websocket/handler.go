@@ -10,6 +10,7 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/network/transport"
 	"github.com/micro/micro/v3/service/server"
+	grpcserver "github.com/micro/micro/v3/service/server/grpc"
 	"github.com/micro/micro/v3/util/codec/bytes"
 	"golang.org/x/net/publicsuffix"
 	"net"
@@ -66,7 +67,12 @@ func requestHeaders(clientHeaders, status map[string]string, sessionID, serverID
 
 // isSessionControlRequest reports whether a client is trying to reach this gateway's own session RPCs.
 func isSessionControlRequest(service, endpoint, gatewayName string) bool {
-	return strings.EqualFold(service, gatewayName) && strings.HasPrefix(endpoint, "Session.")
+	if !strings.EqualFold(service, gatewayName) {
+		return false
+	}
+	// Parse the endpoint the same way the gRPC server does so path forms like "/websocket.Session/Bind" are covered.
+	handler, _, err := grpcserver.ServiceMethod(endpoint)
+	return err == nil && handler == "Session"
 }
 
 func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -92,13 +98,13 @@ func (h *wsHandler) serveConn(sock *Session, domain string) {
 			logger.Error(string(debug.Stack()))
 		}
 	}()
+	config := server.DefaultServer.Options()
+	serverID := config.Name + "-" + config.Id
 	for {
 		var msg transport.Message
 		if err := sock.Recv(&msg); err != nil {
 			return
 		}
-		config := server.DefaultServer.Options()
-		serverID := config.Name + "-" + config.Id
 		hdr := requestHeaders(msg.Header, sock.GetStatus(), sock.SID(), serverID)
 		ctx := metadata.NewContext(context.Background(), hdr)
 		ct := msg.Header["Content-Type"]

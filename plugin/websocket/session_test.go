@@ -87,7 +87,6 @@ func TestSessionSendWaitsForQueueAndStopsWhenClosed(t *testing.T) {
 		t.Fatalf("send returned while queue was full: %v", err)
 	case <-time.After(50 * time.Millisecond):
 	}
-	session.isClosed.Store(true)
 	close(session.closed)
 	select {
 	case err := <-result:
@@ -160,7 +159,12 @@ func TestSessionCloseIsConcurrentSafe(t *testing.T) {
 	OnSessionClose(func(session *Session) {
 		defer close(callbackDone)
 		_, registered := sessionsBySID.Load(session.SID())
-		callbackState <- session.isClosed.Load() && !registered
+		select {
+		case <-session.closed:
+			callbackState <- !registered
+		default:
+			callbackState <- false
+		}
 		<-callbackRelease
 	})
 
