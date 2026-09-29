@@ -50,6 +50,13 @@ var (
 	wsPath  = "/websocket2"
 )
 
+func listenAddress(ctx *cli.Context) string {
+	if value := ctx.String("address"); len(value) > 0 {
+		return value
+	}
+	return address
+}
+
 func Run(ctx *cli.Context) error {
 	if len(ctx.String("server_name")) > 0 {
 		name = ctx.String("server_name")
@@ -69,14 +76,14 @@ func Run(ctx *cli.Context) error {
 		opentelemetry.WithTraceReporterAddress(reporterAddress),
 	)
 	logger.Infof("Setting jaeger global tracer to %s", reporterAddress)
-	defer traceCloser.Close() // Make sure we flush any pending traces before shutdown:
 	if err != nil {
 		logger.Warnf("Unable to prepare a Jaeger tracer: %s", err)
 	} else {
+		defer traceCloser.Close()
 		// Set the global default opentracing tracer:
 		opentracing.SetGlobalTracer(openTracer)
+		opentelemetry.DefaultOpenTracer = openTracer
 	}
-	opentelemetry.DefaultOpenTracer = openTracer
 
 	srv := service.New(
 		service.Name(name),
@@ -105,7 +112,7 @@ func Run(ctx *cli.Context) error {
 	r.Handle(wsPath, websocket.NewHandler())
 	h = wrapper.HTTPWrapper(h)
 
-	api := httpapi.NewServer(address)
+	api := httpapi.NewServer(listenAddress(ctx))
 	api.Init()
 	api.Handle("/", h)
 

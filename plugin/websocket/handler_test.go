@@ -18,6 +18,63 @@ import (
 	"github.com/micro/micro/v3/util/codec/bytes"
 )
 
+func TestRequestHeadersProtectSessionMetadata(t *testing.T) {
+	headers := requestHeaders(map[string]string{
+		"Micro-Service":       "game",
+		"Micro-Ws-Session-Id": "forged-session",
+		"MICRO-WS-SERVER-ID":  "forged-server",
+		"mcb-openid":          "forged-user",
+		"X-Client":            "client-value",
+	}, map[string]string{
+		"Mcb-Openid":          "bound-user",
+		"Micro-Ws-Session-Id": "stale-session",
+	}, "real-session", "real-server")
+
+	want := map[string]string{
+		"micro-service":       "game",
+		"x-client":            "client-value",
+		"mcb-openid":          "bound-user",
+		"micro-ws-session-id": "real-session",
+		"micro-ws-server-id":  "real-server",
+	}
+	if len(headers) != len(want) {
+		t.Fatalf("unexpected header count: got %d, want %d, headers=%v", len(headers), len(want), headers)
+	}
+	for key, value := range want {
+		if got := headers[key]; got != value {
+			t.Fatalf("unexpected header %q: got %q, want %q", key, got, value)
+		}
+	}
+}
+
+func TestRequestHeadersRejectUnboundSessionMetadata(t *testing.T) {
+	headers := requestHeaders(map[string]string{
+		"McB-Openid": "forged-user",
+	}, nil, "real-session", "real-server")
+
+	if _, ok := headers["mcb-openid"]; ok {
+		t.Fatal("client supplied session metadata was forwarded")
+	}
+}
+
+func TestIsSessionControlRequest(t *testing.T) {
+	tests := []struct {
+		service  string
+		endpoint string
+		want     bool
+	}{
+		{service: "websocket", endpoint: "Session.Bind", want: true},
+		{service: "WebSocket", endpoint: "Session.Kick", want: true},
+		{service: "websocket", endpoint: "Debug.Health", want: false},
+		{service: "game", endpoint: "Session.Bind", want: false},
+	}
+	for _, test := range tests {
+		if got := isSessionControlRequest(test.service, test.endpoint, "websocket"); got != test.want {
+			t.Fatalf("isSessionControlRequest(%q, %q) = %v, want %v", test.service, test.endpoint, got, test.want)
+		}
+	}
+}
+
 type testRequest struct {
 	service     string
 	endpoint    string

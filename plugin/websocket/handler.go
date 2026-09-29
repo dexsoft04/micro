@@ -6,6 +6,7 @@ import (
 	hdl "github.com/micro/micro/v3/service/api/handler"
 	"github.com/micro/micro/v3/service/client"
 	"github.com/micro/micro/v3/service/context/metadata"
+	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/network/transport"
 	"github.com/micro/micro/v3/service/server"
@@ -14,9 +15,7 @@ import (
 	"net"
 	"net/http"
 	"runtime/debug"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -48,6 +47,28 @@ type wsHandler struct {
 	opts hdl.Options
 }
 
+func requestHeaders(clientHeaders, status map[string]string, sessionID, serverID string) map[string]string {
+	headers := make(map[string]string, len(clientHeaders)+len(status)+2)
+	for key, value := range clientHeaders {
+		key = strings.ToLower(key)
+		if strings.HasPrefix(key, "micro-ws-") || strings.HasPrefix(key, "mcb-") {
+			continue
+		}
+		headers[key] = value
+	}
+	for key, value := range status {
+		headers[strings.ToLower(key)] = value
+	}
+	headers["micro-ws-session-id"] = sessionID
+	headers["micro-ws-server-id"] = serverID
+	return headers
+}
+
+// isSessionControlRequest reports whether a client is trying to reach this gateway's own session RPCs.
+func isSessionControlRequest(service, endpoint, gatewayName string) bool {
+	return strings.EqualFold(service, gatewayName) && strings.HasPrefix(endpoint, "Session.")
+}
+
 func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cnn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -76,28 +97,10 @@ func (h *wsHandler) serveConn(sock *Session, domain string) {
 		if err := sock.Recv(&msg); err != nil {
 			return
 		}
-		hdr := make(map[string]string, len(msg.Header))
-		for k, v := range msg.Header {
-			hdr[k] = v
-		}
-		status := sock.GetStatus()
-		for k, v := range status {
-			hdr[k] = v
-		}
 		config := server.DefaultServer.Options()
 		serverID := config.Name + "-" + config.Id
-		hdr["micro-ws-session-id"] = sock.SID()
-		hdr["micro-ws-server-id"] = serverID
+		hdr := requestHeaders(msg.Header, sock.GetStatus(), sock.SID(), serverID)
 		ctx := metadata.NewContext(context.Background(), hdr)
-
-		timeout := msg.Header["Timeout"]
-		if len(timeout) > 0 {
-			if n, err := strconv.ParseInt(timeout, 10, 64); err != nil {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, time.Duration(n))
-				defer cancel()
-			}
-		}
 		ct := msg.Header["Content-Type"]
 		if !hasCodec(ct, protoCodecs) {
 			ct = DefaultContentType
@@ -113,7 +116,21 @@ func (h *wsHandler) serveConn(sock *Session, domain string) {
 			callOpt = append(callOpt, client.WithServerUid(msg.Header["Micro-ServiceID"]))
 		}
 		if len(msg.Header["Micro-Service"]) == 0 || len(msg.Header["Micro-Endpoint"]) == 0 {
-			sock.Send(&transport.Message{})
+			if err := sock.Send(&transport.Message{}); err != nil {
+				return
+			}
+			continue
+		}
+		if isSessionControlRequest(msg.Header["Micro-Service"], msg.Header["Micro-Endpoint"], config.Name) {
+			if err := sock.Send(&transport.Message{
+				Header: map[string]string{
+					"Micro-Id":     msg.Header["Micro-Id"],
+					"Content-Type": ct,
+					"Micro-Error":  errors.Forbidden(config.Name, "session control is not allowed from clients").Error(),
+				},
+			}); err != nil {
+				return
+			}
 			continue
 		}
 		// create the request
@@ -126,15 +143,18 @@ func (h *wsHandler) serveConn(sock *Session, domain string) {
 		var rsp []byte
 		// make the call
 		response := new(bytes.Frame)
-		if err := client.DefaultClient.Call(ctx, req, response, callOpt...); err != nil {
-			sock.Send(&transport.Message{
+		callErr := client.DefaultClient.Call(ctx, req, response, callOpt...)
+		if callErr != nil {
+			if err := sock.Send(&transport.Message{
 				Header: map[string]string{
 					"Micro-Id":     msg.Header["Micro-Id"],
 					"Content-Type": ct,
-					"Micro-Error":  err.Error(),
+					"Micro-Error":  callErr.Error(),
 				},
 				Body: rsp,
-			})
+			}); err != nil {
+				return
+			}
 			continue
 		}
 		if len(msg.Header["Micro-Id"]) > 0 {

@@ -19,9 +19,13 @@ import (
 var (
 	sessionsBySID         sync.Map
 	sessionCloseCallbacks = make([]func(s *Session), 0)
+	sessionCloseLocker    sync.RWMutex
 	SessionCount          int64
 	ErrSessionNotFound    = errors.New("session not found")
 )
+
+// Matches the backend gRPC message limit plus websocket envelope overhead.
+const defaultMaxMessageSize int64 = 32*1024*1024 + 64*1024
 
 func GetSessionBySID(sid string) *Session {
 	// TODO: Block this operation in backend servers
@@ -31,6 +35,9 @@ func GetSessionBySID(sid string) *Session {
 	return nil
 }
 func OnSessionClose(fn func(session *Session)) {
+	sessionCloseLocker.Lock()
+	defer sessionCloseLocker.Unlock()
+
 	sf := reflect.ValueOf(fn)
 	for _, f := range sessionCloseCallbacks {
 		if reflect.ValueOf(f).Pointer() == sf.Pointer() {
@@ -46,6 +53,7 @@ type Session struct {
 	send      chan *transport.Message
 	closed    chan bool
 	closeOnce sync.Once
+	isClosed  atomic.Bool
 	timeout   time.Duration
 	domain    string
 	status    map[string]string
@@ -64,6 +72,7 @@ func NewSession(conn *ws.Conn, domain string) *Session {
 	}
 	atomic.AddInt64(&SessionCount, 1)
 	sessionsBySID.Store(s.sid, s)
+	s.conn.SetReadLimit(defaultMaxMessageSize)
 	go s.process()
 	return s
 }
@@ -79,6 +88,7 @@ func (s *Session) UpdateStatus(status map[string]string) {
 	for k, v := range status {
 		if v == "" {
 			delete(s.status, k)
+			continue
 		}
 		s.status[k] = v
 	}
@@ -87,7 +97,11 @@ func (s *Session) GetStatus() map[string]string {
 	s.locker.RLock()
 	defer s.locker.RUnlock()
 
-	return s.status
+	status := make(map[string]string, len(s.status))
+	for key, value := range s.status {
+		status[key] = value
+	}
+	return status
 }
 func (s *Session) Recv(m *transport.Message) error {
 	if m == nil {
@@ -111,13 +125,15 @@ func (s *Session) Recv(m *transport.Message) error {
 	return nil
 }
 func (s *Session) Send(m *transport.Message) error {
+	if s.isClosed.Load() {
+		return io.EOF
+	}
 	select {
 	case <-s.closed:
 		return io.EOF
-	default:
-		s.send <- m
+	case s.send <- m:
+		return nil
 	}
-	return nil
 }
 func (s *Session) sendMsg(m *transport.Message) error {
 	if s.timeout > time.Duration(0) {
@@ -148,19 +164,34 @@ func (s *Session) process() {
 			if err := s.sendMsg(m); err != nil {
 				logger.Errorf("sendMsg, err:%s sid:%s header:%+v", err.Error(), s.sid, m.Header)
 				s.Close()
+				return
 			}
 		}
 	}
 }
 func (s *Session) Close() error {
 	s.closeOnce.Do(func() {
-		for _, cb := range sessionCloseCallbacks {
-			cb(s)
-		}
+		s.isClosed.Store(true)
 		atomic.AddInt64(&SessionCount, -1)
-		s.conn.Close()
 		sessionsBySID.Delete(s.sid)
 		close(s.closed)
+		s.conn.Close()
+
+		sessionCloseLocker.RLock()
+		callbacks := append([]func(s *Session){}, sessionCloseCallbacks...)
+		sessionCloseLocker.RUnlock()
+		go func() {
+			for _, cb := range callbacks {
+				func() {
+					defer func() {
+						if recovered := recover(); recovered != nil {
+							logger.Errorf("session close callback panic: %v", recovered)
+						}
+					}()
+					cb(s)
+				}()
+			}
+		}()
 	})
 	return nil
 }
