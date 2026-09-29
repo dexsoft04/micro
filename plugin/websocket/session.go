@@ -41,14 +41,15 @@ func OnSessionClose(fn func(session *Session)) {
 }
 
 type Session struct {
-	sid     string
-	conn    *ws.Conn
-	send    chan *transport.Message
-	closed  chan bool
-	timeout time.Duration
-	domain  string
-	status  map[string]string
-	locker  sync.RWMutex
+	sid       string
+	conn      *ws.Conn
+	send      chan *transport.Message
+	closed    chan bool
+	closeOnce sync.Once
+	timeout   time.Duration
+	domain    string
+	status    map[string]string
+	locker    sync.RWMutex
 }
 
 func NewSession(conn *ws.Conn, domain string) *Session {
@@ -152,10 +153,7 @@ func (s *Session) process() {
 	}
 }
 func (s *Session) Close() error {
-	select {
-	case <-s.closed:
-		return nil
-	default:
+	s.closeOnce.Do(func() {
 		for _, cb := range sessionCloseCallbacks {
 			cb(s)
 		}
@@ -163,7 +161,7 @@ func (s *Session) Close() error {
 		s.conn.Close()
 		sessionsBySID.Delete(s.sid)
 		close(s.closed)
-	}
+	})
 	return nil
 }
 
