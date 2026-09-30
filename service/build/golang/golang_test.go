@@ -101,23 +101,17 @@ func TestGolangBuilder(t *testing.T) {
 	})
 }
 
-func TestAppendGitConfigPreservesExistingRewrites(t *testing.T) {
-	env := []string{
-		"GIT_CONFIG_GLOBAL=/dev/null",
-		"GIT_CONFIG_NOSYSTEM=1",
-		"GIT_CONFIG_COUNT=2",
-		"GIT_CONFIG_KEY_0=url.git@github.com:.insteadOf",
-		"GIT_CONFIG_VALUE_0=https://github.com",
-		"GIT_CONFIG_KEY_1=url.git@gitee.com:.insteadOf",
-		"GIT_CONFIG_VALUE_1=https://gitee.com",
+func TestBuildEnvUsesSecondaryPublicProxyBeforeDirect(t *testing.T) {
+	base := []string{
+		"PATH=/usr/bin",
+		"GIT_CONFIG_PARAMETERS='url.git@github.com:.insteadOf=https://github.com'",
 	}
-	env = appendGitConfig(env, "url.https://github.com/dexsoft04/micro.insteadOf", "https://github.com/dexsoft04/micro")
+	env := buildEnv(base)
 
-	assert.Contains(t, env, "GIT_CONFIG_COUNT=3")
-	assert.Contains(t, env, "GIT_CONFIG_KEY_1=url.git@gitee.com:.insteadOf")
-	assert.Contains(t, env, "GIT_CONFIG_VALUE_1=https://gitee.com")
-	assert.Contains(t, env, "GIT_CONFIG_KEY_2=url.https://github.com/dexsoft04/micro.insteadOf")
-	assert.Contains(t, env, "GIT_CONFIG_VALUE_2=https://github.com/dexsoft04/micro")
+	assert.Equal(t, base, env[:len(base)])
+	assert.Contains(t, env, "GO111MODULE=auto")
+	assert.Contains(t, env, "GOPROXY=https://goproxy.cn|https://goproxy.io,direct")
+	assert.Contains(t, env, "GOPRIVATE=gitee.com")
 }
 
 func testBuilder(t *testing.T, buf io.Reader, opts ...build.Option) error {
