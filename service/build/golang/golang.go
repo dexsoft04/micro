@@ -9,13 +9,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/micro/micro/v3/service/build"
 	"github.com/micro/micro/v3/service/build/util/tar"
 	"github.com/micro/micro/v3/service/build/util/zip"
 )
 
-const defaultGOPROXY = "https://goproxy.cn|https://goproxy.io,direct"
+const (
+	defaultGOPROXY               = "https://goproxy.cn|https://goproxy.io,direct"
+	preserveGitHubHTTPSParameter = "'url.https://github.com/.insteadOf=https://github.com/'"
+)
 
 // NewBuilder returns a golang build which can build a go binary given some source
 func NewBuilder() (build.Builder, error) {
@@ -95,11 +99,27 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 }
 
 func buildEnv(env []string) []string {
+	gitConfigParameters := preserveGitHubHTTPSParameter
+	if existing, ok := envValue(env, "GIT_CONFIG_PARAMETERS"); ok && existing != "" {
+		gitConfigParameters = existing + " " + gitConfigParameters
+	}
+
 	return append(env,
+		"GIT_CONFIG_PARAMETERS="+gitConfigParameters,
 		"GO111MODULE=auto",
 		"GOPROXY="+defaultGOPROXY,
 		"GOPRIVATE=gitee.com",
 	)
+}
+
+func envValue(env []string, key string) (string, bool) {
+	prefix := key + "="
+	for i := len(env) - 1; i >= 0; i-- {
+		if strings.HasPrefix(env[i], prefix) {
+			return strings.TrimPrefix(env[i], prefix), true
+		}
+	}
+	return "", false
 }
 
 // writeFile takes a single file to a directory

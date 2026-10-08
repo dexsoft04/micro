@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -104,14 +105,50 @@ func TestGolangBuilder(t *testing.T) {
 func TestBuildEnvUsesSecondaryPublicProxyBeforeDirect(t *testing.T) {
 	base := []string{
 		"PATH=/usr/bin",
+		"GIT_CONFIG_GLOBAL=/dev/null",
+		"GIT_CONFIG_NOSYSTEM=1",
 		"GIT_CONFIG_PARAMETERS='url.git@github.com:.insteadOf=https://github.com'",
 	}
 	env := buildEnv(base)
 
 	assert.Equal(t, base, env[:len(base)])
+	assert.Contains(t, env, "GIT_CONFIG_PARAMETERS='url.git@github.com:.insteadOf=https://github.com' 'url.https://github.com/.insteadOf=https://github.com/'")
 	assert.Contains(t, env, "GO111MODULE=auto")
 	assert.Contains(t, env, "GOPROXY=https://goproxy.cn|https://goproxy.io,direct")
 	assert.Contains(t, env, "GOPRIVATE=gitee.com")
+}
+
+func TestBuildEnvGitConfigIsReadable(t *testing.T) {
+	cmd := exec.Command("git", "config", "--get", "url.https://github.com/.insteadOf")
+	cmd.Env = buildEnv([]string{
+		"PATH=" + os.Getenv("PATH"),
+		"GIT_CONFIG_GLOBAL=/dev/null",
+		"GIT_CONFIG_NOSYSTEM=1",
+	})
+	out, err := cmd.CombinedOutput()
+	assert.NoError(t, err, string(out))
+	assert.Equal(t, "https://github.com/\n", string(out))
+}
+
+func TestBuildEnvPreservesGitHubHTTPSAgainstGlobalRewrite(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "gitconfig")
+	config := "[url \"git@github.com:\"]\n\tinsteadOf = https://github.com\n" +
+		"[http]\n\tproxy = http://127.0.0.1:1\n"
+	assert.NoError(t, os.WriteFile(configPath, []byte(config), 0600))
+
+	cmd := exec.Command("git", "ls-remote", "https://github.com/example/repository")
+	cmd.Env = buildEnv([]string{
+		"PATH=" + os.Getenv("PATH"),
+		"GIT_CONFIG_GLOBAL=" + configPath,
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_TRACE=1",
+		"GIT_TERMINAL_PROMPT=0",
+		"GIT_SSH_COMMAND=false",
+	})
+	out, err := cmd.CombinedOutput()
+	assert.Error(t, err)
+	assert.Contains(t, string(out), "remote-https")
+	assert.NotContains(t, string(out), "git@github.com:")
 }
 
 func testBuilder(t *testing.T, buf io.Reader, opts ...build.Option) error {
