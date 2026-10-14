@@ -77,6 +77,7 @@ and `micro user set [namespace]`.
 
 ## Docs
 
+- [Runtime S3 制品兼容要求](plugin/s3/README.md) - 旧版本重启、旧键读取和显式删除的功能约定
 - [Introduction](https://micro.dev/introduction) - A high level introduction to Micro
 - [Getting Started](https://micro.dev/getting-started) - The helloworld quickstart guide
 - [Upgrade Guide](https://micro.dev/upgrade-guide) - Update your go-micro project to use micro v3.

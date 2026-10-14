@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	defaultGOPROXY               = "https://goproxy.cn|https://goproxy.io,direct"
+	defaultGOPROXY               = "https://goproxy.cn|https://goproxy.io|direct"
 	preserveGitHubHTTPSParameter = "'url.https://github.com/.insteadOf=https://github.com/'"
+	preserveMicroHTTPSParameter  = "'url.https://github.com/dexsoft04/micro.insteadOf=https://github.com/dexsoft04/micro'"
 )
 
 // NewBuilder returns a golang build which can build a go binary given some source
@@ -99,7 +100,8 @@ func (g *golang) Build(src io.Reader, opts ...build.Option) (io.Reader, error) {
 }
 
 func buildEnv(env []string) []string {
-	gitConfigParameters := preserveGitHubHTTPSParameter
+	// The repository prefix must outrank existing host-wide SSH rewrites.
+	gitConfigParameters := preserveGitHubHTTPSParameter + " " + preserveMicroHTTPSParameter
 	if existing, ok := envValue(env, "GIT_CONFIG_PARAMETERS"); ok && existing != "" {
 		gitConfigParameters = existing + " " + gitConfigParameters
 	}

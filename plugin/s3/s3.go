@@ -219,9 +219,6 @@ func (s *s3) Delete(key string, opts ...store.BlobOption) error {
 		return store.ErrMissingKey
 	}
 
-	// make the key safe for use with s3
-	key = cleanKey(key)
-
 	// parse the options
 	var options store.BlobOptions
 	for _, o := range opts {
@@ -231,8 +228,19 @@ func (s *s3) Delete(key string, opts ...store.BlobOption) error {
 		options.Namespace = "micro"
 	}
 
+	currentKey, legacyKey := cleanKey(key), legacyCleanKey(key)
+	// Remove the fallback first so a failed deletion cannot expose stale content.
+	if legacyKey != currentKey {
+		if err := s.deleteObject(legacyKey, options.Namespace); err != nil && !isObjectNotFound(err) {
+			return err
+		}
+	}
+	return s.deleteObject(currentKey, options.Namespace)
+}
+
+func (s *s3) deleteObject(key, namespace string) error {
 	if len(s.options.Bucket) > 0 {
-		k := filepath.Join(options.Namespace, key) // object name
+		k := filepath.Join(namespace, key) // object name
 		_, err := s.client.DeleteObject(&sthree.DeleteObjectInput{
 			Bucket: &s.options.Bucket, // bucket name
 			Key:    &k,
@@ -241,7 +249,7 @@ func (s *s3) Delete(key string, opts ...store.BlobOption) error {
 	}
 
 	_, err := s.client.DeleteObject(&sthree.DeleteObjectInput{
-		Bucket: &options.Namespace, // bucket name
+		Bucket: &namespace, // bucket name
 		Key:    &key,
 	})
 	return err

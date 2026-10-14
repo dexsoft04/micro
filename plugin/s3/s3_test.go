@@ -27,6 +27,7 @@ import (
 	sthree "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/micro/micro/v3/service/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -41,7 +42,7 @@ func TestKeyFormats(t *testing.T) {
 	assert.Equal(t, "build-igaoshou-task-srv-v0-2-1-release", legacyCleanKey(key))
 }
 
-func TestBlobStoreUsesCurrentKeyForWritesAndDeletes(t *testing.T) {
+func TestBlobStoreWritesCurrentKeyAndDeletesBothFormats(t *testing.T) {
 	var requests []string
 	httpClient := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		requests = append(requests, req.Method+" "+req.URL.Path)
@@ -72,6 +73,7 @@ func TestBlobStoreUsesCurrentKeyForWritesAndDeletes(t *testing.T) {
 	assert.Equal(t, []string{
 		"PUT /igaoshou",
 		"PUT /igaoshou/build/igaoshou-match-srv/v7.0.13-beta",
+		"DELETE /igaoshou/build-igaoshou-match-srv-v7-0-13-beta",
 		"DELETE /igaoshou/build/igaoshou-match-srv/v7.0.13-beta",
 	}, requests)
 }
@@ -123,6 +125,113 @@ func TestBlobStoreDoesNotFallbackOnOtherErrors(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, reader)
 	assert.Equal(t, []string{"GET /igaoshou/build/service/v1.0.0"}, requests)
+}
+
+func TestBlobStoreLegacyArtifactSurvivesReaderRestart(t *testing.T) {
+	for _, bucket := range []string{"", "artifacts"} {
+		t.Run("bucket="+bucket, func(t *testing.T) {
+			prefix := "/igaoshou/"
+			if bucket != "" {
+				prefix = "/artifacts/igaoshou/"
+			}
+			transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				require.Equal(t, http.MethodGet, req.Method)
+				if req.URL.Path == prefix+"build-service-v1-0-0" {
+					return s3Response(req, http.StatusOK, "legacy binary"), nil
+				}
+				return s3Response(req, http.StatusNotFound, "<Error><Code>NoSuchKey</Code></Error>"), nil
+			})
+			for attempt := 0; attempt < 2; attempt++ {
+				blob := newTestBlobStore(t, transport)
+				blob.options.Bucket = bucket
+				reader, err := blob.Read("build://service:v1.0.0", store.BlobNamespace("igaoshou"))
+				require.NoError(t, err)
+				data, err := ioutil.ReadAll(reader)
+				require.NoError(t, err)
+				require.Equal(t, "legacy binary", string(data))
+			}
+		})
+	}
+}
+
+func TestBlobStoreDeleteRemovesReadableArtifacts(t *testing.T) {
+	for _, bucket := range []string{"", "artifacts"} {
+		for _, contents := range []string{"current", "legacy", "both", "neither"} {
+			for _, kind := range []string{"build", "source"} {
+				t.Run(bucket+"/"+contents+"/"+kind, func(t *testing.T) {
+					prefix := "/igaoshou/"
+					if bucket != "" {
+						prefix = "/artifacts/igaoshou/"
+					}
+					currentPath, legacyPath := prefix+kind+"/service/v1.0.0", prefix+kind+"-service-v1-0-0"
+					objects := make(map[string]string)
+					if contents == "current" || contents == "both" {
+						objects[currentPath] = "current"
+					}
+					if contents == "legacy" || contents == "both" {
+						objects[legacyPath] = "legacy"
+					}
+					var deletes []string
+					blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+						if req.Method == http.MethodDelete {
+							deletes = append(deletes, req.URL.Path)
+							delete(objects, req.URL.Path)
+							return s3Response(req, http.StatusNoContent, ""), nil
+						}
+						if data, ok := objects[req.URL.Path]; ok {
+							return s3Response(req, http.StatusOK, data), nil
+						}
+						return s3Response(req, http.StatusNotFound, "<Error><Code>NoSuchKey</Code></Error>"), nil
+					})
+					blob.options.Bucket = bucket
+					key := kind + "://service:v1.0.0"
+					require.NoError(t, blob.Delete(key, store.BlobNamespace("igaoshou")))
+					require.Equal(t, []string{legacyPath, currentPath}, deletes)
+					reader, err := blob.Read(key, store.BlobNamespace("igaoshou"))
+					require.True(t, isObjectNotFound(err), "expected not found, got %v", err)
+					require.Nil(t, reader)
+					require.NoError(t, blob.Delete(key, store.BlobNamespace("igaoshou")))
+				})
+			}
+		}
+	}
+}
+
+func TestBlobStoreDeleteFailurePreservesCurrentArtifact(t *testing.T) {
+	for _, failedPath := range []string{"/igaoshou/build-service-v1-0-0", "/igaoshou/build/service/v1.0.0"} {
+		t.Run(failedPath, func(t *testing.T) {
+			objects := map[string]string{
+				"/igaoshou/build-service-v1-0-0": "legacy",
+				"/igaoshou/build/service/v1.0.0": "current",
+			}
+			blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+				if req.Method == http.MethodDelete {
+					if req.URL.Path == failedPath {
+						return s3Response(req, http.StatusForbidden, "<Error><Code>AccessDenied</Code></Error>"), nil
+					}
+					delete(objects, req.URL.Path)
+					return s3Response(req, http.StatusNoContent, ""), nil
+				}
+				return s3Response(req, http.StatusOK, objects[req.URL.Path]), nil
+			})
+			require.Error(t, blob.Delete("build://service:v1.0.0", store.BlobNamespace("igaoshou")))
+			reader, err := blob.Read("build://service:v1.0.0", store.BlobNamespace("igaoshou"))
+			require.NoError(t, err)
+			data, err := ioutil.ReadAll(reader)
+			require.NoError(t, err)
+			require.Equal(t, "current", string(data))
+		})
+	}
+}
+
+func TestBlobStoreDeleteIdenticalKeyFormatsOnce(t *testing.T) {
+	var requests []string
+	blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+		requests = append(requests, req.Method+" "+req.URL.Path)
+		return s3Response(req, http.StatusNoContent, ""), nil
+	})
+	require.NoError(t, blob.Delete("artifact"))
+	require.Equal(t, []string{"DELETE /micro/artifact"}, requests)
 }
 
 func newTestBlobStore(t *testing.T, transport roundTripFunc) *s3 {
