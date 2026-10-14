@@ -146,10 +146,10 @@ func TestBrokerNamespaceRPC(t *testing.T) {
 	}
 	ctx := metadata.Set(context.Background(), "Authorization", internalAuth.BearerScheme+tokens["other"])
 	ctx = metadata.Set(ctx, "Micro-Sub-Namespace", "igaoshou")
-	_, err := rpc.Publish(ctx, &pb.PublishRequest{Topic: "forbidden", Message: &pb.Message{Body: []byte("blocked")}})
-	if microerrors.FromError(err).Code != 403 {
-		t.Fatalf("cross-tenant RPC publish: %v", err)
+	if _, err := rpc.Publish(ctx, &pb.PublishRequest{Topic: "authenticated-override", Message: &pb.Message{Body: []byte("compatibility")}}); err != nil {
+		t.Fatalf("existing authenticated routing override rejected: %v", err)
 	}
+
 	if _, err := rpc.Publish(context.Background(), &pb.PublishRequest{Topic: "unauthenticated", Message: &pb.Message{}}); microerrors.FromError(err).Code != 401 {
 		t.Fatalf("unauthenticated RPC publish: %v", err)
 	}

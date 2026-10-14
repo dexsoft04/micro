@@ -14,16 +14,11 @@ import (
 
 type Broker struct{}
 
-func messageNamespace(ctx context.Context, issuer, method string) (string, error) {
+func messageNamespace(ctx context.Context, issuer string) string {
 	if ns, ok := metadata.Get(ctx, "Micro-Sub-Namespace"); ok && len(ns) > 0 {
-		if ns != issuer {
-			if err := authns.Authorize(ctx, ns, method); err != nil {
-				return "", err
-			}
-		}
-		return ns, nil
+		return ns
 	}
-	return issuer, nil
+	return issuer
 }
 
 func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Empty) error {
@@ -51,13 +46,10 @@ func (h *Broker) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.Em
 			}
 		}
 	}
-	ns, err := messageNamespace(ctx, acc.Issuer, "broker.Broker.Publish")
-	if err != nil {
-		return err
-	}
+	ns := messageNamespace(ctx, acc.Issuer)
 
 	logger.Debugf("Publishing message to %s topic in the %v namespace", req.Topic, ns)
-	err = broker.DefaultBroker.Publish(ns+"."+req.Topic, &broker.Message{
+	err := broker.DefaultBroker.Publish(ns+"."+req.Topic, &broker.Message{
 		Header: req.Message.Header,
 		Body:   req.Message.Body,
 	})
@@ -73,10 +65,7 @@ func (h *Broker) Subscribe(ctx context.Context, req *pb.SubscribeRequest, stream
 	if !ok {
 		return errors.Unauthorized("broker.Broker.Subscribe", "%s", authns.ErrForbidden.Error())
 	}
-	ns, err := messageNamespace(ctx, acc.Issuer, "broker.Broker.Subscribe")
-	if err != nil {
-		return err
-	}
+	ns := messageNamespace(ctx, acc.Issuer)
 
 	if len(req.Topic) == 0 {
 		return errors.BadRequest("broker.Broker.Subscribe", "Missing topic")

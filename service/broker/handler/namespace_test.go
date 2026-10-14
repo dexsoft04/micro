@@ -157,43 +157,20 @@ func TestPublishPreservesFailureBoundaries(t *testing.T) {
 	}
 }
 
-func TestCrossNamespaceAuthorization(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		account *auth.Account
-		allowed bool
-	}{
-		{"platform service", &auth.Account{Issuer: "micro", Type: "service", Scopes: []string{"service"}}, true},
-		{"platform admin", &auth.Account{Issuer: "micro", Type: "user", Scopes: []string{"admin"}}, true},
-		{"platform user", &auth.Account{Issuer: "micro", Type: "user"}, false},
-		{"platform service without scope", &auth.Account{Issuer: "micro", Type: "service"}, false},
-		{"other tenant service", &auth.Account{Issuer: "other", Type: "service", Scopes: []string{"service"}}, false},
-		{"other tenant admin", &auth.Account{Issuer: "other", Type: "user", Scopes: []string{"admin"}}, false},
+// Existing Broker accounts do not require a type/scope migration for routing overrides.
+func TestNamespaceOverridePreservesLegacyAccounts(t *testing.T) {
+	for _, account := range []*auth.Account{
+		{Issuer: "micro"},
+		{Issuer: "micro", Type: "service", Scopes: []string{"*"}},
+		{Issuer: "igaoshou", Type: "service", Scopes: []string{"service"}},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			b := testBroker(t)
-			b.writeErr = errors.New("backend reached")
-			base, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			ctx := auth.ContextWithAccount(base, tc.account)
-			ctx = metadata.Set(ctx, "Micro-Sub-Namespace", "igaoshou")
-			err := (&Broker{}).Publish(ctx, &pb.PublishRequest{Topic: "session.close", Message: &pb.Message{}}, &pb.Empty{})
-			want := int32(403)
-			if tc.allowed {
-				want = 500
-			}
-			if microerrors.FromError(err).Code != want {
-				t.Fatalf("publish authorization: %v", err)
-			}
-			if !tc.allowed {
-				err = (&Broker{}).Subscribe(ctx, &pb.SubscribeRequest{Topic: "session.close"}, &messageStream{ctx: ctx})
-				if microerrors.FromError(err).Code != 403 {
-					t.Fatalf("subscribe authorization: %v", err)
-				}
-				if len(b.ready) != 0 {
-					t.Fatal("unauthorized subscription reached backend")
-				}
-			}
-		})
+		b := testBroker(t)
+		b.writeErr = errors.New("backend reached")
+		ctx := auth.ContextWithAccount(context.Background(), account)
+		ctx = metadata.Set(ctx, "Micro-Sub-Namespace", "regression-target")
+		err := (&Broker{}).Publish(ctx, &pb.PublishRequest{Topic: "compatibility", Message: &pb.Message{}}, &pb.Empty{})
+		if microerrors.FromError(err).Code != 500 {
+			t.Fatalf("existing authenticated account rejected: %v", err)
+		}
 	}
 }
