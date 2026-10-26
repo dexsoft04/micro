@@ -27,6 +27,32 @@ import (
 // ErrPrometheusPanic is a catch-all for the panics which can be thrown by the Prometheus client:
 var ErrPrometheusPanic = errors.New("The Prometheus client panicked. Did you do something like change the tag cardinality or the type of a metric?")
 
+// BindCount resolves a counter and snapshots its tags once. The returned function
+// adds synchronously to the same counter as Count, without repeating label lookup.
+// Binding makes a zero-valued series visible even before the first addition.
+func (r *Reporter) BindCount(name string, tags metrics.Tags) (add func(int64) error, err error) {
+	defer func() {
+		if recover() != nil {
+			add, err = nil, ErrPrometheusPanic
+		}
+	}()
+
+	counter := r.metrics.getCounter(r.stripUnsupportedCharacters(name), r.listTagKeys(tags))
+	metric, err := counter.GetMetricWith(r.convertTags(tags))
+	if err != nil {
+		return nil, err
+	}
+	return func(value int64) (err error) {
+		defer func() {
+			if recover() != nil {
+				err = ErrPrometheusPanic
+			}
+		}()
+		metric.Add(float64(value))
+		return nil
+	}, nil
+}
+
 // Count is a counter with key/value tags:
 // New values are added to any previous one (eg "number of hits")
 func (r *Reporter) Count(name string, value int64, tags metrics.Tags) (err error) {
