@@ -39,3 +39,6 @@ test/services
 
 .idea/
 bin/
+
+.agents/
+.playwright-cli/

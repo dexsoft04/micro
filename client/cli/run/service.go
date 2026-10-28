@@ -316,7 +316,11 @@ func runService(ctx *cli.Context) error {
 	if source.Local {
 		// check to see if a vendor folder exists, if it doesn't we should delete the one we generate
 		// after we finish the upload
-		vendorDir := filepath.Join(source.LocalRepoRoot, "vendor")
+		sourceRoot := source.LocalRepoRoot
+		if sourceRoot == "" {
+			sourceRoot = source.FullPath
+		}
+		vendorDir := filepath.Join(sourceRoot, "vendor")
 		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
 			defer os.RemoveAll(vendorDir)
 		} else if err != nil {
@@ -324,7 +328,7 @@ func runService(ctx *cli.Context) error {
 		}
 
 		// vendor the dependencies
-		if err := vendorDependencies(source.LocalRepoRoot); err != nil {
+		if err := vendorDependencies(sourceRoot, ctx.App.ErrWriter); err != nil {
 			return err
 		}
 
@@ -558,7 +562,11 @@ func updateService(ctx *cli.Context) error {
 	if source.Local {
 		// check to see if a vendor folder exists, if it doesn't we should delete the one we generate
 		// after we finish the upload
-		vendorDir := filepath.Join(source.LocalRepoRoot, "vendor")
+		sourceRoot := source.LocalRepoRoot
+		if sourceRoot == "" {
+			sourceRoot = source.FullPath
+		}
+		vendorDir := filepath.Join(sourceRoot, "vendor")
 		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
 			defer os.RemoveAll(vendorDir)
 		} else if err != nil {
@@ -566,7 +574,7 @@ func updateService(ctx *cli.Context) error {
 		}
 
 		// vendor the dependencies
-		if err := vendorDependencies(source.LocalRepoRoot); err != nil {
+		if err := vendorDependencies(sourceRoot, ctx.App.ErrWriter); err != nil {
 			return err
 		}
 

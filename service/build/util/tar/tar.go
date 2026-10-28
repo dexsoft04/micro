@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
+	"sort"
 )
 
 // Unarchive decodes the source in a tar and writes it to a directory
@@ -49,94 +49,75 @@ func Unarchive(src io.Reader, dir string) error {
 	return nil
 }
 
-// Archive a local directory into a tar gzip
+// Archive a local directory, including only Go build inputs and embedded assets.
 func Archive(dir string) (io.Reader, error) {
+	files, err := sourceFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a tar writer and a buffer to store the archive
 	tf := bytes.NewBuffer(nil)
 	tw := tar.NewWriter(tf)
 	defer tw.Close()
 
-	// walkFn archives each file in the directory
-	walkFn := func(path string, info os.FileInfo, err error) error {
+	// Include only directories needed by the selected files, in parent-first order.
+	entries := make(map[string]bool)
+	for file := range files {
+		entries[file] = true
+		for parent := filepath.Dir(file); parent != "."; parent = filepath.Dir(parent) {
+			entries[parent] = true
+		}
+	}
+	names := make([]string, 0, len(entries))
+	for name := range entries {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		path := filepath.Join(dir, name)
+		info, err := os.Lstat(path)
 		if err != nil {
-			return err
-		}
-
-		// get the relative path, e.g. cmd/main.go
-		relpath, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-
-		// skip git files
-		if filepath.HasPrefix(relpath, ".git") {
-			return nil
-		}
-
-		// skip irrelevent files
-		if !info.IsDir() && !shouldArchive(relpath) {
-			return nil
+			return nil, err
 		}
 
 		// generate and write tar header
-		header, err := tar.FileInfoHeader(info, relpath)
+		header, err := tar.FileInfoHeader(info, "")
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Since os.FileInfo's Name method only returns the base name of the file it describes, it is
 		// necessary to modify Header.Name to provide the full path name of the file. See:
 		// https://golang.org/src/archive/tar/common.go?s=22088:22153#L626
-		relpath = strings.Join(strings.Split(relpath, "\\"), "/")
-		header.Name = relpath
+		header.Name = filepath.ToSlash(name)
 
 		// write the header to the archive
 		if err := tw.WriteHeader(header); err != nil {
-			return err
+			return nil, err
 		}
 
 		// there is no body if it's a directory
 		if info.IsDir() {
-			return nil
+			continue
 		}
 
 		// read the contents of the file
 		bytes, err := ioutil.ReadFile(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// write the contents of the file to the tar
-		_, err = tw.Write([]byte(bytes))
-		return err
+		if _, err := tw.Write(bytes); err != nil {
+			return nil, err
+		}
 	}
 
-	// Add the files to the archive
-	if err := filepath.Walk(dir, walkFn); err != nil {
+	if err := tw.Close(); err != nil {
 		return nil, err
 	}
 
 	// Return the archive
 	return tf, nil
-}
-
-// shouldArchive is a helper func which indicates if a file should be archived. TODO: implement a
-// smarter check which just excludes executables
-func shouldArchive(file string) bool {
-	if filepath.HasPrefix(file, "vendor") {
-		return true
-	}
-	if strings.HasSuffix(file, ".go") {
-		return true
-	}
-	if strings.HasSuffix(file, "go.sum") {
-		return true
-	}
-	if strings.HasSuffix(file, "go.mod") {
-		return true
-	}
-	if strings.HasSuffix(file, ".txt") {
-		return true
-	}
-	return false
 }

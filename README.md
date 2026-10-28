@@ -239,6 +239,32 @@ Run from local dir
 micro run .
 ```
 
+Local source uploads include Go source, module metadata, native build inputs,
+text (`.txt`) resources, and assets referenced by `//go:embed`. Hidden directories,
+`node_modules`, tests, logs, Markdown, and binaries are excluded by default, including
+inside `vendor`. Text files are retained because they may contain runtime data;
+explicitly embedded assets are retained regardless of extension.
+CGO package directories and explicitly referenced native search directories retain
+all non-hidden regular files, including files with arbitrary extensions: C/C++
+includes can be macro-generated, so filtering these directories by extension can
+break valid builds. This may also retain documentation, logs, or binaries within
+those directories. Symbolic links and excluded directories are still skipped.
+Compiler/linker paths are resolved within the archive root; external system
+libraries are not uploaded. Remote builds use standalone module semantics:
+`go.work` and `go.work.sum` are not automatically archived, so local workspace
+references outside the uploaded repository do not affect the build. Local `run`
+and `update` warn before vendoring when Go reports an active workspace. They do
+not silently disable it; verify standalone builds before using `GOWORK=off`.
+
+To list the files in the final archive before uploading, use
+`mcbeam run --show-upload-files .`. Paths are relative to the archive root (the
+Git repository root when present). The option also works with `mcbeam update`;
+with `--watch`, each upload prints its own file list. Remote Git sources do not
+upload local files and therefore do not print a list.
+
+`mcbeam --version` also displays the executable's target OS and architecture,
+for example `mcbeam version v3.12.3-mcbeam-v3.12.3 linux/amd64`.
+
 Or from a git url
 
 ```sh

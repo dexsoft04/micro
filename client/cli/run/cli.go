@@ -47,6 +47,10 @@ var flags = []cli.Flag{
 		Usage: "Set any metadata on the service e.g. foo=bar",
 	},
 	&cli.BoolFlag{
+		Name:  "show-upload-files",
+		Usage: "List the files in the local source archive before uploading",
+	},
+	&cli.BoolFlag{
 		Name: "watch",
 		Usage: `Enable live-reloading, watch the file changes of source directories, then rebuild and restart the service.
 		only watching *.go and *.proto files now`,

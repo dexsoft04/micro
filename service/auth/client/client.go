@@ -17,8 +17,30 @@ import (
 )
 
 const (
-	ruleCacheTTL = 2 * time.Minute
+	ruleCacheTTL                   = 2 * time.Minute
+	inspectRejectionReportInterval = time.Minute
 )
+
+type rejectionReporter struct {
+	sync.Mutex
+	pending    uint64
+	lastReport time.Time
+}
+
+func (r *rejectionReporter) observe(now time.Time) (uint64, bool) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.pending++
+	if !r.lastReport.IsZero() && now.Sub(r.lastReport) < inspectRejectionReportInterval {
+		return 0, false
+	}
+
+	count := r.pending
+	r.pending = 0
+	r.lastReport = now
+	return count, true
+}
 
 type rulesCache struct {
 	sync.RWMutex
@@ -59,11 +81,12 @@ type cacheEntry struct {
 
 // srv is the service implementation of the Auth interface
 type srv struct {
-	options   auth.Options
-	auth      pb.AuthService
-	rules     pb.RulesService
-	token     token.Provider
-	ruleCache rulesCache
+	options           auth.Options
+	auth              pb.AuthService
+	rules             pb.RulesService
+	token             token.Provider
+	ruleCache         rulesCache
+	inspectRejections rejectionReporter
 }
 
 func (s *srv) String() string {
@@ -246,7 +269,13 @@ func (s *srv) Inspect(token string) (*auth.Account, error) {
 		Token: token, Options: &pb.Options{Namespace: s.Options().Issuer},
 	}, s.callOpts()...)
 	if err != nil {
-		logger.Errorf("inspect failed: %v", err)
+		if errors.FromError(err).Code == 400 {
+			if count, report := s.inspectRejections.observe(time.Now()); report {
+				logger.Warnf("inspect rejected tokens: count=%d last_error=%v", count, err)
+			}
+		} else {
+			logger.Errorf("inspect failed: %v", err)
+		}
 		return nil, err
 	}
 	if rsp == nil || rsp.Account == nil {

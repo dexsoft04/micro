@@ -1,12 +1,14 @@
 package runtime
 
 import (
+	stdtar "archive/tar"
 	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	pb "github.com/micro/micro/v3/proto/runtime"
 	"github.com/micro/micro/v3/service/build/util/tar"
@@ -37,6 +39,11 @@ func upload(ctx *cli.Context, srv *runtime.Service, source *git.Source) (string,
 	}
 	buf := &bytes.Buffer{}
 	size, _ := io.Copy(buf, data)
+	if ctx.Bool("show-upload-files") {
+		if err := printUploadFiles(ctx.App.Writer, buf.Bytes()); err != nil {
+			return "", err
+		}
+	}
 	// create an upload stream
 	cli := pb.NewSourceService("runtime", client.DefaultClient)
 	stream, err := cli.Upload(context.DefaultContext, client.WithAuthToken())
@@ -78,14 +85,54 @@ func upload(ctx *cli.Context, srv *runtime.Service, source *git.Source) (string,
 	return rsp.Id, nil
 }
 
+func printUploadFiles(w io.Writer, data []byte) error {
+	reader := stdtar.NewReader(bytes.NewReader(data))
+	var files []string
+	for {
+		header, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if header.Typeflag == stdtar.TypeReg || header.Typeflag == stdtar.TypeRegA {
+			files = append(files, header.Name)
+		}
+	}
+	if _, err := fmt.Fprintf(w, "Files to upload (%d):\n", len(files)); err != nil {
+		return err
+	}
+	for _, file := range files {
+		if _, err := fmt.Fprintf(w, "  %s\n", file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // vendorDependencies will use `go mod vendor` to generate a vendor directory containing all of a
 // services deps. This is then uploaded to the server along with the source code to be built into
 // a binary.
-func vendorDependencies(dir string) error {
+func vendorDependencies(dir string, warnings io.Writer) error {
 	// find the go command
 	gopath, err := locateGo()
 	if err != nil {
 		return err
+	}
+
+	// Use Go's own workspace resolution, including parent directories and GOWORK.
+	probe := exec.Command(gopath, "env", "GOWORK")
+	probe.Dir = dir
+	probe.Env = append(os.Environ(), "GO111MODULE=auto")
+	out, err := probe.Output()
+	if err != nil {
+		return fmt.Errorf("detect Go workspace: %w", err)
+	}
+	if workspace := strings.TrimSpace(string(out)); workspace != "" && workspace != "off" {
+		if _, err := fmt.Fprintf(warnings, "Warning: active Go workspace %s will not be uploaded. Remote builds use standalone modules. Use GOWORK=off only after verifying this module builds independently.\n", workspace); err != nil {
+			return err
+		}
 	}
 
 	// construct the command
