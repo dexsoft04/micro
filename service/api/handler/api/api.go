@@ -18,6 +18,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 
 	api "github.com/micro/micro/v3/proto/api"
@@ -38,6 +39,19 @@ const (
 	Handler = "api"
 )
 
+// legacyErrorBody preserves the fixed API handler's public error field names.
+// Keep this HTTP contract separate from the shared RPC error representation.
+func legacyErrorBody(err error) []byte {
+	e := errors.FromError(err)
+	body, _ := json.Marshal(struct {
+		Id     string `json:"Id"`
+		Code   int32  `json:"Code"`
+		Detail string `json:"Detail"`
+		Status string `json:"Status"`
+	}{e.Id, e.Code, e.Detail, e.Status})
+	return body
+}
+
 // API handler is the default handler which takes api.Request and returns api.Response
 func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	bsize := handler.DefaultMaxRecvSize
@@ -51,7 +65,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		er := errors.InternalServerError("go.micro.api", "%s", err.Error())
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
-		w.Write([]byte(er.Error()))
+		w.Write(legacyErrorBody(er))
 		return
 	}
 
@@ -69,7 +83,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			er := errors.InternalServerError("go.micro.api", "%s", err.Error())
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(500)
-			w.Write([]byte(er.Error()))
+			w.Write(legacyErrorBody(er))
 			return
 		}
 		service = s
@@ -79,7 +93,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		er := errors.InternalServerError("go.micro.api", "no route found")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
-		w.Write([]byte(er.Error()))
+		w.Write(legacyErrorBody(er))
 		return
 	}
 
@@ -99,7 +113,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			w.WriteHeader(int(ce.Code))
 		}
-		w.Write([]byte(ce.Error()))
+		w.Write(legacyErrorBody(ce))
 		return
 	} else if rsp.StatusCode == 0 {
 		rsp.StatusCode = http.StatusOK
