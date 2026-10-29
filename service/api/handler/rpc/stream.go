@@ -230,22 +230,42 @@ type stream struct {
 	// the websocket connection.
 	conn *websocket.Conn
 	// the downstream connection.
-	stream client.Stream
+	stream  client.Stream
+	writeMu sync.Mutex
 }
 
-func (s *stream) processWSReadsAndWrites() {
-	defer func() {
-		s.conn.Close()
-	}()
+type websocketResponse struct {
+	data    []byte
+	written chan struct{}
+}
 
-	msgs := make(chan []byte)
+func (s *stream) writeMessage(messageType int, payload []byte) error {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	return s.conn.WriteMessage(messageType, payload)
+}
+
+func (s *stream) processWSReadsAndWrites(cancelStream context.CancelFunc) {
+
+	msgs := make(chan websocketResponse)
 
 	stopCtx, cancel := context.WithCancel(context.Background())
+	var stopped sync.Once
+	stop := func() {
+		stopped.Do(func() {
+			cancel()
+			cancelStream()
+			s.conn.Close()
+			s.stream.Close()
+		})
+	}
+	defer stop()
 	wg := sync.WaitGroup{}
 	wg.Add(3)
-	go s.rspToBufLoop(cancel, &wg, stopCtx, msgs)
-	go s.bufToClientLoop(cancel, &wg, stopCtx, msgs)
-	go s.clientToServerLoop(cancel, &wg, stopCtx)
+	go s.rspToBufLoop(stop, &wg, stopCtx, msgs)
+	go s.bufToClientLoop(stop, &wg, stopCtx, msgs)
+	go s.clientToServerLoop(stop, &wg, stopCtx)
 	wg.Wait()
 
 	fmt.Println("EXITING")
@@ -253,7 +273,6 @@ func (s *stream) processWSReadsAndWrites() {
 
 func (s *stream) clientToServerLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context) {
 	defer func() {
-		s.stream.Close()
 		cancel()
 		wg.Done()
 	}()
@@ -290,7 +309,7 @@ func (s *stream) clientToServerLoop(cancel context.CancelFunc, wg *sync.WaitGrou
 
 }
 
-func (s *stream) rspToBufLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context, msgs chan []byte) {
+func (s *stream) rspToBufLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context, msgs chan websocketResponse) {
 	defer func() {
 		cancel()
 		wg.Done()
@@ -309,28 +328,35 @@ func (s *stream) rspToBufLoop(cancel context.CancelFunc, wg *sync.WaitGroup, sto
 		if err := s.stream.Recv(&frame); err != nil {
 			fmt.Println("Error reading from stream", err)
 			if err == io.EOF {
-				// clean exit
+				s.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 				return
 			}
 			// write error then close the connection
 			b, _ := json.Marshal(err)
-			s.conn.WriteMessage(s.messageType, b)
-			s.conn.WriteMessage(websocket.CloseAbnormalClosure, []byte{})
+			s.writeMessage(s.messageType, b)
+			s.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, ""))
 			return
 		}
 
+		response := websocketResponse{data: frame.Data, written: make(chan struct{})}
 		select {
 		case <-stopCtx.Done():
 			return
-		case msgs <- frame.Data:
+		case msgs <- response:
+		}
+		// Receiving the channel value is not enough: EOF must follow the actual
+		// socket write so a finite backend cannot close away its final frame.
+		select {
+		case <-stopCtx.Done():
+			return
+		case <-response.written:
 		}
 	}
 
 }
 
-func (s *stream) bufToClientLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context, msgs chan []byte) {
+func (s *stream) bufToClientLoop(cancel context.CancelFunc, wg *sync.WaitGroup, stopCtx context.Context, msgs chan websocketResponse) {
 	defer func() {
-		s.conn.Close()
 		cancel()
 		wg.Done()
 
@@ -344,24 +370,17 @@ func (s *stream) bufToClientLoop(cancel context.CancelFunc, wg *sync.WaitGroup, 
 		case <-s.ctx.Done():
 			return
 		case <-s.stream.Context().Done():
-			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			s.writeMessage(websocket.CloseMessage, []byte{})
 			return
 		case <-ticker.C:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			if err := s.writeMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		case msg := <-msgs:
 			// read response body
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			w, err := s.conn.NextWriter(s.messageType)
+			err := s.writeMessage(s.messageType, msg.data)
+			close(msg.written)
 			if err != nil {
-				return
-			}
-			if _, err := w.Write(msg); err != nil {
-				return
-			}
-			if err := w.Close(); err != nil {
 				return
 			}
 		}
@@ -389,6 +408,7 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 		}
 		return
 	}
+	defer conn.Close()
 
 	// determine the content type
 	ct := r.Header.Get("Content-Type")
@@ -407,17 +427,8 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 
 	logger.Infof("Connecting websocket stream to backend %s %s %s", service.Name, service.Endpoint.Name, ct)
 
-	_, msg, err := conn.ReadMessage()
-	if err != nil {
-		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-			if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-				logger.Error(err)
-			}
-		}
-		return
-	}
-
 	md, _ := metadata.FromContext(ctx)
+	md = metadata.Copy(md)
 	// reset content type
 	md["Content-Type"] = ct
 	// delete websocket info
@@ -428,22 +439,15 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	delete(md, "Sec-Websocket-Key")
 
 	ctx = metadata.NewContext(ctx, md)
+	ctx, cancelStream := context.WithCancel(ctx)
+	defer cancelStream()
 
 	// create stream
-	req := c.NewRequest(service.Name, service.Endpoint.Name, &raw.Frame{Data: msg}, client.WithContentType(ct))
+	req := c.NewRequest(service.Name, service.Endpoint.Name, nil, client.WithContentType(ct), client.StreamingRequest())
 	str, err := c.Stream(ctx, req, client.WithRouter(router.New(service.Services)))
 	if err != nil {
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Error(err)
-		}
-		return
-	}
-
-	// write the raw request
-	err = str.Send(&raw.Frame{Data: msg})
-	if err != nil {
-		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
-			logger.Error("Error sending request ", err)
 		}
 		return
 	}
@@ -455,7 +459,7 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	}
 
 	s := stream{ctx: ctx, conn: conn, stream: str, messageType: msgType}
-	s.processWSReadsAndWrites()
+	s.processWSReadsAndWrites(cancelStream)
 }
 
 func isStream(r *http.Request, srv *api.Service) bool {
