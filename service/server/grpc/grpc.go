@@ -36,6 +36,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	pberr "github.com/micro/micro/v3/proto/errors"
 	"github.com/micro/micro/v3/service/broker"
+	"github.com/micro/micro/v3/service/client"
 	meta "github.com/micro/micro/v3/service/context/metadata"
 	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
@@ -348,6 +349,28 @@ func (g *grpcServer) handler(srv interface{}, stream grpc.ServerStream) (err err
 
 		return nil
 	}
+
+	// A router/proxy must never acknowledge its own identity for a backend.
+	// Only the terminal server can supply the instance proof.
+	if md[client.InstanceProbeVersionHeader] != "" {
+		opts := g.Options()
+		uid := opts.Name + "-" + opts.Id
+		domain := opts.Namespace
+		if domain == "" {
+			domain = registry.DefaultDomain
+		}
+		if md[client.InstanceProbeVersionHeader] != "1" || md[client.InstanceProbeDomainHeader] != domain || md[client.InstanceProbeUIDHeader] != uid {
+			return status.Error(codes.FailedPrecondition, "instance probe target mismatch")
+		}
+		if err := stream.SetHeader(metadata.Pairs(client.InstanceProofHeader, "1", client.InstanceProbeDomainHeader, domain, client.InstanceProbeUIDHeader, uid)); err != nil {
+			return err
+		}
+	}
+
+	for _, key := range []string{client.InstanceProofHeader, client.InstanceProbeVersionHeader, client.InstanceProbeDomainHeader, client.InstanceProbeUIDHeader} {
+		delete(md, key)
+	}
+	ctx = meta.NewContext(ctx, md)
 
 	// process the standard request flow
 	g.rpc.mu.Lock()

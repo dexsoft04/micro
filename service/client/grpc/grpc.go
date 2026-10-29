@@ -98,6 +98,15 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 		header = make(map[string]string)
 	}
 
+	for _, key := range []string{client.InstanceProofHeader, client.InstanceProbeVersionHeader, client.InstanceProbeDomainHeader, client.InstanceProbeUIDHeader} {
+		delete(header, key)
+	}
+	if domain, uid, enabled := client.InstanceProbeTarget(opts); enabled {
+		header[client.InstanceProbeVersionHeader] = "1"
+		header[client.InstanceProbeDomainHeader] = domain
+		header[client.InstanceProbeUIDHeader] = uid
+	}
+
 	// set timeout in nanoseconds
 	header["timeout"] = fmt.Sprintf("%d", opts.RequestTimeout)
 	// set the content type for the request
@@ -147,7 +156,19 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 		if opts := g.getGrpcCallOptions(); opts != nil {
 			grpcCallOptions = append(grpcCallOptions, opts...)
 		}
+		var responseHeader gmetadata.MD
+		grpcCallOptions = append(grpcCallOptions, grpc.Header(&responseHeader))
 		err := cc.Invoke(ctx, methodToGRPC(req.Service(), req.Endpoint()), req.Body(), rsp, grpcCallOptions...)
+		if err == nil {
+			value := func(key string) string {
+				values := responseHeader.Get(key)
+				if len(values) != 1 {
+					return ""
+				}
+				return values[0]
+			}
+			err = client.ConfirmInstanceProbe(opts, value(client.InstanceProofHeader), value(client.InstanceProbeDomainHeader), value(client.InstanceProbeUIDHeader))
+		}
 		ch <- microError(err)
 	}()
 
@@ -427,7 +448,13 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 
 	// lookup the route to send the reques to
 	// TODO apply any filtering here
-	routes, err := g.opts.Lookup(ctx, req, callOpts)
+	var routes []string
+	var err error
+	if _, _, enabled := client.InstanceProbeTarget(callOpts); enabled {
+		routes, err = client.LookupInstanceProbeRoutes(ctx, req, callOpts)
+	} else {
+		routes, err = g.opts.Lookup(ctx, req, callOpts)
+	}
 	if err != nil {
 		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}

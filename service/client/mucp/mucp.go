@@ -345,6 +345,10 @@ func (r *rpcClient) Call(ctx context.Context, request client.Request, response i
 	default:
 	}
 
+	if _, _, enabled := client.InstanceProbeTarget(callOpts); enabled {
+		return client.ErrInstanceProbeUnsupported
+	}
+
 	// make copy of call method
 	rcall := r.call
 
