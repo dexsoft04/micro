@@ -452,6 +452,9 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	var err error
 	if _, _, enabled := client.InstanceProbeTarget(callOpts); enabled {
 		routes, err = client.LookupInstanceProbeRoutes(ctx, req, callOpts)
+		if err != nil {
+			return err
+		}
 	} else {
 		routes, err = g.opts.Lookup(ctx, req, callOpts)
 	}
