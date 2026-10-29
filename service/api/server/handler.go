@@ -65,7 +65,7 @@ func (m *metaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		er := errors.InternalServerError(m.ns, "%s", err.Error())
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
-		w.Write([]byte(er.Error()))
+		w.Write(handler.LegacyErrorBody(er))
 		return
 	}
 

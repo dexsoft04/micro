@@ -194,7 +194,8 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// create request/response
-		var response interface{}
+		// Preserve JSON numbers across the gateway without a float64 round trip.
+		var response json.RawMessage
 
 		req := c.NewRequest(
 			service.Name,
@@ -261,7 +262,7 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 		w.Header().Set("grpc-message", ce.Detail)
 	}
 
-	_, werr := w.Write([]byte(ce.Error()))
+	_, werr := w.Write(handler.LegacyErrorBody(ce))
 	if werr != nil {
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Error(werr)
