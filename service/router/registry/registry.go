@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/micro/micro/v3/service/logger"
@@ -34,11 +35,13 @@ var (
 type registryRouter struct {
 	sync.RWMutex
 
-	running  bool
-	table    *table
-	options  router.Options
-	exit     chan bool
-	initChan chan bool
+	running         bool
+	table           *table
+	options         router.Options
+	exit            chan bool
+	initChan        chan bool
+	refreshSequence atomic.Uint64
+	activeRefreshes atomic.Int64
 }
 
 // NewRouter creates new router and returns it
@@ -231,6 +234,16 @@ func (r *registryRouter) loadRoutes(name, domain string) error {
 		return fmt.Errorf("failed listing services: %v", err)
 	}
 
+	// These counters describe overlapping rebuilds, not an atomic route revision.
+	refreshID := r.refreshSequence.Add(1)
+	r.activeRefreshes.Add(1)
+	started := time.Now()
+	logger.Debugf("Route refresh begin router_id=%q refresh_id=%d service=%q domain=%q service_versions=%d", r.options.Id, refreshID, name, domain, len(services))
+	defer func() {
+		active := r.activeRefreshes.Add(-1)
+		logger.Debugf("Route refresh end router_id=%q refresh_id=%d service=%q domain=%q active_refreshes=%d elapsed_us=%d", r.options.Id, refreshID, name, domain, active, time.Since(started).Microseconds())
+	}()
+
 	// delete the services first
 	for _, service := range services {
 		// get the services domain from metadata. Fallback to wildcard.
@@ -323,15 +336,17 @@ func (r *registryRouter) Close() error {
 // lookup retrieves all the routes for a given service and creates them in the routing table
 func (r *registryRouter) Lookup(service string, opts ...router.LookupOption) ([]router.Route, error) {
 	q := router.NewLookup(opts...)
+	refreshBefore := r.refreshSequence.Load()
 
 	// if we find the routes filter and return them
 	routes, err := r.table.Read(router.ReadService(service))
 	if err == nil {
-		routes = router.Filter(routes, q)
-		if len(routes) == 0 {
+		filtered := router.Filter(routes, q)
+		if len(filtered) == 0 {
+			r.logLookupMiss(service, q, "cache_filter", routes, refreshBefore)
 			return nil, router.ErrRouteNotFound
 		}
-		return routes, nil
+		return filtered, nil
 	}
 
 	// lookup the route
@@ -339,6 +354,7 @@ func (r *registryRouter) Lookup(service string, opts ...router.LookupOption) ([]
 
 	services, err := r.options.Registry.GetService(service, registry.GetDomain(registry.WildcardDomain))
 	if err == registry.ErrNotFound {
+		r.logLookupMiss(service, q, "registry_not_found", nil, refreshBefore)
 		logger.Tracef("Failed to find route for %s", service)
 		return nil, router.ErrRouteNotFound
 	} else if err != nil {
@@ -359,11 +375,12 @@ func (r *registryRouter) Lookup(service string, opts ...router.LookupOption) ([]
 			r.table.Create(route)
 		}
 	}
-	routes = router.Filter(routes, q)
-	if len(routes) == 0 {
+	filtered := router.Filter(routes, q)
+	if len(filtered) == 0 {
+		r.logLookupMiss(service, q, "registry_filter", routes, refreshBefore)
 		return nil, router.ErrRouteNotFound
 	}
-	return routes, nil
+	return filtered, nil
 }
 
 // watchRegistry watches registry and updates routing table based on the received events.

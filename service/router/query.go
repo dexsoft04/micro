@@ -14,13 +14,17 @@
 
 package router
 
+import "context"
+
 // LookupOption sets routing table query options
 type LookupOption func(*LookupOptions)
 
 // LookupOptions are routing table query options
 // TODO replace with Filter(Route) bool
 type LookupOptions struct {
-	Uid string
+	// Context carries diagnostic correlation only; it does not change route filtering.
+	Context context.Context
+	Uid     string
 	// Address of the service
 	Address string
 	// Gateway is route gateway
@@ -33,11 +37,17 @@ type LookupOptions struct {
 	Link string
 }
 
+// LookupContext preserves request correlation for local route diagnostics.
+func LookupContext(ctx context.Context) LookupOption {
+	return func(o *LookupOptions) { o.Context = ctx }
+}
+
 func LookupUid(id string) LookupOption {
 	return func(o *LookupOptions) {
 		o.Uid = id
 	}
 }
+
 // LookupAddress sets service to query
 func LookupAddress(a string) LookupOption {
 	return func(o *LookupOptions) {
@@ -77,7 +87,7 @@ func LookupLink(link string) LookupOption {
 func NewLookup(opts ...LookupOption) LookupOptions {
 	// default options
 	qopts := LookupOptions{
-		Uid: "*",
+		Uid:     "*",
 		Address: "*",
 		Gateway: "*",
 		Network: "*",

@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"github.com/micro/micro/v3/service/errors"
+	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/router"
 )
 
@@ -35,7 +36,7 @@ func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, 
 	}
 
 	// construct the router query
-	query := []router.LookupOption{}
+	query := []router.LookupOption{router.LookupContext(ctx)}
 
 	// if a custom network was requested, pass this to the router. By default the router will use it's
 	// own network, which is set during initialisation.
@@ -50,6 +51,15 @@ func LookupRoute(ctx context.Context, req Request, opts CallOptions) ([]string, 
 	}
 	// lookup the routes which can be used to execute the request
 	routes, err := opts.Router.Lookup(req.Service(), query...)
+	if err != nil {
+		fields := router.LookupDiagnosticFields(router.NewLookup(query...))
+		fields["service"] = req.Service()
+		fields["endpoint"] = req.Endpoint()
+		fields["router_id"] = opts.Router.Options().Id
+		fields["router_type"] = opts.Router.String()
+		fields["route_not_found"] = err == router.ErrRouteNotFound
+		logger.Fields(fields).Log(logger.WarnLevel, "Route lookup failed")
+	}
 	if err == router.ErrRouteNotFound {
 		return nil, errors.InternalServerError("go.micro.client", "service %s: %s", req.Service(), err.Error())
 	} else if err != nil {
