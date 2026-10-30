@@ -13,6 +13,7 @@ import (
 	"github.com/micro/micro/v3/service/api/resolver"
 	"github.com/micro/micro/v3/service/api/router"
 	reg "github.com/micro/micro/v3/service/registry"
+	regcache "github.com/micro/micro/v3/service/registry/cache"
 )
 
 // watchRefreshRegistry controls registry snapshots independently of the stale
@@ -58,7 +59,7 @@ func (f *watchRefreshRegistry) Watch(opts ...reg.WatchOption) (reg.Watcher, erro
 	for _, fn := range opts {
 		fn(&o)
 	}
-	if o.Domain != reg.WildcardDomain {
+	if o.Domain != reg.WildcardDomain && o.Domain != "igaoshou" && o.Domain != reg.DefaultDomain {
 		return nil, fmt.Errorf("unexpected watch domain %q", o.Domain)
 	}
 	return f.watcher, nil
@@ -249,6 +250,37 @@ func TestWatchRefreshPreservesDomainsAndFailureBehavior(t *testing.T) {
 			if got := watchRefreshAddresses(t, r); !reflect.DeepEqual(got, []string{"192.0.2.30:8080"}) {
 				t.Fatalf("other domain changed: %v", got)
 			}
+		})
+	}
+}
+
+// The real Match endpoints have no API metadata. Requests therefore use the
+// lower registry cache, not the endpoint cache exercised above.
+func TestWatchRefreshImplicitRouteSameVersion(t *testing.T) {
+	for _, domain := range []string{"igaoshou", reg.DefaultDomain} {
+		t.Run(domain, func(t *testing.T) {
+			w := &watchRefreshWatcher{events: make(chan *reg.Result, 1), processed: make(chan struct{}, 1), stopped: make(chan struct{})}
+			f := &watchRefreshRegistry{services: make(map[string][]*reg.Service), watcher: w}
+			old := watchRefreshService(domain, "latest", "old", "192.0.2.10:8080")
+			old.Endpoints[0].Metadata = nil
+			newer := watchRefreshService(domain, "latest", "new", "192.0.2.20:8080")
+			newer.Endpoints[0].Metadata = nil
+			f.replace(domain, old)
+			r := &registryRouter{exit: make(chan bool), opts: router.NewOptions(router.WithHandler("rpc"), router.WithRegistry(f), router.WithResolver(watchRefreshResolver{domain})), rc: regcache.New(f), refreshChan: make(chan string, 1), namespaces: make(map[string]*namespaceEntry)}
+			defer r.Close()
+			check := func(want []string) {
+				t.Helper()
+				if got := watchRefreshAddresses(t, r); !reflect.DeepEqual(got, want) {
+					t.Fatalf("implicit route=%v want=%v", got, want)
+				}
+			}
+			check([]string{"192.0.2.10:8080"})
+			f.replace(domain, old, newer)
+			w.emit(t, &reg.Result{Action: "create", Service: newer})
+			check([]string{"192.0.2.10:8080", "192.0.2.20:8080"})
+			f.replace(domain, newer)
+			w.emit(t, &reg.Result{Action: "delete", Service: old})
+			check([]string{"192.0.2.20:8080"})
 		})
 	}
 }

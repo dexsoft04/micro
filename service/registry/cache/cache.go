@@ -236,7 +236,7 @@ func (c *cache) update(domain string, res *registry.Result) {
 	// only save watched services since the service using the cache may only depend on a handful
 	// of other services
 	c.RLock()
-	if _, ok := c.watched[res.Service.Name]; !ok {
+	if !c.watched[domain][res.Service.Name] {
 		c.RUnlock()
 		return
 	}
@@ -248,7 +248,13 @@ func (c *cache) update(domain string, res *registry.Result) {
 		return
 	}
 
+	// Readers may still hold the published snapshot after releasing the lock.
+	// Build the next snapshot without mutating it or the caller's event.
+	services = Copy(services)
 	c.RUnlock()
+	event := *res
+	event.Service = CopyService(res.Service)
+	res = &event
 
 	if len(res.Service.Nodes) == 0 {
 		switch res.Action {
