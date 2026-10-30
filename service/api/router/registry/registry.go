@@ -183,9 +183,11 @@ func (r *registryRouter) process(res *registry.Result) {
 		return
 	}
 
-	// get entry from cache
-	// only deals with default namespace
-	service, err := r.rc.GetService(res.Service.Name)
+	// The API watcher and the registry cache watcher run independently.
+	// Reconcile against the registry so a cached pre-event node list cannot
+	// keep a retired instance in the endpoint routes.
+	namespace := getDomain(res.Service)
+	service, err := r.opts.Registry.GetService(res.Service.Name, registry.GetDomain(namespace))
 	if err != nil {
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Errorf("unable to get %v service: %v", res.Service.Name, err)
@@ -197,9 +199,6 @@ func (r *registryRouter) process(res *registry.Result) {
 	if len(service) == 0 {
 		return
 	}
-
-	// get te namespace
-	namespace := getDomain(service[0])
 
 	// update our local endpoints
 	r.store(namespace, service)
