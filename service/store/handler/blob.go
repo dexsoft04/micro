@@ -38,18 +38,22 @@ func (b *BlobStore) Read(ctx context.Context, req *pb.BlobReadRequest, stream pb
 	} else if err != nil {
 		return errors.InternalServerError("store.Blob.Read", "%s", err.Error())
 	}
+	if closer, ok := blob.(io.Closer); ok {
+		defer closer.Close()
+	}
 
 	// read from the blob and stream it to the client
 	buffer := make([]byte, bufferSize)
 	for {
 		num, err := blob.Read(buffer)
+		if num > 0 {
+			if sendErr := stream.Send(&pb.BlobReadResponse{Blob: buffer[:num]}); sendErr != nil {
+				return sendErr
+			}
+		}
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return err
-		}
-
-		if err := stream.Send(&pb.BlobReadResponse{Blob: buffer[:num]}); err != nil {
 			return err
 		}
 	}

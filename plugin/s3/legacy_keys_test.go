@@ -85,3 +85,20 @@ func TestNewBlobStoreDoesNotWriteProbeObject(t *testing.T) {
 	require.NotNil(t, blob)
 	require.Zero(t, requests.Load())
 }
+
+type failingObjectBody struct{ closed bool }
+
+func (b *failingObjectBody) Read(p []byte) (int, error) {
+	return copy(p, "partial"), io.ErrUnexpectedEOF
+}
+func (b *failingObjectBody) Close() error { b.closed = true; return nil }
+func TestBlobStoreRejectsPartialObjectAndClosesBody(t *testing.T) {
+	body := &failingObjectBody{}
+	blob := newTestBlobStore(t, func(req *http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: body, Request: req}, nil
+	})
+	value, err := blob.Read("fixture")
+	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
+	require.Nil(t, value)
+	require.True(t, body.closed)
+}

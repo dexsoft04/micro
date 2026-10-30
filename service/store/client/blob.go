@@ -99,23 +99,24 @@ func (b *blob) Write(key string, blob io.Reader, opts ...store.BlobOption) error
 	buffer := make([]byte, bufferSize)
 	for {
 		num, err := blob.Read(buffer)
+		if num > 0 {
+			req := &pb.BlobWriteRequest{
+				Key: key,
+				Options: &pb.BlobOptions{
+					Namespace:   options.Namespace,
+					Public:      options.Public,
+					ContentType: options.ContentType,
+				},
+				Blob: buffer[:num],
+			}
+
+			if err := stream.Send(req); err != nil {
+				return err
+			}
+		}
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return err
-		}
-
-		req := &pb.BlobWriteRequest{
-			Key: key,
-			Options: &pb.BlobOptions{
-				Namespace:   options.Namespace,
-				Public:      options.Public,
-				ContentType: options.ContentType,
-			},
-			Blob: buffer[:num],
-		}
-
-		if err := stream.Send(req); err != nil {
 			return err
 		}
 	}

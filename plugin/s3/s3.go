@@ -136,9 +136,13 @@ func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	out := bytes.NewBuffer([]byte{})
 	_, err = io.Copy(out, res.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	// return the result
 	return out, nil
