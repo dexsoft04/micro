@@ -65,7 +65,6 @@ func NewBlobStore(opts ...Option) (store.BlobStore, error) {
 
 	sess := session.Must(session.NewSession(awsConfig(&options)))
 	client := sthree.New(sess)
-	testConn(client)
 	// return the blob store
 	return &s3{client, &options}, nil
 }
@@ -86,6 +85,13 @@ type s3 struct {
 	options *Options
 }
 
+func (s *s3) objectKey(key string) string {
+	if s.options.UseLegacyKeys {
+		return legacyCleanKey(key)
+	}
+	return cleanKey(key)
+}
+
 func (s *s3) getObject(key, namespace string) (*sthree.GetObjectOutput, error) {
 	if len(s.options.Bucket) > 0 {
 		key = filepath.Join(namespace, key)
@@ -99,19 +105,6 @@ func (s *s3) getObject(key, namespace string) (*sthree.GetObjectOutput, error) {
 		Bucket: &namespace,
 		Key:    &key,
 	})
-}
-
-func testConn(client *sthree.S3) {
-	object, err := client.PutObject(&sthree.PutObjectInput{
-		Body:   nil,
-		Bucket: aws.String("/micro/test/s3-hello"),
-		Key:    aws.String("/micro/test/s3-hello"),
-	})
-	if err != nil {
-		logger.Errorf("err:%s", err.Error())
-		return
-	}
-	logger.Debugf("testConn, object %v", object)
 }
 
 func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
@@ -129,7 +122,7 @@ func (s *s3) Read(key string, opts ...store.BlobOption) (io.Reader, error) {
 		options.Namespace = "micro"
 	}
 
-	currentKey := cleanKey(key)
+	currentKey := s.objectKey(key)
 	res, err := s.getObject(currentKey, options.Namespace)
 	legacyKey := legacyCleanKey(key)
 	if err != nil && legacyKey != currentKey && isObjectNotFound(err) {
@@ -159,7 +152,7 @@ func (s *s3) Write(key string, blob io.Reader, opts ...store.BlobOption) error {
 	}
 
 	// make the key safe for use with s3
-	key = cleanKey(key)
+	key = s.objectKey(key)
 
 	// parse the options
 	var options store.BlobOptions
@@ -228,7 +221,7 @@ func (s *s3) Delete(key string, opts ...store.BlobOption) error {
 		options.Namespace = "micro"
 	}
 
-	currentKey, legacyKey := cleanKey(key), legacyCleanKey(key)
+	currentKey, legacyKey := s.objectKey(key), legacyCleanKey(key)
 	// Remove the fallback first so a failed deletion cannot expose stale content.
 	if legacyKey != currentKey {
 		if err := s.deleteObject(legacyKey, options.Namespace); err != nil && !isObjectNotFound(err) {

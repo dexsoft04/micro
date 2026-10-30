@@ -82,15 +82,7 @@ var Profile = &profile.Profile{
 
 		// only configure the blob store for the store and runtime services
 		if ctx.Args().Get(1) == "runtime" || ctx.Args().Get(1) == "store" {
-			store.DefaultBlobStore, err = s3.NewBlobStore(
-				s3.Credentials(
-					os.Getenv("MICRO_BLOB_STORE_ACCESS_KEY"),
-					os.Getenv("MICRO_BLOB_STORE_SECRET_KEY"),
-				),
-				s3.Endpoint("minio-cluster:9000"),
-				s3.Region(os.Getenv("MICRO_BLOB_STORE_REGION")),
-				s3.Insecure(),
-			)
+			store.DefaultBlobStore, err = s3.NewBlobStore(blobStoreOptions(ctx.Args().Get(1))...)
 			if err != nil {
 				logger.Fatalf("Error configuring s3 blob store: %v", err)
 			}
@@ -127,6 +119,20 @@ var Profile = &profile.Profile{
 		kubernetes.DefaultImage = "wolfplus2048/cells:v0.0.4"
 		return nil
 	},
+}
+
+func blobStoreOptions(serviceName string) []s3.Option {
+	opts := []s3.Option{
+		s3.Credentials(os.Getenv("MICRO_BLOB_STORE_ACCESS_KEY"), os.Getenv("MICRO_BLOB_STORE_SECRET_KEY")),
+		s3.Endpoint("minio-cluster:9000"),
+		s3.Region(os.Getenv("MICRO_BLOB_STORE_REGION")),
+		s3.Insecure(),
+	}
+	// Store must keep writes readable by the old server during rollout and rollback.
+	if serviceName == "store" {
+		opts = append(opts, s3.LegacyKeyFormat())
+	}
+	return opts
 }
 
 // natsStreamOpts returns a slice of options which should be used to configure nats

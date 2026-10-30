@@ -25,10 +25,18 @@ type Options struct {
 	SecretAccessKey string
 	Secure          bool
 	TLSConfig       *tls.Config
+	UseLegacyKeys   bool
 }
 
 // Option configures one or more options
 type Option func(o *Options)
+
+// LegacyKeyFormat preserves the object keys used by older Store servers.
+func LegacyKeyFormat() Option {
+	return func(o *Options) {
+		o.UseLegacyKeys = true
+	}
+}
 
 // Endpoint sets the endpoint option
 func Endpoint(e string) Option {
