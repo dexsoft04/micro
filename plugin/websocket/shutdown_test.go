@@ -3,6 +3,7 @@ package websocket
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -297,5 +298,77 @@ func TestConcurrentShutdownAndHandshake(t *testing.T) {
 	defer h.mu.Unlock()
 	if len(h.sessions) != 0 {
 		t.Fatalf("sessions leaked: %d", len(h.sessions))
+	}
+}
+
+func TestShutdownSlowQueueUsesRemainingDrainBudget(t *testing.T) {
+	entered := make(chan *Session, 1)
+	release := make(chan struct{})
+	h, _, c := shutdownFixture(t, func(ctx context.Context, rsp interface{}) error {
+		sid, _ := metadata.Get(ctx, "micro-ws-session-id")
+		entered <- GetSessionBySID(sid)
+		<-release
+		rsp.(*bytes.Frame).Data = []byte("final-rpc-response")
+		return nil
+	}, nil)
+	sendShutdownRequest(t, c)
+	s := <-entered
+	if err := c.UnderlyingConn().(*net.TCPConn).SetReadBuffer(64 * 1024); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.conn.UnderlyingConn().(*net.TCPConn).SetWriteBuffer(16 * 1024); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 20; i++ {
+		body := make([]byte, 512*1024)
+		body[0] = byte(i)
+		if err := s.Send(&transport.Message{Body: body}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	started := time.Now()
+	go func() { done <- h.Shutdown(ctx) }()
+	for !h.stopping() {
+		time.Sleep(time.Millisecond)
+	}
+	close(release)
+	c.SetReadDeadline(time.Now().Add(14 * time.Second))
+	for i := 0; i < 20; i++ {
+		_, b, err := c.ReadMessage()
+		if err != nil {
+			t.Fatalf("queued frame %d: %v", i, err)
+		}
+		var m pb.Message
+		if err = proto.Unmarshal(b, &m); err != nil {
+			t.Fatal(err)
+		}
+		if len(m.Body) != 512*1024 || m.Body[0] != byte(i) {
+			t.Fatalf("queue ordering at frame %d", i)
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	_, b, err := c.ReadMessage()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m pb.Message
+	if err = proto.Unmarshal(b, &m); err != nil {
+		t.Fatal(err)
+	}
+	if string(m.Body) != "final-rpc-response" {
+		t.Fatal("final RPC response lost behind queue")
+	}
+	_, _, err = c.ReadMessage()
+	if !ws.IsCloseError(err, ws.CloseGoingAway) {
+		t.Fatalf("close frame: %v", err)
+	}
+	if err = <-done; err != nil {
+		t.Fatal(err)
+	}
+	if time.Since(started) < 5*time.Second {
+		t.Fatal("fixture did not exercise more than five seconds")
 	}
 }

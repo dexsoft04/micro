@@ -55,6 +55,7 @@ type wsHandler struct {
 	sessions        map[*Session]context.CancelFunc
 	stopDone        chan struct{}
 	cleanupFailures int
+	drainContext    context.Context
 }
 
 // GatewayHandler owns upgraded connections until their close callbacks finish.
@@ -113,10 +114,22 @@ func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	draining := h.draining
 	h.mu.Unlock()
 	defer func() {
+		h.mu.Lock()
+		flush := h.drainContext
+		h.mu.Unlock()
+		if flush != nil {
+			if err := socket.drain(flush); err != nil {
+				h.mu.Lock()
+				if h.draining {
+					h.cleanupFailures++
+				}
+				h.mu.Unlock()
+				logger.Warnf("WebSocket session flush failed: %v", err)
+			}
+		}
+		_ = socket.Close()
 		cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
 		defer stop()
-		_ = socket.drain(cleanup)
-		_ = socket.Close()
 		select {
 		case <-socket.closeDone:
 		case <-cleanup.Done():
@@ -139,6 +152,7 @@ func (h *wsHandler) Shutdown(ctx context.Context) error {
 	h.mu.Lock()
 	if !h.draining {
 		h.draining = true
+		h.drainContext = ctx
 		h.stopDone = make(chan struct{})
 		go func() { h.active.Wait(); close(h.stopDone) }()
 		logger.Infof("WebSocket gateway drain started sessions=%d", len(h.sessions))
@@ -151,7 +165,7 @@ func (h *wsHandler) Shutdown(ctx context.Context) error {
 		failures := h.cleanupFailures
 		h.mu.Unlock()
 		if failures != 0 {
-			return fmt.Errorf("WebSocket shutdown left %d incomplete close callbacks", failures)
+			return fmt.Errorf("WebSocket shutdown had %d incomplete flushes or close callbacks", failures)
 		}
 		logger.Info("WebSocket gateway drain completed")
 		return nil

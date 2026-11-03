@@ -58,6 +58,7 @@ type Session struct {
 	drainOnce  sync.Once
 	sendLocker sync.RWMutex
 	writerDone chan struct{}
+	writerErr  error
 	closeDone  chan struct{}
 	timeout    time.Duration
 	domain     string
@@ -182,10 +183,11 @@ func (s *Session) process() {
 			return
 		case m := <-s.send:
 			if m == nil {
-				_ = s.conn.WriteControl(ws.CloseMessage, ws.FormatCloseMessage(ws.CloseGoingAway, "server shutting down"), time.Now().Add(time.Second))
+				s.writerErr = s.conn.WriteControl(ws.CloseMessage, ws.FormatCloseMessage(ws.CloseGoingAway, "server shutting down"), time.Now().Add(time.Second))
 				return
 			}
 			if err := s.sendMsg(m); err != nil {
+				s.writerErr = err
 				logger.Errorf("sendMsg, err:%s sid:%s header:%+v", err.Error(), s.sid, m.Header)
 				return
 			}
@@ -236,7 +238,7 @@ func (s *Session) drain(ctx context.Context) error {
 	})
 	select {
 	case <-s.writerDone:
-		return nil
+		return s.writerErr
 	case <-ctx.Done():
 		_ = s.Close()
 		return ctx.Err()
