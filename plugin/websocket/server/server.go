@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/micro/micro/v3/plugin"
@@ -19,6 +20,7 @@ import (
 	"github.com/urfave/cli/v2"
 	pb "github.com/wolfplus2048/mcbeam-plugins/ws_session/v3/proto"
 	"net/http"
+	"time"
 )
 
 func init() {
@@ -93,7 +95,9 @@ func Run(ctx *cli.Context) error {
 		c := srv.Client()
 		m := c.NewMessage("session.close", &pb.SessionClose{ServerId: server.DefaultServer.Options().Id,
 			SessionId: s.SID()})
-		err := c.Publish(context.Background(), m, client.PublishNamespace(s.GetDomain()))
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := c.Publish(ctx, m, client.PublishNamespace(s.GetDomain()))
 		logger.Infof("session.close broker:%s, sid:%s, domain:%s, ret:%v", c.Options().Broker.String(), s.SID(), s.GetDomain(), err)
 	})
 
@@ -109,12 +113,18 @@ func Run(ctx *cli.Context) error {
 		return
 	})
 	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {})
-	r.Handle(wsPath, websocket.NewHandler())
+	gateway := websocket.NewHandler()
+	r.Handle(wsPath, gateway)
 	h = wrapper.HTTPWrapper(h)
 
 	api := httpapi.NewServer(listenAddress(ctx))
 	api.Init()
 	api.Handle("/", h)
+	srv.Init(service.BeforeStop(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		return errors.Join(gateway.Shutdown(ctx), api.Stop())
+	}))
 
 	if err := api.Start(); err != nil {
 		logger.Fatal(err)
