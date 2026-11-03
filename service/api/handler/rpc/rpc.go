@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/micro/micro/v3/service/api"
 	"github.com/micro/micro/v3/service/api/handler"
@@ -81,16 +82,27 @@ func jsonMarshal(t interface{}) ([]byte, error) {
 }
 
 func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+	requestContext := r.Context()
+	observed := &responseObservation{ResponseWriter: w}
+	w = observed
+	stream := false
+	stage := "route"
 	bsize := handler.DefaultMaxRecvSize
 	if h.opts.MaxRecvSize > 0 {
 		bsize = h.opts.MaxRecvSize
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, bsize)
+	r.Body = http.MaxBytesReader(observed.ResponseWriter, r.Body, bsize)
 
 	defer r.Body.Close()
 	var service *api.Service
 	var c client.Client
+	defer func() {
+		if !stream {
+			observed.finish(requestContext, r, service, started, stage)
+		}
+	}()
 
 	if v, ok := r.Context().(handler.Context); ok {
 		// we were given the service
@@ -133,7 +145,8 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	*r = *r.Clone(cx)
 	// if stream we currently only support json
 	if isStream(r, service) {
-		serveStream(cx, w, r, service, c)
+		stream = true
+		serveStream(cx, observed.ResponseWriter, r, service, c)
 		return
 	}
 
@@ -148,12 +161,14 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// walk the standard call path
 	// get payload
+	stage = "payload"
 	br, err := api.RequestPayload(r)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
 
+	stage = "call"
 	var rsp []byte
 
 	switch {
@@ -211,6 +226,7 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// marshall response
 		// see https://play.golang.org/p/oBNxUjVTzus
+		stage = "encode"
 		rsp, err = jsonMarshal(response)
 		if err != nil {
 			writeError(w, r, err)
@@ -219,6 +235,7 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// write the response
+	stage = "write"
 	writeResponse(w, r, rsp, ct)
 }
 
@@ -264,6 +281,9 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 
 	_, werr := w.Write(handler.LegacyErrorBody(ce))
 	if werr != nil {
+		if _, observed := w.(*responseObservation); observed {
+			return
+		}
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Error(werr)
 		}
@@ -290,6 +310,9 @@ func writeResponse(w http.ResponseWriter, r *http.Request, rsp []byte, ct string
 	// write response
 	_, err := w.Write(rsp)
 	if err != nil {
+		if _, observed := w.(*responseObservation); observed {
+			return
+		}
 		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 			logger.Error(err)
 		}

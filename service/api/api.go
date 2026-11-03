@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 
@@ -74,19 +75,26 @@ type Server interface {
 }
 
 type Options struct {
-	EnableACME   bool
-	EnableCORS   bool
-	ACMEProvider acme.Provider
-	EnableTLS    bool
-	ACMEHosts    []string
-	TLSConfig    *tls.Config
-	Resolver     resolver.Resolver
-	Wrappers     []Wrapper
+	EnableACME      bool
+	EnableCORS      bool
+	ACMEProvider    acme.Provider
+	EnableTLS       bool
+	ACMEHosts       []string
+	TLSConfig       *tls.Config
+	Resolver        resolver.Resolver
+	Wrappers        []Wrapper
+	ShutdownTimeout time.Duration
 }
 
 type Option func(*Options)
 
 type Wrapper func(h http.Handler) http.Handler
+
+// ShutdownTimeout bounds the wait for in-flight HTTP requests during Stop.
+// Non-positive values use the server default.
+func ShutdownTimeout(timeout time.Duration) Option {
+	return func(o *Options) { o.ShutdownTimeout = timeout }
+}
 
 func WrapHandler(w ...Wrapper) Option {
 	return func(o *Options) {

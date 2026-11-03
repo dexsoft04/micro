@@ -37,6 +37,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding"
 	gmetadata "google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type grpcClient struct {
@@ -86,6 +87,10 @@ func (g *grpcClient) secure(addr string) grpc.DialOption {
 }
 
 func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, rsp interface{}, opts client.CallOptions) error {
+	observation, _ := ctx.Value(attemptObservationKey{}).(*attemptObservation)
+	if observation != nil {
+		observation.stage = "codec"
+	}
 	var header map[string]string
 
 	header = make(map[string]string)
@@ -138,6 +143,9 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 		grpcDialOptions = append(grpcDialOptions, opts...)
 	}
 
+	if observation != nil {
+		observation.stage = "dial"
+	}
 	cc, err := g.pool.getConn(addr, grpcDialOptions...)
 	if err != nil {
 		return errors.InternalServerError("go.micro.client", "Error sending request: %v", err)
@@ -147,7 +155,14 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 		g.pool.release(addr, cc, grr)
 	}()
 
-	ch := make(chan error, 1)
+	type invokeResult struct {
+		err        error
+		grpcStatus string
+	}
+	ch := make(chan invokeResult, 1)
+	if observation != nil {
+		observation.stage = "invoke"
+	}
 
 	go func() {
 		grpcCallOptions := []grpc.CallOption{
@@ -159,6 +174,7 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 		var responseHeader gmetadata.MD
 		grpcCallOptions = append(grpcCallOptions, grpc.Header(&responseHeader))
 		err := cc.Invoke(ctx, methodToGRPC(req.Service(), req.Endpoint()), req.Body(), rsp, grpcCallOptions...)
+		rawStatus := status.Code(err).String()
 		if err == nil {
 			value := func(key string) string {
 				values := responseHeader.Get(key)
@@ -169,12 +185,15 @@ func (g *grpcClient) call(ctx context.Context, addr string, req client.Request, 
 			}
 			err = client.ConfirmInstanceProbe(opts, value(client.InstanceProofHeader), value(client.InstanceProbeDomainHeader), value(client.InstanceProbeUIDHeader))
 		}
-		ch <- microError(err)
+		ch <- invokeResult{err: microError(err), grpcStatus: rawStatus}
 	}()
 
 	select {
-	case err := <-ch:
-		grr = err
+	case result := <-ch:
+		if observation != nil {
+			observation.grpcStatus = result.grpcStatus
+		}
+		grr = result.err
 	case <-ctx.Done():
 		grr = errors.Timeout("go.micro.client", "%v", ctx.Err())
 	}
@@ -390,7 +409,7 @@ func (g *grpcClient) NewRequest(service, method string, req interface{}, reqOpts
 	return newGRPCRequest(service, method, req, g.opts.ContentType, reqOpts...)
 }
 
-func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
+func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) (result error) {
 	if req == nil {
 		return errors.InternalServerError("go.micro.client", "req is nil")
 	} else if rsp == nil {
@@ -401,6 +420,8 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	for _, opt := range opts {
 		opt(&callOpts)
 	}
+
+	observation := newCallObservation(ctx, req, callOpts.RequestTimeout)
 
 	// check if we already have a deadline
 	d, ok := ctx.Deadline()
@@ -415,6 +436,12 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 		opt := client.WithRequestTimeout(time.Until(d))
 		opt(&callOpts)
 	}
+
+	observation.selected = callOpts.RequestTimeout
+	attempts := 0
+	stage := "context_precheck"
+	// Observe before our deferred cancel so a successful call is not labeled canceled.
+	defer func() { observation.finish(ctx, result, attempts, stage) }()
 
 	// should we noop right here?
 	select {
@@ -446,6 +473,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 		callOpts.Address = append(callOpts.Address, g.opts.Proxy)
 	}
 
+	stage = "lookup"
 	// lookup the route to send the reques to
 	// TODO apply any filtering here
 	var routes []string
@@ -462,6 +490,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 		return errors.InternalServerError("go.micro.client", "%s", err.Error())
 	}
 
+	stage = "select"
 	// balance the list of nodes
 	next, err := callOpts.Selector.Select(routes)
 	if err != nil {
@@ -469,13 +498,17 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	}
 
 	// return errors.New("go.micro.client", "request timeout", 408)
-	call := func(i int) error {
+	call := func(i int) (attemptErr error) {
+		attempt := &attemptObservation{call: &observation, number: i, started: time.Now(), stage: "backoff", grpcStatus: "not_observed"}
+		attemptCtx := context.WithValue(ctx, attemptObservationKey{}, attempt)
+		defer func() { attempt.finish(attemptCtx, attemptErr) }()
 		// call backoff first. Someone may want an initial start delay
 		t, err := callOpts.Backoff(ctx, req, i)
 		if err != nil {
 			return errors.InternalServerError("go.micro.client", "%s", err.Error())
 		}
 
+		attempt.backoff = t
 		// only sleep if greater than 0
 		if t.Seconds() > 0 {
 			time.Sleep(t)
@@ -485,7 +518,9 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 		node := next()
 
 		// make the call
-		err = gcall(ctx, node, req, rsp, callOpts)
+		attempt.target = node
+		attempt.stage = "call_wrapper"
+		err = gcall(attemptCtx, node, req, rsp, callOpts)
 
 		// record the result of the call to inform future routing decisions
 		g.opts.Selector.Record(node, err)
@@ -502,6 +537,8 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	var gerr error
 
 	for i := 0; i <= callOpts.Retries; i++ {
+		stage = "call"
+		attempts++
 		go func(i int) {
 			ch <- call(i)
 		}(i)
@@ -515,6 +552,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 				return nil
 			}
 
+			stage = "retry"
 			retry, rerr := callOpts.Retry(ctx, req, i, err)
 			if rerr != nil {
 				return rerr

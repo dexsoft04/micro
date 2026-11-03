@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
@@ -48,26 +49,35 @@ func OnSessionClose(fn func(session *Session)) {
 }
 
 type Session struct {
-	sid       string
-	conn      *ws.Conn
-	send      chan *transport.Message
-	closed    chan bool
-	closeOnce sync.Once
-	timeout   time.Duration
-	domain    string
-	status    map[string]string
-	locker    sync.RWMutex
+	sid        string
+	conn       *ws.Conn
+	send       chan *transport.Message
+	closed     chan bool
+	closeOnce  sync.Once
+	draining   chan struct{}
+	drainOnce  sync.Once
+	sendLocker sync.RWMutex
+	writerDone chan struct{}
+	writerErr  error
+	closeDone  chan struct{}
+	timeout    time.Duration
+	domain     string
+	status     map[string]string
+	locker     sync.RWMutex
 }
 
 func NewSession(conn *ws.Conn, domain string) *Session {
 	s := &Session{
-		sid:     uuid.New().String(),
-		conn:    conn,
-		send:    make(chan *transport.Message, 128),
-		closed:  make(chan bool),
-		timeout: 5 * time.Second,
-		domain:  domain,
-		status:  make(map[string]string),
+		sid:        uuid.New().String(),
+		conn:       conn,
+		send:       make(chan *transport.Message, 128),
+		closed:     make(chan bool),
+		draining:   make(chan struct{}),
+		writerDone: make(chan struct{}),
+		closeDone:  make(chan struct{}),
+		timeout:    5 * time.Second,
+		domain:     domain,
+		status:     make(map[string]string),
 	}
 	atomic.AddInt64(&SessionCount, 1)
 	sessionsBySID.Store(s.sid, s)
@@ -124,12 +134,21 @@ func (s *Session) Recv(m *transport.Message) error {
 	return nil
 }
 func (s *Session) Send(m *transport.Message) error {
+	if m == nil {
+		return errors.New("message passed in is nil")
+	}
+	s.sendLocker.RLock()
+	defer s.sendLocker.RUnlock()
 	select {
+	case <-s.draining:
+		return io.EOF
 	case <-s.closed:
 		return io.EOF
 	default:
 	}
 	select {
+	case <-s.draining:
+		return io.EOF
 	case <-s.closed:
 		return io.EOF
 	case s.send <- m:
@@ -156,13 +175,19 @@ func (s *Session) sendMsg(m *transport.Message) error {
 func (s *Session) process() {
 	defer func() {
 		s.Close()
+		close(s.writerDone)
 	}()
 	for {
 		select {
 		case <-s.closed:
 			return
 		case m := <-s.send:
+			if m == nil {
+				s.writerErr = s.conn.WriteControl(ws.CloseMessage, ws.FormatCloseMessage(ws.CloseGoingAway, "server shutting down"), time.Now().Add(time.Second))
+				return
+			}
 			if err := s.sendMsg(m); err != nil {
+				s.writerErr = err
 				logger.Errorf("sendMsg, err:%s sid:%s header:%+v", err.Error(), s.sid, m.Header)
 				return
 			}
@@ -180,6 +205,7 @@ func (s *Session) Close() error {
 		callbacks := append([]func(s *Session){}, sessionCloseCallbacks...)
 		sessionCloseLocker.RUnlock()
 		go func() {
+			defer close(s.closeDone)
 			for _, cb := range callbacks {
 				func() {
 					defer func() {
@@ -193,6 +219,30 @@ func (s *Session) Close() error {
 		}()
 	})
 	return nil
+}
+
+// drain flushes frames accepted before the shutdown marker. Send remains
+// asynchronous during normal operation; new sends are rejected once draining.
+func (s *Session) drain(ctx context.Context) error {
+	s.drainOnce.Do(func() {
+		close(s.draining)
+		// Closing draining releases producers blocked on a full queue. Taking
+		// the exclusive lock orders the marker after every accepted frame.
+		s.sendLocker.Lock()
+		defer s.sendLocker.Unlock()
+		select {
+		case s.send <- nil:
+		case <-s.closed:
+		case <-ctx.Done():
+		}
+	})
+	select {
+	case <-s.writerDone:
+		return s.writerErr
+	case <-ctx.Done():
+		_ = s.Close()
+		return ctx.Err()
+	}
 }
 
 func (s *Session) Local() string {

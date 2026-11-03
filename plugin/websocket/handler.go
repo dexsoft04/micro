@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"fmt"
 	ws "github.com/gorilla/websocket"
 	hdl "github.com/micro/micro/v3/service/api/handler"
 	"github.com/micro/micro/v3/service/client"
@@ -17,6 +18,8 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -45,7 +48,20 @@ var upgrader = ws.Upgrader{
 }
 
 type wsHandler struct {
-	opts hdl.Options
+	opts            hdl.Options
+	mu              sync.Mutex
+	draining        bool
+	active          sync.WaitGroup
+	sessions        map[*Session]context.CancelFunc
+	stopDone        chan struct{}
+	cleanupFailures int
+	drainContext    context.Context
+}
+
+// GatewayHandler owns upgraded connections until their close callbacks finish.
+type GatewayHandler interface {
+	hdl.Handler
+	Shutdown(context.Context) error
 }
 
 func requestHeaders(clientHeaders, status map[string]string, sessionID, serverID string) map[string]string {
@@ -76,6 +92,15 @@ func isSessionControlRequest(service, endpoint, gatewayName string) bool {
 }
 
 func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.mu.Lock()
+	if h.draining {
+		h.mu.Unlock()
+		http.Error(w, "websocket gateway is shutting down", http.StatusServiceUnavailable)
+		return
+	}
+	h.active.Add(1)
+	h.mu.Unlock()
+	defer h.active.Done()
 	cnn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "failed to upgrade wsHandler", 500)
@@ -83,15 +108,98 @@ func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	domain := domain(r)
 	socket := NewSession(cnn, domain)
-	go h.serveConn(socket, domain)
+	ctx, cancel := context.WithCancel(r.Context())
+	h.mu.Lock()
+	h.sessions[socket] = cancel
+	draining := h.draining
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		flush := h.drainContext
+		h.mu.Unlock()
+		if flush != nil {
+			if err := socket.drain(flush); err != nil {
+				h.mu.Lock()
+				if h.draining {
+					h.cleanupFailures++
+				}
+				h.mu.Unlock()
+				logger.Warnf("WebSocket session flush failed: %v", err)
+			}
+		}
+		_ = socket.Close()
+		cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
+		defer stop()
+		select {
+		case <-socket.closeDone:
+		case <-cleanup.Done():
+			logger.Warn("WebSocket session close callbacks timed out")
+			h.mu.Lock()
+			h.cleanupFailures++
+			h.mu.Unlock()
+		}
+		cancel()
+		h.mu.Lock()
+		delete(h.sessions, socket)
+		h.mu.Unlock()
+	}()
+	if !draining {
+		h.serveConn(ctx, socket, domain)
+	}
+}
+
+func (h *wsHandler) Shutdown(ctx context.Context) error {
+	h.mu.Lock()
+	if !h.draining {
+		h.draining = true
+		h.drainContext = ctx
+		h.stopDone = make(chan struct{})
+		go func() { h.active.Wait(); close(h.stopDone) }()
+		logger.Infof("WebSocket gateway drain started sessions=%d", len(h.sessions))
+	}
+	done := h.stopDone
+	h.mu.Unlock()
+	select {
+	case <-done:
+		h.mu.Lock()
+		failures := h.cleanupFailures
+		h.mu.Unlock()
+		if failures != 0 {
+			return fmt.Errorf("WebSocket shutdown had %d incomplete flushes or close callbacks", failures)
+		}
+		logger.Info("WebSocket gateway drain completed")
+		return nil
+	case <-ctx.Done():
+	}
+	h.mu.Lock()
+	for s, cancel := range h.sessions {
+		cancel()
+		_ = s.Close()
+	}
+	h.mu.Unlock()
+	// Give close notifications a bounded chance while broker/RPC dependencies
+	// are still alive. Their completion is not proof of downstream consumption.
+	cleanup := time.NewTimer(5 * time.Second)
+	defer cleanup.Stop()
+	select {
+	case <-done:
+	case <-cleanup.C:
+	}
+	logger.Warnf("WebSocket gateway drain timed out: %v", ctx.Err())
+	return ctx.Err()
+}
+
+func (h *wsHandler) stopping() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.draining
 }
 
 func (h *wsHandler) String() string {
 	return "websocket"
 }
-func (h *wsHandler) serveConn(sock *Session, domain string) {
+func (h *wsHandler) serveConn(parent context.Context, sock *Session, domain string) {
 	defer func() {
-		sock.Close()
 		// recover any panics
 		if r := recover(); r != nil {
 			logger.Error("panic recovered: ", r)
@@ -101,12 +209,18 @@ func (h *wsHandler) serveConn(sock *Session, domain string) {
 	config := server.DefaultServer.Options()
 	serverID := config.Name + "-" + config.Id
 	for {
+		if h.stopping() || parent.Err() != nil {
+			return
+		}
 		var msg transport.Message
 		if err := sock.Recv(&msg); err != nil {
 			return
 		}
+		if h.stopping() || parent.Err() != nil {
+			return
+		}
 		hdr := requestHeaders(msg.Header, sock.GetStatus(), sock.SID(), serverID)
-		ctx := metadata.NewContext(context.Background(), hdr)
+		ctx := metadata.NewContext(parent, hdr)
 		ct := msg.Header["Content-Type"]
 		if !hasCodec(ct, protoCodecs) {
 			ct = DefaultContentType
@@ -237,9 +351,10 @@ func domain(req *http.Request) string {
 	return strings.Join(comps, "-")
 }
 
-func NewHandler(opts ...hdl.Option) hdl.Handler {
+func NewHandler(opts ...hdl.Option) GatewayHandler {
 	options := hdl.NewOptions(opts...)
 	return &wsHandler{
-		opts: options,
+		opts:     options,
+		sessions: make(map[*Session]context.CancelFunc),
 	}
 }
