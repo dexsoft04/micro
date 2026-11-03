@@ -18,11 +18,14 @@
 package http
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/micro/micro/v3/service/api"
@@ -33,10 +36,17 @@ type httpServer struct {
 	mux  *http.ServeMux
 	opts api.Options
 
-	mtx     sync.RWMutex
-	address string
-	exit    chan chan error
+	mtx         sync.RWMutex
+	address     string
+	server      *http.Server
+	cancel      context.CancelFunc
+	stopDone    chan struct{}
+	stopErr     error
+	active      sync.WaitGroup
+	connections map[net.Conn]http.ConnState
 }
+
+type connectionKey struct{}
 
 func NewServer(address string, opts ...api.Option) api.Server {
 	var options api.Options
@@ -48,7 +58,6 @@ func NewServer(address string, opts ...api.Option) api.Server {
 		opts:    options,
 		mux:     http.NewServeMux(),
 		address: address,
-		exit:    make(chan chan error),
 	}
 }
 
@@ -85,6 +94,11 @@ func (s *httpServer) Handle(path string, handler http.Handler) {
 }
 
 func (s *httpServer) Start() error {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	if s.server != nil {
+		return fmt.Errorf("HTTP server already started")
+	}
 	var l net.Listener
 	var err error
 
@@ -105,29 +119,111 @@ func (s *httpServer) Start() error {
 		logger.Infof("HTTP Server Listening on %s", l.Addr().String())
 	}
 
-	s.mtx.Lock()
 	s.address = l.Addr().String()
-	s.mtx.Unlock()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.cancel = cancel
+	s.connections = make(map[net.Conn]http.ConnState)
+	s.server = &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s.active.Add(1)
+			defer s.active.Done()
+			defer func() {
+				// API websocket handlers own the connection until they return.
+				// net/http does not send StateClosed after a hijack.
+				c, _ := r.Context().Value(connectionKey{}).(net.Conn)
+				s.mtx.Lock()
+				if s.connections[c] == http.StateHijacked {
+					delete(s.connections, c)
+				}
+				s.mtx.Unlock()
+			}()
+			s.mux.ServeHTTP(w, r)
+		}),
+		BaseContext: func(net.Listener) context.Context { return ctx },
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			return context.WithValue(ctx, connectionKey{}, c)
+		},
+		ConnState: func(c net.Conn, state http.ConnState) {
+			s.mtx.Lock()
+			defer s.mtx.Unlock()
+			if state == http.StateClosed {
+				delete(s.connections, c)
+			} else {
+				s.connections[c] = state
+			}
+		},
+	}
+	server := s.server
 
 	go func() {
-		if err := http.Serve(l, s.mux); err != nil {
-			// temporary fix
-			//logger.Fatal(err)
+		if err := server.Serve(l); err != nil && err != http.ErrServerClosed {
+			logger.Errorf("HTTP server serve failed: %v", err)
 		}
-	}()
-
-	go func() {
-		ch := <-s.exit
-		ch <- l.Close()
 	}()
 
 	return nil
 }
 
 func (s *httpServer) Stop() error {
-	ch := make(chan error)
-	s.exit <- ch
-	return <-ch
+	s.mtx.Lock()
+	if s.server == nil {
+		s.mtx.Unlock()
+		return nil
+	}
+	if s.stopDone != nil {
+		done := s.stopDone
+		s.mtx.Unlock()
+		<-done
+		return s.stopErr
+	}
+	s.stopDone = make(chan struct{})
+	server, cancel := s.server, s.cancel
+	timeout := s.opts.ShutdownTimeout
+	if timeout <= 0 {
+		timeout = 20 * time.Second
+	}
+	s.mtx.Unlock()
+
+	logger.Infof("HTTP server drain started timeout=%s", timeout)
+	ctx, stop := context.WithTimeout(context.Background(), timeout)
+	defer stop()
+	err := server.Shutdown(ctx)
+	if err == nil {
+		// Shutdown does not wait for hijacked connections. Their handlers still
+		// belong to this server and share the same bounded drain deadline.
+		done := make(chan struct{})
+		go func() { s.active.Wait(); close(done) }()
+		select {
+		case <-done:
+		case <-ctx.Done():
+			err = ctx.Err()
+		}
+	}
+	cancel()
+	if err != nil {
+		_ = server.Close()
+		logger.Warnf("HTTP server drain timed out: %v", err)
+	}
+	// Close also leaves hijacked connections alone. Close them outside mtx.
+	s.mtx.Lock()
+	var hijacked []net.Conn
+	for c, state := range s.connections {
+		if state == http.StateHijacked {
+			hijacked = append(hijacked, c)
+		}
+	}
+	s.mtx.Unlock()
+	for _, c := range hijacked {
+		_ = c.Close()
+	}
+	s.mtx.Lock()
+	s.stopErr = err
+	close(s.stopDone)
+	s.mtx.Unlock()
+	if err == nil {
+		logger.Info("HTTP server drain completed")
+	}
+	return err
 }
 
 func (s *httpServer) String() string {

@@ -361,6 +361,8 @@ func Run(ctx *cli.Context) error {
 	api.Init(opts...)
 	// register the http handler
 	api.Handle("/", h)
+	// Drain HTTP requests while the service's RPC dependencies are still live.
+	srv.Init(service.BeforeStop(api.Stop))
 
 	// Start API
 	if err := api.Start(); err != nil {
