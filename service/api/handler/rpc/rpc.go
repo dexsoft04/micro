@@ -174,11 +174,7 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	// proto codecs
 	case hasCodec(ct, protoCodecs):
-		var request *bytes.Frame
-		// if the extracted payload isn't empty lets use it
-		if len(br) > 0 {
-			request = &bytes.Frame{Data: br}
-		}
+		request := &bytes.Frame{Data: br}
 
 		// create the request
 		req := c.NewRequest(
@@ -189,7 +185,7 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 
 		// make the call
-		var response *bytes.Frame
+		response := &bytes.Frame{}
 		if err := c.Call(cx, req, response, callOpt); err != nil {
 			writeError(w, r, err)
 			return
