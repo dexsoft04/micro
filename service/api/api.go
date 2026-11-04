@@ -308,7 +308,9 @@ func RequestPayload(r *http.Request) ([]byte, error) {
 		}
 		return raw.Data, nil
 	case strings.Contains(ct, "application/x-www-form-urlencoded"):
-		r.ParseForm()
+		if err := r.ParseForm(); err != nil {
+			return nil, err
+		}
 
 		// generate a new set of values from the form
 		vals := make(map[string]string)
@@ -434,6 +436,11 @@ func RequestPayload(r *http.Request) ([]byte, error) {
 		return out, nil
 	case "PATCH", "POST", "PUT", "DELETE":
 		bodybuf := []byte("{}")
+		// Empty protobuf messages use zero bytes, not an empty JSON object.
+		switch strings.TrimSpace(strings.SplitN(ct, ";", 2)[0]) {
+		case "application/proto", "application/protobuf", "application/grpc", "application/grpc+proto":
+			bodybuf = []byte{}
+		}
 		buf := bufferPool.Get()
 		defer bufferPool.Put(buf)
 		if _, err := buf.ReadFrom(r.Body); err != nil {
