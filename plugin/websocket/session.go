@@ -190,7 +190,13 @@ func (s *Session) process() {
 			return
 		case m := <-s.send:
 			if m == nil {
-				s.writerErr = s.conn.WriteControl(ws.CloseMessage, ws.FormatCloseMessage(ws.CloseGoingAway, "server shutting down"), time.Now().Add(time.Second))
+				err := s.conn.WriteControl(ws.CloseMessage, ws.FormatCloseMessage(ws.CloseGoingAway, "server shutting down"), time.Now().Add(time.Second))
+				// The reader may have already replied to a peer Close. Only a
+				// duplicate control frame is harmless; data write failures below
+				// must still fail the flush, including their ErrCloseSent errors.
+				if err != ws.ErrCloseSent {
+					s.writerErr = err
+				}
 				return
 			}
 			if err := s.sendMsg(m); err != nil {
