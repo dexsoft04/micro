@@ -22,8 +22,15 @@ var (
 	sessionCloseCallbacks = make([]func(s *Session), 0)
 	sessionCloseLocker    sync.RWMutex
 	SessionCount          int64
-	ErrSessionNotFound    = errors.New("session not found")
+	ErrSessionNotFound    error = sessionNotFoundError{}
 )
+
+// A missing session is an expected rejection: a connection may close before
+// an already scheduled push reaches this gateway. It is still a failed send.
+type sessionNotFoundError struct{}
+
+func (sessionNotFoundError) Error() string       { return "session not found" }
+func (sessionNotFoundError) ExpectedError() bool { return true }
 
 // Matches the backend gRPC message limit plus websocket envelope overhead.
 const defaultMaxMessageSize int64 = 32*1024*1024 + 64*1024

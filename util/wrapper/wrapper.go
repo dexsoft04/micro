@@ -139,6 +139,10 @@ func AuthHandler() server.HandlerWrapper {
 }
 
 func logHandlerError(err error) {
+	if errors.IsExpected(err) {
+		logger.Debug(err)
+		return
+	}
 	if err != nil {
 		logger.Error(err)
 	}

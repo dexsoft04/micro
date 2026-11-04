@@ -172,6 +172,7 @@ func setDefaultAuth(a auth.Auth) func() {
 type recordingLogger struct {
 	options    logger.Options
 	errorCount int
+	debugCount int
 }
 
 func (l *recordingLogger) Init(opts ...logger.Option) error {
@@ -193,12 +194,13 @@ func (l *recordingLogger) Log(level logger.Level, v ...interface{}) {
 	if level == logger.ErrorLevel {
 		l.errorCount++
 	}
+	if level == logger.DebugLevel {
+		l.debugCount++
+	}
 }
 
 func (l *recordingLogger) Logf(level logger.Level, format string, v ...interface{}) {
-	if level == logger.ErrorLevel {
-		l.errorCount++
-	}
+	l.Log(level, v...)
 }
 
 func (l *recordingLogger) String() string {
