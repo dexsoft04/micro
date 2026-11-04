@@ -232,9 +232,7 @@ func (g *grpcServer) handler(srv interface{}, stream grpc.ServerStream) (err err
 			}
 			err = errors.InternalServerError(g.opts.Name, "panic recovered: %v", r)
 		} else if err != nil {
-			if logger.V(logger.InfoLevel, logger.DefaultLogger) {
-				logger.Errorf("grpc handler got error: %s", err)
-			}
+			logHandlerError(err)
 		}
 	}()
 
@@ -554,7 +552,7 @@ func (g *grpcServer) processRequest(stream grpc.ServerStream, service *service, 
 				errStatus = status.New(statusCode, statusDesc)
 			}
 
-			return errStatus.Err()
+			return handlerStatusError(appErr, errStatus)
 		}
 
 		if err := stream.SendMsg(replyv.Interface()); err != nil {
