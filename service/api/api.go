@@ -321,6 +321,15 @@ func RequestPayload(r *http.Request) ([]byte, error) {
 		// marshal
 		return json.Marshal(vals)
 	case strings.Contains(ct, "multipart/form-data"):
+		if r.MultipartForm == nil {
+			// The parsed form may belong to a cloned request, which the HTTP
+			// server cannot clean up. Preserve forms supplied by the caller.
+			defer func() {
+				if r.MultipartForm != nil {
+					r.MultipartForm.RemoveAll()
+				}
+			}()
+		}
 		// 10MB buffer
 		if err := r.ParseMultipartForm(int64(10 << 20)); err != nil {
 			return nil, err
@@ -335,8 +344,12 @@ func RequestPayload(r *http.Request) ([]byte, error) {
 				return nil, err
 			}
 			b, err := ioutil.ReadAll(f)
+			closeErr := f.Close()
 			if err != nil {
 				return nil, err
+			}
+			if closeErr != nil {
+				return nil, closeErr
 			}
 			vals[k] = b
 		}
